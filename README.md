@@ -52,7 +52,9 @@ Repository와 UseCase의 생성·연결·앱 단위 singleton 수명주기는 Aw
 
 현재는 대화와 검색 결과를 브라우저 메모리에 보관합니다. 실제 API 연결 전에는 요청 취소, 메시지
 보관 한도·서버 저장과 명시적인 검색 캐시 정책을 추가합니다. 현재 구현 평가와 구체적인 확장 원칙은
-[Frontend 상태 관리 설계](frontend/README.md#상태-관리-설계와-확장-원칙)를 참고하세요.
+[Frontend 상태 관리 설계](frontend/README.md#상태-관리-설계와-확장-원칙)와
+[Provider에서 ViewModel까지 Store 전달](frontend/README.md#redux-provider에서-viewmodel까지-store-전달)을
+참고하세요.
 
 ## 포함한 기반
 

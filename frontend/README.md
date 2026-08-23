@@ -109,6 +109,108 @@ Hook이 반환한 상태와 행동만 사용합니다. Redux에는 문자열·�
 추가하는 방향으로 확장합니다. 더 넓은 계층 규칙은 [아키텍처 문서](../docs/architecture.md#frontend)를
 참고하세요.
 
+## Redux Provider에서 ViewModel까지 Store 전달
+
+`useSupportProgramChatViewModel`이 Store를 직접 import하지 않아도 `dispatch`와 State를 사용할 수
+있는 이유는 React 컴포넌트 트리의 상위에 Redux `Provider`가 있기 때문입니다.
+
+```text
+Provider store={store}
+└─ App
+   └─ ChatPage
+      └─ useSupportProgramChatViewModel
+```
+
+`main.tsx`는 앱 시작 시 생성한 Store를 Provider에 전달합니다.
+
+```tsx
+<Provider store={store}>
+  <App />
+</Provider>
+```
+
+Provider는 Store를 React Context에 보관합니다. `ChatPage`가 렌더링되는 동안 실행되는 ViewModel
+Hook은 같은 Context에서 Store를 찾을 수 있습니다. `app/hooks.ts`는 React Redux Hook에 GovBiz
+Store 타입만 미리 적용합니다.
+
+```ts
+export const useAppDispatch =
+  useDispatch.withTypes<AppDispatch>()
+
+export const useAppSelector =
+  useSelector.withTypes<RootState>()
+```
+
+`withTypes()`는 Store를 새로 만들거나 전역 변수를 조회하지 않습니다. 런타임 동작은 기존
+`useDispatch()`·`useSelector()`와 같고, TypeScript가 GovBiz의 `AppDispatch`와 `RootState`를 알게
+합니다. 동작을 단순화하면 다음과 같습니다.
+
+```ts
+function useDispatch() {
+  const store = useContext(ReactReduxContext)
+  return store.dispatch
+}
+
+function useSelector(selector) {
+  const store = useContext(ReactReduxContext)
+  return selector(store.getState())
+}
+```
+
+실제 `useSelector`는 Store 변경을 구독하고, 선택한 값이 달라질 때 컴포넌트를 다시 렌더링하는 로직도
+포함합니다. 따라서 ViewModel의 다음 코드는 Provider가 제공한 같은 Store를 사용합니다.
+
+```ts
+const dispatch = useAppDispatch()
+const draft = useAppSelector(selectChatDraft)
+const messages = useAppSelector(selectChatMessages)
+```
+
+`dispatch`는 `store.dispatch`이고, selector는 `store.getState()`에서 필요한 값을 선택합니다.
+
+```text
+useAppDispatch()
+→ Provider의 Store
+→ store.dispatch
+
+useAppSelector(selectChatDraft)
+→ Provider의 Store
+→ store.getState()
+→ state.chat.draft
+```
+
+일반 action을 dispatch하면 Slice가 처리합니다.
+
+```ts
+dispatch(draftChanged(value))
+```
+
+함수인 Thunk를 dispatch하면 Redux Thunk middleware가 가로채서 Store에 주입된 `AppServices`를 세
+번째 인자로 전달합니다.
+
+```ts
+dispatch(searchWorkflow)
+
+// Redux Thunk가 내부적으로 실행하는 형태
+searchWorkflow(store.dispatch, store.getState, appServices)
+```
+
+전체 의존성 전달 흐름은 다음과 같습니다.
+
+```text
+Awilix
+→ AppServices 생성
+→ Store의 Thunk extraArgument에 저장
+→ Provider가 Store를 React 트리에 제공
+→ ViewModel이 useAppDispatch()로 store.dispatch 획득
+→ ViewModel이 searchWorkflow를 dispatch
+→ Thunk가 AppServices를 세 번째 인자로 전달
+→ UseCase와 Repository 실행
+```
+
+Provider 없이 `ChatPage`를 렌더링하거나 ViewModel Hook을 React 컴포넌트 렌더링 밖에서 직접 호출하면
+React Redux Context를 찾을 수 없으므로 정상 동작하지 않습니다.
+
 ## Awilix DI 컨테이너 이해하기
 
 DI 라이브러리를 사용해도 구현체 등록 자체는 필요합니다. 달라진 점은 `new`와 함수 `bind`를 직접
