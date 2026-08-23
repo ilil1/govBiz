@@ -28,7 +28,7 @@ services:
     command:
       - sh
       - -c
-      - pnpm install --frozen-lockfile && exec pnpm dev
+      - CI=true pnpm install --frozen-lockfile && exec pnpm dev
     environment:
       CHOKIDAR_USEPOLLING: "true"
       VITE_CORE_API_BASE_URL: /

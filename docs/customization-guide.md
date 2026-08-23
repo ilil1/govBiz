@@ -28,7 +28,8 @@ GovBiz는 샘플 공고 검색을 시작점으로, 실제 지원사업 데이터
 2. Core API에 공고 조회 API와 Repository를 구현합니다.
 3. 기업마당·K-Startup 수집 adapter가 외부 응답을 GovBiz 공고 모델로 변환하게 합니다.
 4. Frontend Data Layer에 Fetch·Zod DTO 경계와 HTTP Repository를 추가합니다.
-5. `app/services.ts`의 Composition Root에서 샘플 Repository 대신 HTTP Repository를 선택합니다.
+5. `app/di/registerRepositories.ts`에서 `supportProgramRepository` 등록을 샘플 구현에서 HTTP
+   구현으로 교체합니다.
 6. 동일한 검색 시나리오를 fixture·HTTP 계약 테스트와 Compose smoke로 검증합니다.
 
 ## 3. SampleItem 계층 패턴 재사용
@@ -38,6 +39,7 @@ SampleItem은 실제 GovBiz 도메인이 아니라 Frontend와 Core API 계층�
 
 ```text
 Frontend
+  앱 조립: Awilix → AppServices facade → Redux Store
   채팅: View → ViewModel의 Thunk → AppServices → UseCase → Repository
   단순 요청: View → ViewModel의 local state·Thunk → AppServices
 
@@ -49,6 +51,11 @@ Core API
 상태로 구성할 수 있습니다. 채팅처럼 여러 상태 전이를 직접 제어할 작업 흐름은 ViewModel 안의 Redux
 Thunk가 주입된 UseCase를 호출하고, Redux Slice가 결과 상태를 보관합니다. 두 경우 모두 실제
 Repository는 ViewModel이 생성하지 않고 AppServices를 통해 주입받습니다.
+
+Awilix는 `app/di` 등록 모듈과 `app/services.ts` 공개 facade 안에서만 사용합니다. 화면이나 Domain에서
+컨테이너를 직접 조회하지 않고, 새 구현체는 최초 resolve 전에 역할에 맞는 등록 모듈에 추가합니다.
+테스트에서 운영 컨테이너를 변경하지 말고 각 테스트용 새 컨테이너나 plain Fake `AppServices`를
+사용합니다.
 
 ## 4. 데이터베이스와 비동기 처리 추가 시점
 

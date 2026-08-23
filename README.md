@@ -45,6 +45,11 @@ React Hook은 사이드바·DOM 참조처럼 화면과 함께 사라지는 상�
 로딩·성공·실패 상태는 해당 Hook이 관리합니다. 검색 중 중복 전송을 막고, 새 대화를 시작한 뒤 도착한
 이전 응답은 요청 ID를 비교해 무시합니다.
 
+Repository와 UseCase의 생성·연결·앱 단위 singleton 수명주기는 Awilix 컨테이너가 관리합니다.
+컨테이너 자체를 ViewModel에 노출하지 않고, 컨테이너가 완성한 `AppServices`만 Redux Thunk에
+주입합니다. DI 등록은 `frontend/src/app/di`에서 Repository, UseCase, AppServices 역할별 모듈로
+분리해 관리합니다.
+
 현재는 대화와 검색 결과를 브라우저 메모리에 보관합니다. 실제 API 연결 전에는 요청 취소, 메시지
 보관 한도·서버 저장과 명시적인 검색 캐시 정책을 추가합니다. 현재 구현 평가와 구체적인 확장 원칙은
 [Frontend 상태 관리 설계](frontend/README.md#상태-관리-설계와-확장-원칙)를 참고하세요.
@@ -52,6 +57,7 @@ React Hook은 사이드바·DOM 참조처럼 화면과 함께 사라지는 상�
 ## 포함한 기반
 
 - React의 View → ViewModel → UseCase → Repository → HTTP DTO 흐름
+- Awilix 컨테이너를 이용한 decorator 없는 Frontend 의존성 주입
 - Spring Boot의 Controller → Service → Domain 흐름
 - Zod와 Bean Validation을 이용한 요청·응답 계약 검증
 - FastAPI 내부 Health API와 Core API의 upstream 오류 변환

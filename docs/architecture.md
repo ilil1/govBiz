@@ -18,15 +18,21 @@ React는 Core API만 호출합니다. FastAPI는 브라우저에 공개하지 �
 ## Frontend
 
 ```text
+앱 시작:
+Awilix Composition Root
+  → AppServices facade
+      → Redux Store의 Thunk extraArgument
+
+요청 실행:
 View
   → ViewModel Hook
       → typed Redux hooks
           → ViewModel 안의 Redux Thunk
-              → injected AppServices
+              → injected AppServices facade
                   → Domain UseCase
                       → Repository interface
                           → Fixture 또는 HTTP Repository
-                              → Redux Toolkit slice·selector
+          → Redux Toolkit slice·selector
 ```
 
 - **View**는 JSX, 접근성, 표시를 담당합니다.
@@ -35,7 +41,9 @@ View
 - **Redux Toolkit**은 대화 메시지·검색 조건처럼 공유할 클라이언트 상태를 관리합니다.
 - **React Hook state**는 Health와 SampleItem처럼 한 화면에서 끝나는 요청의 로딩·성공·실패 상태를
   관리합니다.
-- **AppServices**는 Store 생성 시 UseCase와 Repository 구현을 주입하는 Composition Root입니다.
+- **Awilix Composition Root**는 `app/di`의 역할별 등록 모듈을 하나의 객체 graph로 조립하고 앱 단위
+  singleton 수명주기를 관리합니다.
+- **AppServices**는 컨테이너 전체를 노출하지 않고 ViewModel에 필요한 기능만 전달하는 facade입니다.
 - **UseCase**는 화면과 HTTP 구현 사이의 업무 행동입니다.
 - **Repository interface**는 Domain이 필요한 통신을 정의합니다.
 - **Data Layer**는 Fetch, URL, Zod 응답 검증을 소유합니다.
@@ -84,6 +92,8 @@ Browser (127.0.0.1:5173)
 - React View는 Redux Store 또는 Data Layer를 직접 호출하지 않고 ViewModel을 사용합니다.
 - ViewModel의 Redux Thunk는 구체 Repository를 생성하지 않고 AppServices에서 필요한 의존성을
   주입받습니다.
+- Awilix 컨테이너와 `container.resolve()`는 `app/di` Composition Root와 `app/services.ts` 공개
+  facade 밖으로 노출하지 않습니다.
 - Core API는 FastAPI 전송 DTO를 브라우저에 그대로 노출하지 않습니다.
 - FastAPI는 Core API 소스 코드를 import하거나 Core API 데이터 저장소를 수정하지 않습니다.
 - 서비스 간 통신은 명시적인 HTTP·JSON 계약과 테스트로 검증합니다.

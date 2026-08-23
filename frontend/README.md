@@ -42,7 +42,8 @@ pnpm dev
 
 ```text
 src/
-├── app/                                # Redux Store와 서비스 Composition Root
+├── app/                                # Redux Store와 AppServices 공개 facade
+│   └── di/                             # Repository·UseCase·AppServices 역할별 Awilix 등록
 ├── presentation/features/chat/         # View, 인라인 Thunk ViewModel, Redux slice·selector
 ├── presentation/features/sample-item/  # 계층 연결 예제 View와 ViewModel
 ├── presentation/shared/                # Core API 연결 상태 UI
@@ -52,15 +53,16 @@ src/
 
 `ChatPage`는 `useSupportProgramChatViewModel`이 반환한 상태와 행동만 사용합니다. ViewModel은 typed
 Redux hook으로 selector를 읽고, `submitMessage` 안의 Thunk가 Store에 주입된 UseCase를 직접
-실행합니다. 구체 Repository 선택은 `app/services.ts` 한 곳에서만 수행합니다.
+실행합니다. 구체 Repository 등록과 singleton 수명주기는 `app/di`의 역할별 등록 모듈에서 관리하고,
+`app/services.ts`는 완성된 `AppServices`만 Store에 제공합니다.
 
 ```text
 ChatPage
   → useSupportProgramChatViewModel
       → submitMessage 안의 Redux Thunk
-          → AppServices
-              → SearchSupportProgramsUseCase
-                  → SupportProgramRepository
+          → AppServices facade
+              → Awilix가 생성한 SearchSupportProgramsUseCase
+                  → Awilix가 주입한 SupportProgramRepository
                       → chat slice 성공·실패 상태
 ```
 
@@ -79,9 +81,10 @@ workflow는 ViewModel의 Thunk에 명시하고, 대화 상태는 Redux에 둡니
 | Redux Toolkit | 여러 컴포넌트가 공유하는 작업 흐름 | 입력 초안, 메시지, 검색 상태, 활성 요청 ID |
 | 서버 저장소 | 새로고침 후에도 남아야 하는 장기 데이터 | 이후 추가할 전체 대화 이력과 공고 데이터 |
 
-Store를 만들 때 `AppServices`를 주입하므로 테스트에서는 실제 Repository 대신 Fake 구현을 사용할 수
-있습니다. View는 typed selector와 dispatch를 직접 조립하지 않고 ViewModel Hook이 반환한 상태와 행동만
-사용합니다. Redux에는 문자열·배열·일반 객체처럼 직렬화 가능한 값만 저장합니다.
+Awilix가 완성한 `AppServices`를 Store에 주입하므로 테스트에서는 plain Fake 서비스나 별도의 테스트
+컨테이너를 사용할 수 있습니다. View는 typed selector와 dispatch를 직접 조립하지 않고 ViewModel
+Hook이 반환한 상태와 행동만 사용합니다. Redux에는 문자열·배열·일반 객체처럼 직렬화 가능한 값만
+저장합니다.
 
 현재 채팅 흐름은 다음 안전장치를 적용합니다.
 
@@ -105,6 +108,46 @@ Store를 만들 때 `AppServices`를 주입하므로 테스트에서는 실제 R
 따라서 현재 Redux 구조를 다시 만드는 것이 아니라, 실제 API 도입 시 캐시·취소·장기 보관 정책을
 추가하는 방향으로 확장합니다. 더 넓은 계층 규칙은 [아키텍처 문서](../docs/architecture.md#frontend)를
 참고하세요.
+
+## Awilix DI 컨테이너 이해하기
+
+DI 라이브러리를 사용해도 구현체 등록 자체는 필요합니다. 달라진 점은 `new`와 함수 `bind`를 직접
+연결하는 대신 Awilix가 등록 정보를 바탕으로 객체 생성, 의존성 해석과 수명주기를 관리한다는 것입니다.
+
+```text
+createAppContainer()
+  → registerRepositories()
+  → registerUseCases()
+  → registerAppServices()
+  → PROXY 방식으로 의존성 해석
+  → 앱 컨테이너 안에서 singleton 재사용
+  → appServices facade 한 번 resolve
+  → createAppStore(appServices)
+```
+
+컨테이너 조립과 등록은 `app/di`에만 존재하고, `app/services.ts`는 공개 facade 역할만 합니다.
+ViewModel과 Domain은 Awilix를 import하거나 `container.resolve()`를 호출하지 않습니다. 따라서 DI
+라이브러리를 다른 구현으로 바꾸더라도 화면·UseCase·Repository 계약은 영향을 받지 않습니다.
+
+등록 책임은 다음과 같이 분리합니다.
+
+- `registerRepositories.ts`: Data Layer Repository 구현체
+- `registerUseCases.ts`: Domain UseCase와 Repository 연결
+- `registerAppServices.ts`: 외부 서비스와 Redux Thunk용 `AppServices` facade
+- `container.ts`: 위 등록 모듈을 하나의 컨테이너로 조립
+
+현재 정책은 다음과 같습니다.
+
+- 브라우저 minification에 안전하도록 `InjectionMode.PROXY`를 사용합니다.
+- 수명주기 오류를 조기에 찾도록 Awilix `strict` 모드를 사용합니다.
+- 상태가 없는 Repository·UseCase는 앱 컨테이너 안에서 singleton으로 관리합니다.
+- 요청별 `AbortController`, 폼 상태와 Redux Store는 컨테이너에 등록하지 않습니다.
+- 테스트는 전역 컨테이너를 수정하지 않고 매번 새 컨테이너 또는 plain `AppServices` Fake를 사용합니다.
+- 현재는 정리할 외부 자원이 없으며, WebSocket·Worker 같은 disposable 서비스를 추가할 때는 컨테이너
+  handle을 앱 수명 동안 보관하고 종료 시 `container.dispose()`를 호출합니다.
+
+Awilix의 브라우저 지원·주입 방식·수명주기 규칙은
+[공식 문서](https://github.com/jeffijoe/awilix#readme)를 참고하세요.
 
 ## SampleItem ViewModel Hook 이해하기
 
@@ -157,8 +200,9 @@ const result = await dispatch(preparationWorkflow)
 - 입력이 바뀌면 이전 결과를 지우고, 늦게 도착한 과거 응답은 요청 ID가 다르면 무시합니다.
 
 ViewModel이 Repository를 직접 생성하는 것은 아닙니다. 실제 Repository와 UseCase는
-`app/services.ts`에서 한 번 조립되고, `app/store.ts`가 이를 Thunk의 `extraArgument`로 주입합니다.
-따라서 운영 Store에는 실제 구현을, 테스트 Store에는 Fake 구현을 넣을 수 있습니다.
+`app/di`의 Awilix 컨테이너에서 한 번 해석되고, `app/services.ts`를 거쳐 `app/store.ts`가 완성된
+facade를 Thunk의 `extraArgument`로 주입합니다. 따라서 운영 Store에는 실제 구현을, 테스트 Store에는
+Fake 구현을 넣을 수 있습니다.
 
 ```text
 사용자 입력
