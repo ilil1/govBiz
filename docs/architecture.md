@@ -1,4 +1,4 @@
-# Base Architecture Starter 아키텍처
+# GovBiz 아키텍처
 
 ## 서비스 경계
 
@@ -20,20 +20,27 @@ React는 Core API만 호출합니다. FastAPI는 브라우저에 공개하지 �
 ```text
 View
   → ViewModel Hook
-      → Domain UseCase
-          → Repository interface
-              → Data Repository implementation
-                  → Fetch API + Zod DTO
+      → typed Redux hooks
+          → Redux Toolkit slice·selector·thunk
+              → RTK Query
+                  → injected AppServices
+                      → Domain UseCase
+                          → Repository interface
+                              → Fixture 또는 HTTP Repository
 ```
 
 - **View**는 JSX, 접근성, 표시를 담당합니다.
-- **ViewModel**은 폼 상태, 사용자 행동, mutation 상태를 관리합니다.
+- **ViewModel**은 selector와 action을 화면이 사용하기 좋은 상태·행동으로 묶습니다.
+- **Redux Toolkit**은 대화 메시지·검색 조건처럼 공유할 클라이언트 상태를 관리합니다.
+- **RTK Query**는 검색·Health·mutation 요청과 캐시 lifecycle을 관리합니다.
+- **AppServices**는 Store 생성 시 UseCase와 Repository 구현을 주입하는 Composition Root입니다.
 - **UseCase**는 화면과 HTTP 구현 사이의 업무 행동입니다.
 - **Repository interface**는 Domain이 필요한 통신을 정의합니다.
 - **Data Layer**는 Fetch, URL, Zod 응답 검증을 소유합니다.
 
-Health 조회처럼 업무 도메인이 아닌 연결 상태는 UseCase·Repository를 거치지 않고 `data/core-api`에
-둘 수 있습니다.
+사이드바 열림과 DOM 참조 같은 화면 전용 상태는 Redux에 넣지 않고 React 로컬 hook에 둡니다.
+Health 조회처럼 업무 도메인이 아닌 연결 상태는 UseCase·Repository를 억지로 거치지 않지만, 서버
+상태 lifecycle은 같은 RTK Query API에서 관리합니다.
 
 ## Core API
 
@@ -72,7 +79,8 @@ Browser (127.0.0.1:5173)
 
 ## 의존성 규칙
 
-- React View는 Data Layer의 Fetch 구현을 직접 호출하지 않습니다.
+- React View는 Redux Store, RTK Query 또는 Data Layer를 직접 호출하지 않고 ViewModel을 사용합니다.
+- Redux thunk와 RTK Query endpoint는 구체 Repository를 생성하지 않고 AppServices에서 주입받습니다.
 - Core API는 FastAPI 전송 DTO를 브라우저에 그대로 노출하지 않습니다.
 - FastAPI는 Core API 소스 코드를 import하거나 Core API 데이터 저장소를 수정하지 않습니다.
 - 서비스 간 통신은 명시적인 HTTP·JSON 계약과 테스트로 검증합니다.

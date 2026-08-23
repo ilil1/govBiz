@@ -3,9 +3,9 @@ import './CoreApiConnectionStatus.css'
 import { useCoreApiHealth } from './useCoreApiHealth'
 
 export function CoreApiConnectionStatus() {
-  const { data, isError, isPending, refetch } = useCoreApiHealth()
+  const { data, isError, isLoading, refetch } = useCoreApiHealth()
 
-  if (isPending) {
+  if (isLoading) {
     return (
       <div className="core-api-status is-checking" aria-live="polite">
         <span className="connection-dot" aria-hidden="true" />
@@ -17,7 +17,7 @@ export function CoreApiConnectionStatus() {
     )
   }
 
-  if (isError) {
+  if (isError || !data) {
     return (
       <div className="core-api-status is-error" role="alert">
         <span className="connection-dot" aria-hidden="true" />

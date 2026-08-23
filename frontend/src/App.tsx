@@ -1,8 +1,8 @@
-import { SampleItemPage } from './presentation/features/sample-item/view/SampleItemPage'
+import { ChatPage } from './presentation/features/chat/view/ChatPage'
 
-/** 앱 조합 지점입니다. 기능 화면을 선택하고 전역 Provider를 연결하는 역할만 맡습니다. */
+/** GovBiz의 첫 진입점은 공고를 찾는 채팅 화면입니다. */
 function App() {
-  return <SampleItemPage />
+  return <ChatPage />
 }
 
 export default App
