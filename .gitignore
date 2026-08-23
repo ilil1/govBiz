@@ -1,0 +1,39 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.vite/
+
+# Java and Gradle
+.gradle/
+build/
+out/
+*.class
+
+# Runtime and local artifacts
+.data/
+uploads/
+tmp/
+work/
+*.log
+
+# IDE and OS
+.idea/
+.vscode/
+.DS_Store

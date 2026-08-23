@@ -1,0 +1,29 @@
+:root {
+  color: #1b3025;
+  background: #f3f4ed;
+  font-family: Inter, Pretendard, 'Noto Sans KR', system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 4%, rgba(200, 247, 121, 0.22), transparent 23rem),
+    radial-gradient(circle at 96% 14%, rgba(227, 101, 74, 0.1), transparent 19rem),
+    #f3f4ed;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
