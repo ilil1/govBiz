@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "base-architecture-ai-service"
+name = "govbiz-ai-service"
 version = "0.1.0"
-description = "Internal AI analysis service for Base Architecture Starter"
+description = "Internal AI analysis service for GovBiz"
 requires-python = ">=3.11,<3.15"
 dependencies = [
     "fastapi>=0.139.2,<0.140.0",

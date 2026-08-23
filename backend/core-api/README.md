@@ -1,7 +1,7 @@
-# Base Architecture Core API
+# GovBiz Core API
 
-Spring Boot 기반의 브라우저 공개 API입니다. React의 업무 요청을 받고, 내부 AI Service 호출 결과를
-안정적인 공개 HTTP 계약으로 변환합니다.
+Spring Boot 기반의 GovBiz 브라우저 공개 API입니다. React의 업무 요청을 받고, 내부 AI Service 호출
+결과를 안정적인 공개 HTTP 계약으로 변환합니다.
 
 ## 현재 API
 
@@ -14,6 +14,8 @@ Spring Boot 기반의 브라우저 공개 API입니다. React의 업무 요청�
 `SampleItem`의 정확한 요청·응답은 [SampleItem 계약](../../docs/sample-item-contract.md)을
 참고하세요.
 
+현재 SampleItem은 GovBiz의 실제 지원사업 기능으로 교체하기 전까지 유지하는 구조 예제입니다.
+
 ## 구조
 
 ```text
@@ -23,6 +25,8 @@ domain/       # 프레임워크에 독립적인 record·enum·불변식
 client/ai/    # FastAPI 내부 HTTP Client
 config/       # CORS, HTTP Client, JSON 설정
 ```
+
+Java 기본 패키지는 `ai.govbiz.core`이고 Gradle 프로젝트명은 `govbiz-core-api`입니다.
 
 외부 HTTP 호출은 영속성 Repository가 아니므로 `client/ai`에 둡니다. 데이터 저장이 필요한 기능이
 생길 때 실제 Repository를 추가하세요.

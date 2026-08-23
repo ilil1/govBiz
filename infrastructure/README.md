@@ -1,4 +1,4 @@
-# Base Architecture Docker Compose
+# GovBiz Docker Compose
 
 Docker Compose는 React, Core API, AI Service를 한 번에 실행하고 실제 서비스 경계를 검증합니다.
 

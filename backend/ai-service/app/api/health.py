@@ -14,5 +14,5 @@ def health() -> HealthResponse:
     """Core API가 AI Service의 실행 상태를 확인할 때 사용한다."""
     return HealthResponse(
         status="up",
-        service=ServiceName.BASE_ARCHITECTURE_AI_SERVICE,
+        service=ServiceName.GOVBIZ_AI_SERVICE,
     )

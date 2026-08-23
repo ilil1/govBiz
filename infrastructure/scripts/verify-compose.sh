@@ -8,7 +8,7 @@ COMPOSE_FILE="${INFRASTRUCTURE_DIR}/compose.yaml"
 WAIT_TIMEOUT_SECONDS="${VERIFY_COMPOSE_TIMEOUT_SECONDS:-120}"
 WAIT_INTERVAL_SECONDS="${VERIFY_COMPOSE_INTERVAL_SECONDS:-2}"
 KEEP_RUNNING="${VERIFY_COMPOSE_KEEP_RUNNING:-false}"
-PROJECT_NAME="${VERIFY_COMPOSE_PROJECT_NAME:-base-architecture-verify}"
+PROJECT_NAME="${VERIFY_COMPOSE_PROJECT_NAME:-govbiz-verify}"
 
 COMPOSE=(docker compose --project-name "${PROJECT_NAME}" --file "${COMPOSE_FILE}")
 RESPONSE_DIR="$(mktemp -d)"
@@ -113,28 +113,28 @@ wait_for_json_post() {
 echo "Validating Compose configuration"
 "${COMPOSE[@]}" config --quiet
 
-echo "Building and starting the Base Architecture verification stack (${PROJECT_NAME})"
+echo "Building and starting the GovBiz verification stack (${PROJECT_NAME})"
 "${COMPOSE[@]}" up --build --detach --remove-orphans
 
 wait_for_http "Vite web" "http://127.0.0.1:5173/" "200"
-wait_for_http "Vite-proxied Core API health" "http://127.0.0.1:5173/api/v1/health" "200" '"status"[[:space:]]*:[[:space:]]*"up".*"service"[[:space:]]*:[[:space:]]*"base-architecture-core-api"'
+wait_for_http "Vite-proxied Core API health" "http://127.0.0.1:5173/api/v1/health" "200" '"status"[[:space:]]*:[[:space:]]*"up".*"service"[[:space:]]*:[[:space:]]*"govbiz-core-api"'
 wait_for_json_post \
   "Vite-proxied sample item preparation" \
   "http://127.0.0.1:5173/api/v1/sample-items/prepare" \
   '{"item":{"name":"Compose verification item","category":"BASIC","note":"Verifies the reusable sample feature."}}' \
   "200" \
   '"phase"[[:space:]]*:[[:space:]]*"READY_FOR_PROCESSING".*"status"[[:space:]]*:[[:space:]]*"NOT_STARTED"'
-wait_for_http "Vite-proxied Core to AI Service health" "http://127.0.0.1:5173/api/v1/health/ai-service" "200" '"status"[[:space:]]*:[[:space:]]*"up".*"service"[[:space:]]*:[[:space:]]*"base-architecture-ai-service"'
+wait_for_http "Vite-proxied Core to AI Service health" "http://127.0.0.1:5173/api/v1/health/ai-service" "200" '"status"[[:space:]]*:[[:space:]]*"up".*"service"[[:space:]]*:[[:space:]]*"govbiz-ai-service"'
 
 echo "Stopping only AI Service to verify failure isolation"
 "${COMPOSE[@]}" stop ai-service
 
-wait_for_http "Core API health while AI Service is stopped" "http://127.0.0.1:5173/api/v1/health" "200" '"status"[[:space:]]*:[[:space:]]*"up".*"service"[[:space:]]*:[[:space:]]*"base-architecture-core-api"'
+wait_for_http "Core API health while AI Service is stopped" "http://127.0.0.1:5173/api/v1/health" "200" '"status"[[:space:]]*:[[:space:]]*"up".*"service"[[:space:]]*:[[:space:]]*"govbiz-core-api"'
 wait_for_http "Core to AI Service unavailable contract" "http://127.0.0.1:5173/api/v1/health/ai-service" "503" '"code"[[:space:]]*:[[:space:]]*"AI_SERVICE_UNAVAILABLE"'
 
 echo "Restarting AI Service to verify recovery without restarting Core API"
 "${COMPOSE[@]}" start ai-service
 
-wait_for_http "Core to AI Service recovery" "http://127.0.0.1:5173/api/v1/health/ai-service" "200" '"status"[[:space:]]*:[[:space:]]*"up".*"service"[[:space:]]*:[[:space:]]*"base-architecture-ai-service"'
+wait_for_http "Core to AI Service recovery" "http://127.0.0.1:5173/api/v1/health/ai-service" "200" '"status"[[:space:]]*:[[:space:]]*"up".*"service"[[:space:]]*:[[:space:]]*"govbiz-ai-service"'
 
 echo "Compose verification passed: startup, failure isolation, and recovery are valid."

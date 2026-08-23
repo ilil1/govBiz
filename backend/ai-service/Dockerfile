@@ -26,17 +26,17 @@ ENV PATH="/app/.venv/bin:${PATH}" \
 
 WORKDIR /app
 
-RUN groupadd --system basearchitecture && \
+RUN groupadd --system govbiz && \
     useradd --system \
-        --gid basearchitecture \
+        --gid govbiz \
         --home-dir /nonexistent \
         --shell /usr/sbin/nologin \
-        basearchitecture
+        govbiz
 
-COPY --from=builder --chown=basearchitecture:basearchitecture /app/.venv /app/.venv
-COPY --from=builder --chown=basearchitecture:basearchitecture /app/app /app/app
+COPY --from=builder --chown=govbiz:govbiz /app/.venv /app/.venv
+COPY --from=builder --chown=govbiz:govbiz /app/app /app/app
 
-USER basearchitecture:basearchitecture
+USER govbiz:govbiz
 
 EXPOSE 8000
 

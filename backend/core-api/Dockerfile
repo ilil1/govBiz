@@ -21,17 +21,17 @@ FROM eclipse-temurin:21-jre-jammy AS runtime
 
 WORKDIR /app
 
-RUN groupadd --system basearchitecture && \
+RUN groupadd --system govbiz && \
     useradd --system \
-        --gid basearchitecture \
+        --gid govbiz \
         --home-dir /nonexistent \
         --shell /usr/sbin/nologin \
-        basearchitecture
+        govbiz
 
-COPY --from=builder --chown=basearchitecture:basearchitecture \
+COPY --from=builder --chown=govbiz:govbiz \
     /workspace/application.jar /app/application.jar
 
-USER basearchitecture:basearchitecture
+USER govbiz:govbiz
 
 EXPOSE 8080
 

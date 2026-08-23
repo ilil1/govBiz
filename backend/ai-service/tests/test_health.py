@@ -12,7 +12,7 @@ def test_returns_typed_health_response() -> None:
     assert response.headers["content-type"].startswith("application/json")
     assert response.json() == {
         "status": "up",
-        "service": "base-architecture-ai-service",
+        "service": "govbiz-ai-service",
     }
 
 
@@ -32,5 +32,5 @@ def test_exposes_health_contract_in_openapi() -> None:
     assert health_schema["properties"]["status"]["const"] == "up"
     assert (
         health_schema["properties"]["service"]["const"]
-        == "base-architecture-ai-service"
+        == "govbiz-ai-service"
     )

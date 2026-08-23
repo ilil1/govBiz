@@ -1,6 +1,7 @@
 # SampleItem 준비 API 계약
 
-SampleItem은 이 스타터의 구조를 보여 주는 최소 예제입니다. 실제 업무 도메인을 추가할 때는 이
+SampleItem은 GovBiz의 Frontend·Core API 계층 연결을 보여 주는 최소 예제입니다. 실제 업무
+도메인을 추가할 때는 이
 계약을 그대로 확장하기보다, 필요한 상태와 필드를 새로 정의하세요.
 
 ## Endpoint
@@ -54,7 +55,7 @@ Content-Type: application/json
 
 ```json
 {
-  "type": "urn:base-architecture:problem:request-validation-failed",
+  "type": "urn:govbiz:problem:request-validation-failed",
   "title": "Request Validation Failed",
   "status": 400,
   "detail": "One or more request fields are invalid.",

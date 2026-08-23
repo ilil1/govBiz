@@ -1,59 +1,63 @@
-# Base Architecture Starter 커스터마이즈 안내
+# GovBiz 확장·적용 안내
 
-## 1. 프로젝트 식별자 변경
+GovBiz는 샘플 공고 검색을 시작점으로, 실제 지원사업 데이터와 기업 맞춤 추천을 단계적으로
+연결하도록 구성했습니다. 다른 지원사업 데이터 소스나 유사한 공공 정보 서비스에 적용할 때도
+계층의 책임은 유지하고 도메인 계약과 adapter를 기능 단위로 교체합니다.
 
-새 프로젝트 이름을 정한 뒤 다음 식별자를 한 번에 바꿉니다.
+## 1. GovBiz 브랜드와 서비스 계약 확정
 
-| 현재 | 역할 |
-|---|---|
-| `base-architecture` | Compose 프로젝트명 |
-| `base-architecture-core-api` | Core API Health service 값 |
-| `base-architecture-ai-service` | AI Service Health service 값 |
-| `io.basearchitecture.core` | Java package·Gradle group |
-| `basearchitecture` | Dockerfile의 non-root 사용자 |
-| `urn:base-architecture:*` | 공개 ProblemDetail type |
+서비스명, 표시 문구, 공개 URL, API 오류 URN과 Health service 값은 배포 전에 하나의 규칙으로
+확정합니다. 사용자에게 노출되는 이름과 서비스 간 계약에 쓰이는 식별자를 혼용하지 않습니다.
 
-Health service 값은 `application.properties`, FastAPI Health schema, Core API의 예상 값, 테스트,
-Compose smoke script에서 같은 문자열을 사용하므로 함께 변경해야 합니다.
+다음 위치는 같은 변경에서 함께 검토합니다.
 
-## 2. SampleItem을 실제 기능으로 교체
+- 루트·서비스별 README와 브라우저 metadata
+- Frontend 화면의 브랜드·샘플 데이터 모드 표시
+- Core API와 AI Service의 Health 응답·예상 값
+- `application/problem+json` type URN과 서비스 간 DTO
+- Docker Compose project·service·container 이름과 smoke 검증 스크립트
 
-다음 흐름을 기능 단위로 새로 만듭니다.
+## 2. 샘플 공고를 실제 데이터 소스로 교체
 
-```text
-frontend/src/presentation/features/sample-item/
-frontend/src/domain/entities/SampleItem.ts
-frontend/src/domain/repositories/SampleItemRepository.ts
-frontend/src/domain/usecases/PrepareSampleItemUseCase.ts
-frontend/src/data/api/sampleItemApi.ts
-frontend/src/data/models/SampleItemDto.ts
-frontend/src/data/repositories/SampleItemRepositoryImpl.ts
-
-backend/core-api/src/main/java/.../domain/sample/
-backend/core-api/src/main/java/.../dto/sample/
-backend/core-api/src/main/java/.../controller/SampleItemPreparationController.java
-backend/core-api/src/main/java/.../service/SampleItemPreparationService.java
-```
+현재 채팅 화면은 `SupportProgramRepository`를 통해 공고를 검색합니다. 화면과 UseCase는 유지하고
+`FixtureSupportProgramRepository`를 Core API HTTP adapter로 교체합니다.
 
 권장 순서:
 
-1. Core API Domain과 상태를 먼저 정의합니다.
-2. 요청·응답 DTO와 Controller 테스트를 추가합니다.
-3. Frontend Domain type, Repository port, UseCase를 만듭니다.
-4. Fetch API와 Zod DTO를 추가합니다.
-5. ViewModel과 화면을 연결합니다.
-6. Compose smoke에 실제 POST 흐름을 추가하거나 교체합니다.
-7. 기존 `sample-item`은 더 이상 참고할 필요 없을 때 제거합니다.
+1. 검색어, 필터, 페이징과 정렬을 포함한 검색 요청·응답 계약을 확정합니다.
+2. Core API에 공고 조회 API와 Repository를 구현합니다.
+3. 기업마당·K-Startup 수집 adapter가 외부 응답을 GovBiz 공고 모델로 변환하게 합니다.
+4. Frontend Data Layer에 Fetch·Zod DTO 경계와 HTTP Repository를 추가합니다.
+5. `app/services.ts`의 Composition Root에서 샘플 Repository 대신 HTTP Repository를 선택합니다.
+6. 동일한 검색 시나리오를 fixture·HTTP 계약 테스트와 Compose smoke로 검증합니다.
 
-## 3. 데이터베이스와 비동기 처리 추가 시점
+## 3. SampleItem 계층 패턴 재사용
 
-SampleItem은 의도적으로 비영속입니다. 데이터베이스가 실제로 필요해질 때 Core API에 Repository와
-마이그레이션을 추가하세요. 시간이 오래 걸리는 작업이 생길 때만 큐·worker·상태 조회 API를
-도입하는 편이 구조를 불필요하게 키우지 않습니다.
+SampleItem은 실제 GovBiz 도메인이 아니라 Frontend와 Core API 계층을 연결하는 최소 패턴 예제입니다.
+새 기능에서는 파일을 이름만 바꿔 복사하지 말고, 필요한 상태와 계약을 먼저 정의합니다.
 
-## 4. 검증을 유지하는 방법
+```text
+Frontend
+  View → ViewModel → RTK Query → AppServices → UseCase → Repository
 
-각 변경 후 다음 순서로 검증합니다.
+Core API
+  Controller → Service → Domain
+```
+
+폼 입력과 한 번의 요청으로 끝나는 기능은 SampleItem처럼 React Hook Form과 RTK Query mutation으로
+구성할 수 있습니다. 채팅처럼 여러 컴포넌트가 공유하고 오래 유지할 작업 흐름은 Redux Slice와
+selector·thunk를 함께 사용합니다.
+
+## 4. 데이터베이스와 비동기 처리 추가 시점
+
+SampleItem은 의도적으로 비영속입니다. 실제 공고 수집, 전체 대화 이력, 사용자별 기업 정보처럼
+새로고침 후에도 남아야 하는 데이터가 생길 때 Core API에 Repository와 migration을 추가합니다.
+외부 API 수집, PDF 분석, 임베딩처럼 시간이 오래 걸리는 작업은 재시도·중복 방지·상태 조회 규칙을
+확정한 뒤 큐와 worker를 도입합니다.
+
+## 5. 검증 순서
+
+기능을 확장한 뒤에는 변경한 계약에서 시작해 전체 서비스 흐름으로 넓혀 갑니다.
 
 ```bash
 cd frontend && pnpm test && pnpm lint && pnpm build
@@ -62,5 +66,6 @@ cd ../ai-service && uv lock --check && uv run --locked --extra dev python -m pyt
 cd ../.. && ./infrastructure/scripts/verify-compose.sh
 ```
 
-Compose smoke는 기본적으로 5173과 8080을 사용합니다. 다른 프로젝트 스택이 실행 중이면 먼저
-중지하거나 Compose 포트를 조정해야 합니다.
+Docker Compose smoke는 Frontend → Core API → AI Service 연결과 장애·복구까지 검증합니다. 외부 데이터
+소스를 추가하면 실제 밀어넣기 대신 고정 fixture나 mock server로 재현 가능한 시나리오를 먼저
+추가합니다.

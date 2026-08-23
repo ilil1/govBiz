@@ -58,7 +58,7 @@ React Hook은 사이드바·DOM 참조처럼 화면과 함께 사라지는 상�
 
 ## SampleItem 예제
 
-스타터에는 최소 수직 슬라이스 하나가 포함되어 있습니다.
+GovBiz에는 계층 연결을 확인할 수 있는 최소 수직 슬라이스 예제가 포함되어 있습니다.
 
 ```text
 SampleItemPage
@@ -138,4 +138,5 @@ govBiz/
 4. 기업마당·K-Startup API adapter로 샘플 Repository를 교체합니다.
 5. 이후 기업정보 기반 추천과 GovClause의 PDF·조건 판정을 결합합니다.
 
-기존 스타터 계층과 확장 방법은 [커스터마이즈 안내](docs/customization-guide.md)를 참고하세요.
+GovBiz 계층을 유지하며 데이터 소스와 기능을 확장하는 방법은
+[GovBiz 확장·적용 안내](docs/customization-guide.md)를 참고하세요.

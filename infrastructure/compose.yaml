@@ -1,4 +1,4 @@
-name: base-architecture
+name: govbiz
 
 services:
   ai-service:

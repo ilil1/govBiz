@@ -16,9 +16,9 @@ export function SampleItemPage() {
 
   return (
     <main className="sample-shell">
-      <section className="sample-hero" aria-label="Base Architecture Starter 소개">
+      <section className="sample-hero" aria-label="GovBiz 구조 예제 소개">
         <div>
-          <p className="eyebrow">Base Architecture Starter</p>
+          <p className="eyebrow">GovBiz Architecture Example</p>
           <h1>재사용 가능한 수직 슬라이스</h1>
           <p>
             이 예제는 React의 View·ViewModel·UseCase·Repository와 Spring Boot의

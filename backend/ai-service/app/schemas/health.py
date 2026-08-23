@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict
 class ServiceName(StrEnum):
     """서비스 간 Health 계약에서 사용하는 AI Service 식별자."""
 
-    BASE_ARCHITECTURE_AI_SERVICE = "base-architecture-ai-service"
+    GOVBIZ_AI_SERVICE = "govbiz-ai-service"
 
 
 class HealthResponse(BaseModel):
@@ -16,4 +16,4 @@ class HealthResponse(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     status: Literal["up"]
-    service: Literal[ServiceName.BASE_ARCHITECTURE_AI_SERVICE]
+    service: Literal[ServiceName.GOVBIZ_AI_SERVICE]

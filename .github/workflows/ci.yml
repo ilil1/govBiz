@@ -1,4 +1,4 @@
-name: Base Architecture CI
+name: GovBiz CI
 
 on:
   push:
@@ -117,7 +117,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      VERIFY_COMPOSE_PROJECT_NAME: base-architecture-ci
+      VERIFY_COMPOSE_PROJECT_NAME: govbiz-ci
       VERIFY_COMPOSE_KEEP_RUNNING: "true"
     steps:
       - name: Check out repository

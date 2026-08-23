@@ -43,7 +43,7 @@ pnpm dev
 src/
 ├── app/                                # Store, RTK Query, 서비스 Composition Root
 ├── presentation/features/chat/         # View, ViewModel, Redux slice·selector·thunk
-├── presentation/features/sample-item/  # 스타터 예제 View와 ViewModel
+├── presentation/features/sample-item/  # 계층 연결 예제 View와 ViewModel
 ├── presentation/shared/                # Core API 연결 상태 UI
 ├── domain/                             # Entity, Repository port, UseCase
 └── data/                               # Fixture·Fetch API·Zod DTO·Repository 구현

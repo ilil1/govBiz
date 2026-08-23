@@ -1,4 +1,4 @@
-# Base Architecture AI Service
+# GovBiz AI Service
 
 Core API가 내부 HTTP로 호출하는 FastAPI 서비스입니다. 현재는 서비스 경계와 Health 계약만 제공하며,
 실제 AI·문서 처리 기능을 붙일 자리를 보여 줍니다.
@@ -7,7 +7,7 @@ Core API가 내부 HTTP로 호출하는 FastAPI 서비스입니다. 현재는 �
 
 ```text
 GET /internal/v1/health
-→ { "status": "up", "service": "base-architecture-ai-service" }
+→ { "status": "up", "service": "govbiz-ai-service" }
 ```
 
 이 경로는 브라우저 공개 API가 아닙니다. React는 Core API만 호출하므로 AI Service에 CORS를
