@@ -38,15 +38,17 @@ SampleItem은 실제 GovBiz 도메인이 아니라 Frontend와 Core API 계층�
 
 ```text
 Frontend
-  View → ViewModel → RTK Query → AppServices → UseCase → Repository
+  채팅: View → ViewModel의 Thunk → AppServices → UseCase → Repository
+  단순 요청: View → ViewModel의 local state·Thunk → AppServices
 
 Core API
   Controller → Service → Domain
 ```
 
-폼 입력과 한 번의 요청으로 끝나는 기능은 SampleItem처럼 React Hook Form과 RTK Query mutation으로
-구성할 수 있습니다. 채팅처럼 여러 컴포넌트가 공유하고 오래 유지할 작업 흐름은 Redux Slice와
-selector·thunk를 함께 사용합니다.
+폼 입력과 한 번의 요청으로 끝나는 기능은 SampleItem처럼 React Hook Form과 ViewModel의 로컬 요청
+상태로 구성할 수 있습니다. 채팅처럼 여러 상태 전이를 직접 제어할 작업 흐름은 ViewModel 안의 Redux
+Thunk가 주입된 UseCase를 호출하고, Redux Slice가 결과 상태를 보관합니다. 두 경우 모두 실제
+Repository는 ViewModel이 생성하지 않고 AppServices를 통해 주입받습니다.
 
 ## 4. 데이터베이스와 비동기 처리 추가 시점
 

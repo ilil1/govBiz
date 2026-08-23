@@ -9,7 +9,10 @@ import { SearchSupportProgramsUseCase } from '../domain/usecases/SearchSupportPr
 
 export type AppServices = {
   fetchCoreApiHealth(signal?: AbortSignal): Promise<CoreApiHealth>
-  prepareSampleItem(command: PrepareSampleItemCommand): Promise<SampleItemPreparation>
+  prepareSampleItem(
+    command: PrepareSampleItemCommand,
+    signal?: AbortSignal,
+  ): Promise<SampleItemPreparation>
   searchSupportPrograms: Pick<SearchSupportProgramsUseCase, 'execute'>
 }
 

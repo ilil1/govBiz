@@ -17,6 +17,7 @@ export class SampleItemApiError extends Error {
 /** 외부 JSON 응답을 Zod로 검증하는 Data Layer의 HTTP 경계입니다. */
 export async function prepareSampleItemApi(
   command: PrepareSampleItemCommand,
+  signal?: AbortSignal,
 ): Promise<SampleItemPreparationDto> {
   const response = await fetch(`${getCoreApiBaseUrl()}${PREPARE_SAMPLE_ITEM_PATH}`, {
     method: 'POST',
@@ -25,6 +26,7 @@ export async function prepareSampleItemApi(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(command),
+    signal,
   })
 
   if (!response.ok) {

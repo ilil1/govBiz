@@ -20,12 +20,12 @@ React Web
 사용자 메시지
   → ChatPage
       → useSupportProgramChatViewModel
-          → Redux Toolkit chat slice
-          → RTK Query
-              → SearchSupportProgramsUseCase
+          → ViewModel 안의 Redux Thunk
+              → 주입된 SearchSupportProgramsUseCase
                   → SupportProgramRepository
                       → 샘플 공고 검색
-                          → 지원사업 카드·마감일·추천 이유 표시
+                          → Redux Toolkit chat slice
+                              → 지원사업 카드·마감일·추천 이유 표시
 ```
 
 현재 화면은 다음 질문을 처리할 수 있습니다.
@@ -39,12 +39,14 @@ Repository 계약은 이후 기업마당·K-Startup 수집 adapter로 교체할 
 
 ### 채팅 상태 관리
 
-React Hook은 사이드바·DOM 참조처럼 화면과 함께 사라지는 상태를, Redux Toolkit은 메시지·검색 진행
-상태처럼 공유하는 작업 흐름을, RTK Query는 서버 요청과 캐시 lifecycle을 담당합니다. 검색 중 중복
-전송을 막고, 새 대화를 시작한 뒤 도착한 이전 응답은 요청 ID를 비교해 무시합니다.
+React Hook은 사이드바·DOM 참조처럼 화면과 함께 사라지는 상태를 담당합니다. Redux Toolkit은
+메시지·검색 진행 상태를 보관하고, ViewModel 안의 Thunk가 주입된 UseCase를 직접 호출해 검색 순서를
+제어합니다. Health와 SampleItem도 ViewModel Hook 안의 Thunk가 주입된 서비스를 직접 호출하고,
+로딩·성공·실패 상태는 해당 Hook이 관리합니다. 검색 중 중복 전송을 막고, 새 대화를 시작한 뒤 도착한
+이전 응답은 요청 ID를 비교해 무시합니다.
 
 현재는 대화와 검색 결과를 브라우저 메모리에 보관합니다. 실제 API 연결 전에는 요청 취소, 메시지
-보관 한도·서버 저장, 검색 캐시 정책을 추가합니다. 현재 구현 평가와 구체적인 확장 원칙은
+보관 한도·서버 저장과 명시적인 검색 캐시 정책을 추가합니다. 현재 구현 평가와 구체적인 확장 원칙은
 [Frontend 상태 관리 설계](frontend/README.md#상태-관리-설계와-확장-원칙)를 참고하세요.
 
 ## 포함한 기반
@@ -71,7 +73,7 @@ SampleItemPage
 
 `name`은 필수이고 `category`, `note`는 선택입니다. 성공 응답은 처리 시작 전의
 `READY_FOR_PROCESSING` / `NOT_STARTED` 상태만 반환합니다. 즉 실제 비동기 작업이나 영속성은
-의도적으로 포함하지 않습니다. 이 예제의 ViewModel Hook과 RTK Query mutation이 연결되는 방식은
+의도적으로 포함하지 않습니다. 이 예제의 ViewModel Hook이 요청과 화면 상태를 직접 관리하는 방식은
 [SampleItem Hook 구조 설명](frontend/README.md#sampleitem-viewmodel-hook-이해하기)을 참고하세요.
 
 ## 빠른 시작

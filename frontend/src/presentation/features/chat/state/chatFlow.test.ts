@@ -1,13 +1,25 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { RootState } from '../../../../app/store'
 import type { AppServices } from '../../../../app/services'
 import { createAppStore } from '../../../../app/store'
 import { supportPrograms } from '../../../../data/fixtures/supportPrograms'
 import { conversationReset, draftChanged } from './chatSlice'
-import { submitSupportProgramSearch } from './chatThunks'
+import { useSupportProgramChatViewModel } from '../viewmodel/useSupportProgramChatViewModel'
+
+const hookMocks = vi.hoisted(() => ({
+  useAppDispatch: vi.fn(),
+  useAppSelector: vi.fn(),
+}))
+
+vi.mock('../../../../app/hooks', () => hookMocks)
 
 describe('Redux chat flow', () => {
-  it('stores the user message and RTK Query result in the chat slice', async () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('stores the user message and injected search service result in the chat slice', async () => {
     const execute = vi.fn().mockResolvedValue({
       query: '서울 AI',
       programs: [supportPrograms[0]],
@@ -15,7 +27,7 @@ describe('Redux chat flow', () => {
     const store = createAppStore(createTestServices(execute))
 
     store.dispatch(draftChanged('서울 AI'))
-    await store.dispatch(submitSupportProgramSearch())
+    await useTestViewModel(store).submitMessage()
 
     const chat = store.getState().chat
     expect(execute).toHaveBeenCalledOnce()
@@ -34,8 +46,9 @@ describe('Redux chat flow', () => {
     const store = createAppStore(createTestServices(execute))
 
     store.dispatch(draftChanged('수출'))
-    const firstSearch = store.dispatch(submitSupportProgramSearch())
-    const duplicateSearch = store.dispatch(submitSupportProgramSearch())
+    const viewModel = useTestViewModel(store)
+    const firstSearch = viewModel.submitMessage()
+    const duplicateSearch = viewModel.submitMessage()
     pending.resolve({ query: '수출', programs: [supportPrograms[3]] })
     await Promise.all([firstSearch, duplicateSearch])
 
@@ -48,7 +61,7 @@ describe('Redux chat flow', () => {
     const store = createAppStore(createTestServices(vi.fn().mockReturnValue(pending.promise)))
 
     store.dispatch(draftChanged('제조'))
-    const search = store.dispatch(submitSupportProgramSearch())
+    const search = useTestViewModel(store).submitMessage()
     store.dispatch(conversationReset())
     pending.resolve({ query: '제조', programs: [supportPrograms[2]] })
     await search
@@ -58,18 +71,42 @@ describe('Redux chat flow', () => {
     expect(chat.messages).toHaveLength(1)
   })
 
+  it('ignores an error that arrives after the conversation was reset', async () => {
+    const pending = deferredSearchResult()
+    const store = createAppStore(createTestServices(vi.fn().mockReturnValue(pending.promise)))
+
+    store.dispatch(draftChanged('제조'))
+    const search = useTestViewModel(store).submitMessage()
+    store.dispatch(conversationReset())
+    pending.reject(new Error('late search failure'))
+    await search
+
+    const chat = store.getState().chat
+    expect(chat.searchStatus).toBe('idle')
+    expect(chat.searchError).toBeNull()
+    expect(chat.messages).toHaveLength(1)
+  })
+
   it('stores a safe error when the search service fails', async () => {
     const execute = vi.fn().mockRejectedValue(new Error('internal fixture error'))
     const store = createAppStore(createTestServices(execute))
 
     store.dispatch(draftChanged('서울'))
-    await store.dispatch(submitSupportProgramSearch())
+    await useTestViewModel(store).submitMessage()
 
     const chat = store.getState().chat
     expect(chat.searchStatus).toBe('failed')
     expect(chat.searchError).toBe('지원사업을 검색하지 못했습니다. 잠시 후 다시 시도해 주세요.')
   })
 })
+
+function useTestViewModel(store: ReturnType<typeof createAppStore>) {
+  hookMocks.useAppDispatch.mockReturnValue(store.dispatch)
+  hookMocks.useAppSelector.mockImplementation(
+    (selector: (state: RootState) => unknown) => selector(store.getState()),
+  )
+  return useSupportProgramChatViewModel()
+}
 
 function createTestServices(
   execute: AppServices['searchSupportPrograms']['execute'],
@@ -88,8 +125,10 @@ function createTestServices(
 function deferredSearchResult() {
   type Result = Awaited<ReturnType<AppServices['searchSupportPrograms']['execute']>>
   let resolve!: (result: Result) => void
-  const promise = new Promise<Result>((complete) => {
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<Result>((complete, fail) => {
     resolve = complete
+    reject = fail
   })
-  return { promise, resolve }
+  return { promise, reject, resolve }
 }

@@ -5,6 +5,7 @@ import type { PrepareSampleItemCommand, SampleItemRepository } from '../reposito
 export function prepareSampleItem(
   repository: SampleItemRepository,
   command: PrepareSampleItemCommand,
+  signal?: AbortSignal,
 ): Promise<SampleItemPreparation> {
-  return repository.prepare(command)
+  return repository.prepare(command, signal)
 }

@@ -25,10 +25,13 @@ afterEach(() => {
 
 describe('prepareSampleItemApi', () => {
   it('posts the typed sample command and validates the preparation response', async () => {
+    const controller = new AbortController()
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(preparationResponse))
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(prepareSampleItemApi(command)).resolves.toEqual(preparationResponse)
+    await expect(prepareSampleItemApi(command, controller.signal)).resolves.toEqual(
+      preparationResponse,
+    )
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
     expect(url).toMatch(/\/api\/v1\/sample-items\/prepare$/)
@@ -38,6 +41,7 @@ describe('prepareSampleItemApi', () => {
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
+      signal: controller.signal,
     })
     expect(JSON.parse(String(init.body))).toEqual(command)
   })

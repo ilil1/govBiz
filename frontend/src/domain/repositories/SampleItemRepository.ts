@@ -7,5 +7,8 @@ export type PrepareSampleItemCommand = {
 
 /** Domain이 요구하는 예제 준비 API의 포트입니다. */
 export interface SampleItemRepository {
-  prepare(command: PrepareSampleItemCommand): Promise<SampleItemPreparation>
+  prepare(
+    command: PrepareSampleItemCommand,
+    signal?: AbortSignal,
+  ): Promise<SampleItemPreparation>
 }
