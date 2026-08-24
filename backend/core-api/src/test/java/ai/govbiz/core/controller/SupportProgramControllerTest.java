@@ -4,11 +4,13 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 
 import ai.govbiz.core.client.bizinfo.BizInfoClient;
 import ai.govbiz.core.client.bizinfo.BizInfoClientException;
 import ai.govbiz.core.client.bizinfo.BizInfoProgramPayload;
 import ai.govbiz.core.service.SupportProgramSearchService;
+import ai.govbiz.core.service.AiSearchIntentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +36,9 @@ class SupportProgramControllerTest {
     @Mock
     private BizInfoClient client;
 
+    @Mock
+    private AiSearchIntentService aiSearchIntentService;
+
     private MockMvc mockMvc;
 
     @BeforeEach
@@ -41,7 +46,10 @@ class SupportProgramControllerTest {
         Clock clock = Clock.fixed(
                 Instant.parse("2026-08-24T03:00:00Z"),
                 ZoneId.of("Asia/Seoul"));
-        SupportProgramSearchService service = new SupportProgramSearchService(client, clock);
+        SupportProgramSearchService service = new SupportProgramSearchService(
+                client,
+                aiSearchIntentService,
+                clock);
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new SupportProgramController(service))
                 .setControllerAdvice(new ApiExceptionHandler())
@@ -50,6 +58,7 @@ class SupportProgramControllerTest {
 
     @Test
     void returnsTheStableFrontendContractIncludingNullableParsedDates() throws Exception {
+        when(aiSearchIntentService.analyze("서울 AI", true)).thenReturn(Optional.empty());
         when(client.fetchAll()).thenReturn(List.of(payload("상시 접수")));
 
         mockMvc.perform(get(PATH).queryParam("query", "  서울 AI  "))
@@ -68,6 +77,7 @@ class SupportProgramControllerTest {
 
     @Test
     void hidesConfigurationAndUpstreamDetailsBehindAStableProblem() throws Exception {
+        when(aiSearchIntentService.analyze("서울", true)).thenReturn(Optional.empty());
         when(client.fetchAll()).thenThrow(BizInfoClientException.notConfigured());
 
         mockMvc.perform(get(PATH).queryParam("query", "서울"))

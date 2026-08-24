@@ -60,7 +60,7 @@ Frontend 환경변수에 기록하지 마세요.
 | `BIZINFO_API_READ_TIMEOUT` | `10s` | 공고 API 응답 제한시간 |
 | `AI_SERVICE_BASE_URL` | `http://127.0.0.1:8000` | 내부 AI Service 주소 |
 | `AI_SERVICE_CONNECT_TIMEOUT` | `1s` | AI Service 연결 제한시간 |
-| `AI_SERVICE_READ_TIMEOUT` | `2s` | AI Service 응답 제한시간 |
+| `AI_SERVICE_READ_TIMEOUT` | `3s` | AI Service 응답 제한시간(LLM 기본 제한 2.5초 + 내부 응답 여유) |
 | `APP_CORS_ALLOWED_ORIGIN` | `http://localhost:5173` | 허용할 Web origin |
 
 Compose 실행은 저장소 루트 `.env`의 `DATA_GO_KR_SERVICE_KEY`를 Core API 컨테이너에만 전달합니다.

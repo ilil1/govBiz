@@ -3,6 +3,7 @@ package ai.govbiz.core.client.ai;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.http.HttpConnectTimeoutException;
+import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,8 +29,23 @@ class AiServiceClientTest {
 
     private static final String BASE_URL = "http://ai-service.test:8000";
     private static final String HEALTH_URL = BASE_URL + "/internal/v1/health";
+    private static final String SEARCH_INTENT_URL =
+            BASE_URL + "/internal/v1/search-intents/analyze";
     private static final String VALID_RESPONSE = """
             {"status":"up","service":"govbiz-ai-service"}
+            """;
+    private static final String VALID_INTENT_RESPONSE = """
+            {
+              "originalQuery":"서울 AI 스타트업 지원사업",
+              "keywords":["스타트업"],
+              "regions":["서울"],
+              "categories":["AI","창업"],
+              "targetTerms":["창업기업"],
+              "acceptingOnly":true,
+              "clarificationNeeded":false,
+              "clarificationQuestion":null,
+              "analysisMode":"LLM"
+            }
             """;
 
     private MockRestServiceServer server;
@@ -147,6 +163,56 @@ class AiServiceClientTest {
         assertFailure(AiServiceClientException.Failure.TIMEOUT);
     }
 
+    @Test
+    void sendsExactSearchIntentRequestAndDecodesTheStructuredResponse() {
+        server.expect(requestTo(SEARCH_INTENT_URL))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(org.springframework.test.web.client.match.MockRestRequestMatchers.content()
+                        .json("""
+                                {
+                                  "query":"서울 AI 스타트업 지원사업",
+                                  "acceptingOnly":true
+                                }
+                                """))
+                .andRespond(withSuccess(VALID_INTENT_RESPONSE, MediaType.APPLICATION_JSON));
+
+        AiSearchIntentPayload response = client.analyzeSearchIntent(
+                "서울 AI 스타트업 지원사업",
+                true);
+
+        assertEquals("서울 AI 스타트업 지원사업", response.originalQuery());
+        assertEquals(List.of("서울"), response.regions());
+        assertEquals(List.of("AI", "창업"), response.categories());
+        assertEquals(AiSearchIntentAnalysisMode.LLM, response.analysisMode());
+    }
+
+    @Test
+    void mapsSearchIntentNoContentToInvalidResponse() {
+        server.expect(requestTo(SEARCH_INTENT_URL)).andRespond(withNoContent());
+
+        assertIntentFailure(AiServiceClientException.Failure.INVALID_RESPONSE);
+    }
+
+    @Test
+    void mapsMalformedSearchIntentJsonToInvalidResponse() {
+        server.expect(requestTo(SEARCH_INTENT_URL))
+                .andRespond(withSuccess("{\"keywords\":", MediaType.APPLICATION_JSON));
+
+        assertIntentFailure(AiServiceClientException.Failure.INVALID_RESPONSE);
+    }
+
+    @Test
+    void mapsSearchIntentProviderFailureToUpstreamError() {
+        server.expect(requestTo(SEARCH_INTENT_URL))
+                .andRespond(withStatus(HttpStatus.SERVICE_UNAVAILABLE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"detail\":\"unavailable\"}"));
+
+        assertIntentFailure(AiServiceClientException.Failure.UPSTREAM_ERROR);
+    }
+
     private void expectResponse(org.springframework.test.web.client.ResponseCreator response) {
         server.expect(requestTo(HEALTH_URL)).andRespond(response);
     }
@@ -155,6 +221,13 @@ class AiServiceClientTest {
         AiServiceClientException exception = assertThrows(
                 AiServiceClientException.class,
                 client::getHealth);
+        assertEquals(expectedFailure, exception.failure());
+    }
+
+    private void assertIntentFailure(AiServiceClientException.Failure expectedFailure) {
+        AiServiceClientException exception = assertThrows(
+                AiServiceClientException.class,
+                () -> client.analyzeSearchIntent("서울 AI", true));
         assertEquals(expectedFailure, exception.failure());
     }
 }

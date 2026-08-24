@@ -42,6 +42,7 @@ public class SupportProgramSearchService {
     private static final Pattern HTML_BREAK = Pattern.compile("(?i)<br\\s*/?>|</p>|</li>");
     private static final Pattern HTML_TAG = Pattern.compile("(?s)<[^>]*>");
     private static final Pattern QUERY_SEPARATOR = Pattern.compile("[^\\p{L}\\p{N}&]+");
+    private static final Pattern ASCII_QUERY_TERM = Pattern.compile("[a-z0-9&]+");
 
     private static final Set<String> QUERY_STOP_WORDS = Set.of(
             "공고", "사업", "지원", "지원사업", "정부지원", "정부지원사업",
@@ -92,21 +93,29 @@ public class SupportProgramSearchService {
             Map.entry("소상공인", List.of("소상공인")));
 
     private final BizInfoClient client;
+    private final AiSearchIntentService aiSearchIntentService;
     private final Clock clock;
     private final Object cacheLock = new Object();
     private volatile CatalogCache cache;
 
     public SupportProgramSearchService(
             BizInfoClient client,
+            AiSearchIntentService aiSearchIntentService,
             @Qualifier("seoulClock") Clock clock
     ) {
         this.client = client;
+        this.aiSearchIntentService = aiSearchIntentService;
         this.clock = clock;
     }
 
     public SupportProgramSearchResult search(String rawQuery, boolean acceptingOnly) {
         String query = rawQuery == null ? "" : rawQuery.trim();
-        SearchIntent intent = SearchIntent.from(query);
+        SearchIntent localIntent = SearchIntent.from(query);
+        SearchIntent intent = query.isBlank()
+                ? localIntent
+                : aiSearchIntentService.analyze(query, acceptingOnly)
+                        .map(analyzed -> localIntent.merge(analyzed, query))
+                        .orElse(localIntent);
 
         List<ScoredProgram> scored = catalog().stream()
                 .filter(candidate -> !acceptingOnly
@@ -233,12 +242,19 @@ public class SupportProgramSearchService {
         }
 
         int score = 0;
+        boolean regionMatched = false;
         List<QueryTerm> matches = new ArrayList<>();
         for (QueryTerm term : intent.terms()) {
+            if (term.kind() == TermKind.REGION && regionMatched) {
+                continue;
+            }
             int termScore = scoreTerm(candidate, term);
             if (termScore > 0) {
                 score += termScore;
                 matches.add(term);
+                if (term.kind() == TermKind.REGION) {
+                    regionMatched = true;
+                }
             }
         }
         return new ScoredProgram(candidate, score, List.copyOf(matches));
@@ -256,6 +272,17 @@ public class SupportProgramSearchService {
                         .map(SupportProgramSearchService::normalize)
                         .anyMatch(normalize(term.label())::equals)) {
             return 11;
+        }
+        if (term.kind() == TermKind.TARGET) {
+            int targetScore = term.variants().stream()
+                    .map(SupportProgramSearchService::normalize)
+                    .filter(Predicate.not(String::isBlank))
+                    .anyMatch(candidate.target()::contains)
+                    ? 8
+                    : 0;
+            if (targetScore > 0) {
+                return targetScore;
+            }
         }
 
         int best = 0;
@@ -295,6 +322,7 @@ public class SupportProgramSearchService {
             String reason = switch (term.kind()) {
                 case REGION -> term.label() + " 지역";
                 case CATEGORY -> term.label() + " 분야";
+                case TARGET -> "지원대상 ‘" + term.label() + "’";
                 case TEXT -> "‘" + term.label() + "’ 관련";
             };
             reasons.add(reason);
@@ -504,6 +532,7 @@ public class SupportProgramSearchService {
     private enum TermKind {
         REGION,
         CATEGORY,
+        TARGET,
         TEXT
     }
 
@@ -511,6 +540,82 @@ public class SupportProgramSearchService {
     }
 
     private record SearchIntent(List<QueryTerm> terms) {
+
+        SearchIntent merge(AnalyzedSearchIntent analyzed, String rawQuery) {
+            String normalizedQuery = normalize(rawQuery);
+            LinkedHashMap<String, QueryTerm> merged = new LinkedHashMap<>();
+            for (QueryTerm term : terms) {
+                merged.putIfAbsent(termKey(term), term);
+            }
+
+            Set<String> locallyDetectedRegions = terms.stream()
+                    .filter(term -> term.kind() == TermKind.REGION)
+                    .map(QueryTerm::label)
+                    .collect(java.util.stream.Collectors.toUnmodifiableSet());
+            for (String regionValue : analyzed.regions()) {
+                String region = REGION_ALIASES.get(regionValue);
+                if (region != null && locallyDetectedRegions.contains(region)) {
+                    addTerm(merged, new QueryTerm(
+                            region,
+                            List.of(regionValue, region),
+                            TermKind.REGION));
+                }
+            }
+            for (String categoryValue : analyzed.categories()) {
+                String category = CATEGORY_ALIASES.get(normalize(categoryValue));
+                if (category != null && categoryIsGrounded(category, normalizedQuery)) {
+                    addTerm(merged, new QueryTerm(
+                            category,
+                            CATEGORY_VARIANTS.getOrDefault(category, List.of(categoryValue)),
+                            TermKind.CATEGORY));
+                }
+            }
+            for (String targetTerm : analyzed.targetTerms()) {
+                if (queryContains(normalizedQuery, targetTerm)) {
+                    addTerm(merged, new QueryTerm(
+                            targetTerm,
+                            List.of(targetTerm),
+                            TermKind.TARGET));
+                }
+            }
+            for (String keyword : analyzed.keywords()) {
+                if (queryContains(normalizedQuery, keyword)) {
+                    addTerm(merged, new QueryTerm(
+                            keyword,
+                            List.of(keyword),
+                            TermKind.TEXT));
+                }
+            }
+            return new SearchIntent(List.copyOf(merged.values()));
+        }
+
+        private static boolean categoryIsGrounded(String category, String normalizedQuery) {
+            return CATEGORY_VARIANTS.getOrDefault(category, List.of(category)).stream()
+                    .anyMatch(variant -> queryContains(normalizedQuery, variant));
+        }
+
+        private static boolean queryContains(String normalizedQuery, String value) {
+            String normalizedValue = normalize(value);
+            if (normalizedValue.isBlank()) {
+                return false;
+            }
+            if (ASCII_QUERY_TERM.matcher(normalizedValue).matches()) {
+                return QUERY_SEPARATOR.splitAsStream(normalizedQuery)
+                        .anyMatch(normalizedValue::equals);
+            }
+            return normalizedQuery.contains(normalizedValue);
+        }
+
+        private static void addTerm(
+                LinkedHashMap<String, QueryTerm> terms,
+                QueryTerm term
+        ) {
+            terms.putIfAbsent(termKey(term), term);
+        }
+
+        private static String termKey(QueryTerm term) {
+            return term.kind().name() + ":" + normalize(term.label());
+        }
 
         static SearchIntent from(String query) {
             String normalized = normalize(query);

@@ -6,6 +6,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
@@ -17,6 +18,7 @@ import org.springframework.web.client.RestClientResponseException;
 public class AiServiceClient {
 
     private static final String HEALTH_PATH = "/internal/v1/health";
+    private static final String SEARCH_INTENT_PATH = "/internal/v1/search-intents/analyze";
 
     private final RestClient restClient;
 
@@ -62,6 +64,50 @@ public class AiServiceClient {
         } catch (RestClientException exception) {
             throw AiServiceClientException.invalidResponse(
                     "AI Service response could not be decoded",
+                    exception);
+        }
+    }
+
+    public AiSearchIntentPayload analyzeSearchIntent(String query, boolean acceptingOnly) {
+        try {
+            ResponseEntity<AiSearchIntentPayload> response = restClient.post()
+                    .uri(SEARCH_INTENT_PATH)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new AiSearchIntentRequest(query, acceptingOnly))
+                    .retrieve()
+                    .onStatus(
+                            statusCode -> statusCode.value() != HttpStatus.OK.value(),
+                            (request, clientResponse) -> {
+                                int statusCode = clientResponse.getStatusCode().value();
+                                if (statusCode == HttpStatus.NO_CONTENT.value()) {
+                                    throw AiServiceClientException.invalidResponse(
+                                            "AI Service returned HTTP 204 without a search intent",
+                                            null);
+                                }
+                                throw AiServiceClientException.upstreamError(
+                                        "AI Service returned unexpected HTTP " + statusCode,
+                                        null);
+                            })
+                    .toEntity(AiSearchIntentPayload.class);
+
+            if (response.getBody() == null) {
+                throw AiServiceClientException.invalidResponse(
+                        "AI Service returned an empty search intent response",
+                        null);
+            }
+            return response.getBody();
+        } catch (ResourceAccessException exception) {
+            if (hasTimeoutCause(exception)) {
+                throw AiServiceClientException.timeout(exception);
+            }
+            throw AiServiceClientException.unavailable(exception);
+        } catch (RestClientResponseException exception) {
+            throw AiServiceClientException.upstreamError(
+                    "AI Service returned HTTP " + exception.getStatusCode().value(),
+                    exception);
+        } catch (RestClientException exception) {
+            throw AiServiceClientException.invalidResponse(
+                    "AI Service search intent response could not be decoded",
                     exception);
         }
     }

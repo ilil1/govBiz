@@ -9,6 +9,7 @@ description = "Internal AI analysis service for GovBiz"
 requires-python = ">=3.11,<3.15"
 dependencies = [
     "fastapi>=0.139.2,<0.140.0",
+    "openai>=3.1.0,<4.0.0",
     "pydantic>=2.12.0,<3.0.0",
     "uvicorn[standard]>=0.35.0,<1.0.0",
 ]

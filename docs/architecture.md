@@ -9,12 +9,14 @@ Browser
           → Spring Boot Core API
               ├→ 외부 HTTP API → 공공데이터포털
               └→ 내부 HTTP API → FastAPI AI Service
+                                      → OpenAI API
 ```
 
 React는 Core API만 호출합니다. FastAPI는 브라우저에 공개하지 않으며, Core API가 호출 결과를
-자신의 공개 DTO와 오류 계약으로 변환합니다. 공공데이터포털 인증키도 Core API에만 보관하고,
-외부 공고 응답을 GovBiz 지원사업 모델로 변환한 뒤 공개합니다. 이후 정책 엔진, 데이터베이스와 큐도
-같은 방식으로 Core API 뒤에 추가합니다.
+자신의 공개 DTO와 오류 계약으로 변환합니다. 공공데이터포털 인증키는 Core API에, OpenAI 인증키는
+AI Service에만 보관합니다. 외부 공고 응답을 GovBiz 지원사업 모델로 변환한 뒤 공개하며, LLM의
+내부 의도 DTO는 브라우저 응답에 포함하지 않습니다. 이후 정책 엔진, 데이터베이스와 큐도 같은
+방식으로 Core API 뒤에 추가합니다.
 
 ## Frontend
 
@@ -65,25 +67,56 @@ Health 조회처럼 업무 도메인이 아닌 연결 상태는 UseCase·Reposit
 ```text
 Controller → Service → Domain
                     ├→ client/bizinfo → 공공데이터포털
-                    └→ client/ai → FastAPI
+                    └→ client/ai → FastAPI → OpenAI
 ```
 
 - **Controller**는 HTTP 요청·응답 DTO 변환과 Bean Validation을 담당합니다.
-- **Service**는 use case와 상태 전이를 담당합니다.
+- **Service**는 use case, 검색 의도 검증, fallback과 상태 전이를 담당합니다.
 - **Domain**은 프레임워크에 의존하지 않는 record·enum·불변식을 둡니다.
 - **client/bizinfo**는 공공데이터포털 전송 계약과 인증키를 소유합니다. Service가 외부 공고를
   GovBiz 모델로 변환하고 검색·정렬·캐시 정책을 적용합니다.
-- **client/ai**는 FastAPI와의 HTTP 계약을 소비합니다.
+- **client/ai**는 FastAPI의 Health와 검색 의도 내부 HTTP 계약을 소비합니다.
 - **config**는 외부 서비스 주소와 HTTP Client 설정을 조립합니다.
 
 외부 HTTP 호출은 영속성 Repository와 다른 책임이므로 `client`에 둡니다. 데이터베이스를 도입할 때
 그때 필요한 Repository를 추가합니다.
 
-## AI Service
+## 검색 의도 분석과 장애 격리
 
-FastAPI는 내부 분석 서비스를 위한 독립 실행 단위입니다. 지금은 Health 계약만 제공하지만, 이후
-PDF 처리, LLM Structured Output, 검색 같은 기능을 이 서비스에 추가할 수 있습니다. AI Service는
-Core API의 데이터베이스를 직접 수정하지 않습니다.
+Core API는 공개 검색 요청을 받으면 AI Service에 다음 내부 요청을 보냅니다.
+
+```http
+POST /internal/v1/search-intents/analyze
+Content-Type: application/json
+
+{"query":"서울 AI 창업지원 찾아줘","acceptingOnly":true}
+```
+
+AI Service는 OpenAI가 설정되어 있으면 [OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs)를
+직접 요청해 키워드, 지역, 분야와 지원대상 표현을 제한된 JSON schema로 받습니다. 공고 내용·자격·금액·
+접수상태를 생성하거나 공공데이터 원문을 대체하지 않습니다.
+
+```text
+AI Service
+  ├→ OpenAI 성공 + schema 검증 성공 → analysisMode=LLM
+  └→ provider 비활성·키 누락·timeout·인증·rate limit·refusal·검증 실패
+       → analysisMode=RULE_BASED_FALLBACK (HTTP 200)
+
+Core API
+  ├→ 로컬 parser를 기준으로 항상 실행
+  ├→ 내부 응답의 query/acceptingOnly echo, 허용값과 길이 검증 성공 → 분석 결과 병합
+  └→ AI HTTP 오류·timeout·JSON 오류·echo 불일치·허용되지 않은 값
+       → 로컬 parser 결과만 사용
+```
+
+AI Service가 유효하지 않은 요청을 받은 경우만 422를 반환합니다. 그 밖의 LLM 실패는 검색 가능한
+규칙 응답으로 흡수되고, Core API에도 두 번째 fallback이 있으므로 AI Service나 OpenAI 장애가 공개
+검색 오류로 전파되지 않습니다. 공개 응답은 계속 `{query, programs}` 계약을 유지합니다.
+
+현재는 단일 provider에 한 번의 짧고 구조화된 호출만 필요하므로 LangChain을 도입하지 않습니다.
+OpenAI client를 직접 사용하면 schema, timeout, refusal과 오류→fallback 경계가 코드에 명시적으로
+남습니다. 여러 provider, 도구 호출 또는 다단계 chain이 실제 요구사항이 될 때 추상화 도입을 다시
+평가합니다.
 
 ## Docker Compose 개발 흐름
 
@@ -94,6 +127,7 @@ Browser (127.0.0.1:5173)
           → core-api:8080
               ├→ https://apis.data.go.kr
               └→ ai-service:8000
+                    └→ https://api.openai.com (LLM 활성 시)
 ```
 
 브라우저는 `core-api`와 `ai-service`라는 Compose 내부 DNS 이름을 알 수 없습니다. React는 `/api`
@@ -110,6 +144,10 @@ Browser (127.0.0.1:5173)
 - FastAPI는 Core API 소스 코드를 import하거나 Core API 데이터 저장소를 수정하지 않습니다.
 - 공공데이터포털 인증키는 Core API 환경변수에만 주입하고 Frontend bundle·응답·로그에 노출하지
   않습니다.
+- OpenAI 인증키는 AI Service 환경변수에만 주입하며 Core API·Frontend·공개 응답·로그에 노출하지
+  않습니다.
+- LLM 분석은 후보 검색어를 구조화할 뿐이며 공고 사실, 신청 가능 여부, 금액과 날짜의 최종 근거는
+  기업마당 원문과 Core API 규칙입니다.
 - 외부 공고의 신청기간을 확실히 해석할 수 없으면 `UNKNOWN`으로 유지하며 접수 상태를 추정하지
   않습니다.
 - 서비스 간 통신은 명시적인 HTTP·JSON 계약과 테스트로 검증합니다.
