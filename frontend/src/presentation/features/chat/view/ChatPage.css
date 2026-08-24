@@ -82,8 +82,7 @@
 .chat-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.5rem clamp(1.25rem, 5vw, 4.5rem); border-bottom: 1px solid #e8ecf7; background: rgb(255 255 255 / 82%); }
 .header-eyebrow { margin: 0 0 0.25rem; color: #6471a0; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
 .chat-header h1 { margin: 0; color: #151d3a; font-size: 1.25rem; letter-spacing: -0.04em; }
-.data-status { padding: 0.45rem 0.7rem; border: 1px solid #dfe8d6; border-radius: 999px; color: #5a743f; background: #f5fbea; font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
-.data-status i { display: inline-block; width: 0.42rem; height: 0.42rem; margin-right: 0.35rem; border-radius: 50%; background: #7cb252; vertical-align: 0.05em; }
+.data-status { padding: 0.45rem 0.7rem; border: 1px solid #dfe4ef; border-radius: 999px; color: #536087; background: #f5f7fb; font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
 .menu-button { display: none; border: 0; color: #536087; background: transparent; font-size: 1.35rem; cursor: pointer; }
 
 .message-timeline { width: min(860px, calc(100% - 2rem)); margin: 0 auto; padding: 2.5rem 0 2rem; overflow-y: auto; }
@@ -133,8 +132,7 @@
   .chat-workspace { min-height: 100svh; }
   .menu-button { display: block; }
   .chat-header { padding: 1rem; }
-  .data-status { font-size: 0; }
-  .data-status i { margin: 0; }
+  .data-status { font-size: 0.62rem; }
   .message-timeline, .chat-composer { width: calc(100% - 1.2rem); }
   .message-timeline { padding-top: 1.5rem; }
   .message-content { max-width: 88%; }

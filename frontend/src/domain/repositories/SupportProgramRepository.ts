@@ -5,10 +5,7 @@ export type SupportProgramSearch = {
   acceptingOnly?: boolean
 }
 
-/**
- * 채팅 화면은 이 포트만 사용합니다.
- * 지금은 fixture adapter를 사용하고, 실제 API 연결 시 같은 포트 뒤의 adapter만 교체합니다.
- */
+/** 채팅 기능이 Data Layer의 구현 세부사항과 분리되도록 하는 Domain 포트입니다. */
 export interface SupportProgramRepository {
-  search(command: SupportProgramSearch): Promise<SupportProgram[]>
+  search(command: SupportProgramSearch, signal?: AbortSignal): Promise<SupportProgram[]>
 }

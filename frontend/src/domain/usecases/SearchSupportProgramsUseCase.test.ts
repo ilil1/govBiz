@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { FixtureSupportProgramRepository } from '../../data/repositories/FixtureSupportProgramRepository'
 import { SearchSupportProgramsUseCase } from './SearchSupportProgramsUseCase'
@@ -23,5 +23,18 @@ describe('SearchSupportProgramsUseCase', () => {
     const result = await useCase.execute('')
 
     expect(result.programs).toHaveLength(5)
+  })
+
+  it('normalizes the query and forwards request cancellation', async () => {
+    const search = vi.fn().mockResolvedValue([])
+    const controller = new AbortController()
+    const cancellableUseCase = new SearchSupportProgramsUseCase({ search })
+
+    await cancellableUseCase.execute('  서울 AI  ', controller.signal)
+
+    expect(search).toHaveBeenCalledWith(
+      { acceptingOnly: true, query: '서울 AI' },
+      controller.signal,
+    )
   })
 })

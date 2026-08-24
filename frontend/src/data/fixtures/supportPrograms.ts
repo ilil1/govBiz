@@ -1,6 +1,6 @@
 import type { SupportProgram } from '../../domain/entities/SupportProgram'
 
-/** 외부 API 연결 전 UI·검색 흐름을 검증하기 위한 샘플 공고입니다. */
+/** 외부 API에 의존하지 않고 Domain·상태 흐름을 검증하기 위한 테스트 전용 공고입니다. */
 export const supportPrograms: SupportProgram[] = [
   {
     id: 'fixture-seoul-ai-business',
@@ -11,11 +11,12 @@ export const supportPrograms: SupportProgram[] = [
     regions: ['서울'],
     targetDescription: '서울 소재 창업 7년 이내 중소기업',
     supportAmount: '기업당 최대 8,000만 원',
+    applicationPeriod: '2026-08-01 ~ 2026-09-15',
     applicationStartDate: '2026-08-01',
     applicationEndDate: '2026-09-15',
     status: 'OPEN',
     sourceName: 'GovBiz 샘플 데이터',
-    sourceUrl: 'https://example.com/programs/seoul-ai-business',
+    sourceUrl: 'https://www.bizinfo.go.kr/programs/seoul-ai-business',
     matchedReasons: ['AI·기술 분야', '서울 지역', '현재 접수 중'],
   },
   {
@@ -27,11 +28,12 @@ export const supportPrograms: SupportProgram[] = [
     regions: ['전국'],
     targetDescription: '창업 3년 이내 기업',
     supportAmount: '기업당 최대 1억 원',
+    applicationPeriod: '2026-08-10 ~ 2026-09-03',
     applicationStartDate: '2026-08-10',
     applicationEndDate: '2026-09-03',
     status: 'OPEN',
     sourceName: 'GovBiz 샘플 데이터',
-    sourceUrl: 'https://example.com/programs/national-startup',
+    sourceUrl: 'https://www.bizinfo.go.kr/programs/national-startup',
     matchedReasons: ['창업 분야', '전국 사업', '현재 접수 중'],
   },
   {
@@ -43,11 +45,12 @@ export const supportPrograms: SupportProgram[] = [
     regions: ['경기'],
     targetDescription: '경기도 소재 중소 제조기업',
     supportAmount: '기업당 최대 5,000만 원',
+    applicationPeriod: '2026-08-20 ~ 2026-10-02',
     applicationStartDate: '2026-08-20',
     applicationEndDate: '2026-10-02',
     status: 'OPEN',
     sourceName: 'GovBiz 샘플 데이터',
-    sourceUrl: 'https://example.com/programs/gyeonggi-smart-factory',
+    sourceUrl: 'https://www.bizinfo.go.kr/programs/gyeonggi-smart-factory',
     matchedReasons: ['제조·기술 분야', '경기 지역', '현재 접수 중'],
   },
   {
@@ -59,11 +62,12 @@ export const supportPrograms: SupportProgram[] = [
     regions: ['전국'],
     targetDescription: '수출을 준비하거나 확대하려는 중소기업',
     supportAmount: '기업별 최대 5,000만 원',
+    applicationPeriod: '2026-08-15 ~ 2026-09-30',
     applicationStartDate: '2026-08-15',
     applicationEndDate: '2026-09-30',
     status: 'OPEN',
     sourceName: 'GovBiz 샘플 데이터',
-    sourceUrl: 'https://example.com/programs/export-voucher',
+    sourceUrl: 'https://www.bizinfo.go.kr/programs/export-voucher',
     matchedReasons: ['수출·해외진출 분야', '전국 사업', '현재 접수 중'],
   },
   {
@@ -75,11 +79,12 @@ export const supportPrograms: SupportProgram[] = [
     regions: ['전국'],
     targetDescription: '콘텐츠·신기술 융합 창업기업',
     supportAmount: '프로그램별 상이',
+    applicationPeriod: '예산 소진시까지',
     applicationStartDate: '2026-07-01',
-    applicationEndDate: '2026-08-31',
+    applicationEndDate: null,
     status: 'OPEN',
     sourceName: 'GovBiz 샘플 데이터',
-    sourceUrl: 'https://example.com/programs/content-innovation',
+    sourceUrl: 'https://www.bizinfo.go.kr/programs/content-innovation',
     matchedReasons: ['콘텐츠·창업 분야', '전국 사업', '현재 접수 중'],
   },
   {
@@ -91,11 +96,12 @@ export const supportPrograms: SupportProgram[] = [
     regions: ['대전'],
     targetDescription: '대전 소재 기술창업 기업',
     supportAmount: '프로그램별 상이',
+    applicationPeriod: '2026-07-01 ~ 2026-07-31',
     applicationStartDate: '2026-07-01',
     applicationEndDate: '2026-07-31',
     status: 'CLOSED',
     sourceName: 'GovBiz 샘플 데이터',
-    sourceUrl: 'https://example.com/programs/daejeon-accelerating',
+    sourceUrl: 'https://www.bizinfo.go.kr/programs/daejeon-accelerating',
     matchedReasons: ['기술·창업 분야', '대전 지역'],
   },
 ]

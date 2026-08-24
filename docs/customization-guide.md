@@ -1,8 +1,8 @@
 # GovBiz 확장·적용 안내
 
-GovBiz는 샘플 공고 검색을 시작점으로, 실제 지원사업 데이터와 기업 맞춤 추천을 단계적으로
-연결하도록 구성했습니다. 다른 지원사업 데이터 소스나 유사한 공공 정보 서비스에 적용할 때도
-계층의 책임은 유지하고 도메인 계약과 adapter를 기능 단위로 교체합니다.
+GovBiz는 기업마당의 실제 지원사업 검색을 시작점으로, 추가 데이터 소스와 기업 맞춤 추천을
+단계적으로 연결하도록 구성했습니다. 다른 지원사업 데이터 소스나 유사한 공공 정보 서비스에
+적용할 때도 계층의 책임은 유지하고 도메인 계약과 adapter를 기능 단위로 교체합니다.
 
 ## 1. GovBiz 브랜드와 서비스 계약 확정
 
@@ -12,25 +12,24 @@ GovBiz는 샘플 공고 검색을 시작점으로, 실제 지원사업 데이터
 다음 위치는 같은 변경에서 함께 검토합니다.
 
 - 루트·서비스별 README와 브라우저 metadata
-- Frontend 화면의 브랜드·샘플 데이터 모드 표시
+- Frontend 화면의 브랜드·공고 출처·조회 상태 표시
 - Core API와 AI Service의 Health 응답·예상 값
 - `application/problem+json` type URN과 서비스 간 DTO
 - Docker Compose project·service·container 이름과 smoke 검증 스크립트
 
-## 2. 샘플 공고를 실제 데이터 소스로 교체
+## 2. 실제 공고 데이터 소스 확장
 
-현재 채팅 화면은 `SupportProgramRepository`를 통해 공고를 검색합니다. 화면과 UseCase는 유지하고
-`FixtureSupportProgramRepository`를 Core API HTTP adapter로 교체합니다.
+현재 채팅 화면은 `SupportProgramRepository`를 통해 Core API를 호출하고, Core API는 공공데이터포털의
+기업마당 공고를 GovBiz 모델로 변환해 검색합니다. 다른 공식 소스를 추가할 때도 화면과 UseCase의
+공개 계약은 유지하고 Core API 뒤의 adapter와 병합 정책을 확장합니다.
 
 권장 순서:
 
-1. 검색어, 필터, 페이징과 정렬을 포함한 검색 요청·응답 계약을 확정합니다.
-2. Core API에 공고 조회 API와 Repository를 구현합니다.
-3. 기업마당·K-Startup 수집 adapter가 외부 응답을 GovBiz 공고 모델로 변환하게 합니다.
-4. Frontend Data Layer에 Fetch·Zod DTO 경계와 HTTP Repository를 추가합니다.
-5. `app/di/registerRepositories.ts`에서 `supportProgramRepository` 등록을 샘플 구현에서 HTTP
-   구현으로 교체합니다.
-6. 동일한 검색 시나리오를 fixture·HTTP 계약 테스트와 Compose smoke로 검증합니다.
+1. 새 소스가 해결할 검색 누락 사례와 품질 기준을 먼저 기록합니다.
+2. 외부 응답·오류·timeout을 소스별 client 경계에서 처리합니다.
+3. 원문 ID, 출처와 날짜 근거를 잃지 않고 GovBiz 공고 모델로 변환합니다.
+4. 중복 공고 판정, 소스 우선순위와 정렬 규칙을 명시합니다.
+5. 동일한 검색 시나리오를 고정 fixture·HTTP 계약 테스트와 Compose smoke로 검증합니다.
 
 ## 3. SampleItem 계층 패턴 재사용
 
@@ -75,6 +74,7 @@ cd ../ai-service && uv lock --check && uv run --locked --extra dev python -m pyt
 cd ../.. && ./infrastructure/scripts/verify-compose.sh
 ```
 
-Docker Compose smoke는 Frontend → Core API → AI Service 연결과 장애·복구까지 검증합니다. 외부 데이터
-소스를 추가하면 실제 밀어넣기 대신 고정 fixture나 mock server로 재현 가능한 시나리오를 먼저
-추가합니다.
+Docker Compose smoke는 Frontend → Core API → 공공데이터 adapter 연결과 AI Service 장애·복구까지
+검증합니다. 공공데이터포털 호출은 검증 profile의 로컬 스텁으로 대체하므로 실제 개인 키나 외부
+네트워크가 필요하지 않습니다. 외부 데이터 소스를 추가할 때도 실제 서비스에 테스트 데이터를
+밀어넣지 말고 고정 fixture나 mock server로 재현 가능한 시나리오를 먼저 추가합니다.

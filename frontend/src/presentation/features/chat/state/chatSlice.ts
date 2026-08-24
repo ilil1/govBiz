@@ -38,6 +38,12 @@ const chatSlice = createSlice({
       state.draft = action.payload
       state.searchError = null
     },
+    searchCancelled(state, action: PayloadAction<{ requestId: string }>) {
+      if (state.activeRequestId !== action.payload.requestId) return
+      state.activeRequestId = null
+      state.searchError = null
+      state.searchStatus = 'idle'
+    },
     searchFailed(state, action: PayloadAction<{ requestId: string }>) {
       if (state.activeRequestId !== action.payload.requestId) return
       state.activeRequestId = null
@@ -105,6 +111,7 @@ const chatSlice = createSlice({
 export const {
   conversationReset,
   draftChanged,
+  searchCancelled,
   searchFailed,
   searchStarted,
   searchSucceeded,
@@ -147,5 +154,5 @@ function createWelcomeMessage(): SupportProgramChatMessage {
 function createSearchResponseText(programCount: number) {
   return programCount > 0
     ? `현재 접수 중인 관련 공고 ${programCount}건을 찾았습니다. 공고를 선택하면 자세한 조건과 원문을 확인할 수 있어요.`
-    : '현재 샘플 데이터에서는 일치하는 공고를 찾지 못했습니다. 지역이나 분야를 바꿔 다시 검색해 보세요.'
+    : '현재 일치하는 공고를 찾지 못했습니다. 지역이나 분야를 바꿔 다시 검색해 보세요.'
 }

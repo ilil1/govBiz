@@ -1,12 +1,24 @@
 import { asValue } from 'awilix/browser'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { supportPrograms } from '../data/fixtures/supportPrograms'
 import type { SupportProgramRepository } from '../domain/repositories/SupportProgramRepository'
 import { createAppContainer } from './di/container'
 
 describe('Awilix application container', () => {
-  it('resolves the production graph and executes the fixture search', async () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('resolves the production graph and executes the Core API search', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      query: '서울 AI',
+      programs: [supportPrograms[0]],
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }))
+    vi.stubGlobal('fetch', fetchMock)
     const container = createAppContainer()
     const result = await container
       .resolve('appServices')
@@ -14,6 +26,7 @@ describe('Awilix application container', () => {
 
     expect(result.query).toBe('서울 AI')
     expect(result.programs[0]?.id).toBe('fixture-seoul-ai-business')
+    expect(fetchMock).toHaveBeenCalledOnce()
   })
 
   it('reuses singletons inside one container and isolates fresh containers', () => {
@@ -38,7 +51,10 @@ describe('Awilix application container', () => {
 
     const result = await container.resolve('appServices').searchSupportPrograms.execute('수출')
 
-    expect(search).toHaveBeenCalledWith({ acceptingOnly: true, query: '수출' })
+    expect(search).toHaveBeenCalledWith(
+      { acceptingOnly: true, query: '수출' },
+      undefined,
+    )
     expect(result.programs).toEqual([supportPrograms[3]])
   })
 })

@@ -1,18 +1,20 @@
 # GovBiz
 
 자연어로 정부지원사업을 검색하고, 공고의 출처와 마감일을 확인할 수 있는 채팅형 웹앱입니다.
-현재는 외부 API 연결 전 단계로, 샘플 공고 데이터로 검색 흐름을 검증합니다.
+[공공데이터포털의 중소기업 지원사업 공고 조회 서비스](https://www.data.go.kr/data/15157820/openapi.do)에서
+기업마당 공고를 Core API로 조회하고, 브라우저에는 GovBiz의 안정적인 검색 계약만 공개합니다.
 
 ```text
 React Web
   → Spring Boot Core API
-      → FastAPI AI Service
+      ├→ 공공데이터포털 지원사업 공고 API
+      └→ FastAPI AI Service
 ```
 
-브라우저는 Core API만 호출합니다. AI Service는 Core API가 내부 HTTP로 호출하는 서비스이며, 이후
-프로젝트의 AI·문서 처리·외부 API 연동을 붙일 위치를 보여 줍니다.
+브라우저는 Core API만 호출하므로 공공데이터포털 인증키가 JavaScript bundle이나 브라우저 요청에
+노출되지 않습니다. AI Service는 Core API가 호출하는 내부 서비스입니다.
 
-## 현재 구현: 샘플 공고 검색 채팅
+## 현재 구현: 실제 공고 검색 채팅
 
 브라우저에서 `/`로 진입하면 바로 GovBiz 채팅 화면이 열립니다.
 
@@ -23,9 +25,10 @@ React Web
           → ViewModel 안의 Redux Thunk
               → 주입된 SearchSupportProgramsUseCase
                   → SupportProgramRepository
-                      → 샘플 공고 검색
-                          → Redux Toolkit chat slice
-                              → 지원사업 카드·마감일·추천 이유 표시
+                      → GET /api/v1/support-programs/search
+                          → 공공데이터포털 기업마당 공고 조회·변환·검색
+                      → Redux Toolkit chat slice
+                          → 지원사업 카드·마감일·추천 이유 표시
 ```
 
 현재 화면은 다음 질문을 처리할 수 있습니다.
@@ -34,8 +37,10 @@ React Web
 - `현재 접수 중인 수출 지원사업 알려줘`
 - `제조기업 R&D 사업을 찾아줘`
 
-외부 API 키나 LLM은 아직 필요하지 않습니다. `FixtureSupportProgramRepository` 뒤의
-Repository 계약은 이후 기업마당·K-Startup 수집 adapter로 교체할 예정입니다.
+Frontend는 HTTP 응답을 Zod로 검증하고, 화면 이탈이나 새 대화 시작 시 진행 중인 검색을 취소합니다.
+공고의 공식 원문 주소와 신청기간 원문을 함께 제공하며, 날짜를 확실히 해석하지 못한 경우 접수 상태를
+추정하지 않습니다. 공개 계약은 [지원사업 검색 HTTP 계약](docs/support-program-search-contract.md)에
+정리되어 있습니다.
 
 ### 채팅 상태 관리
 
@@ -50,8 +55,10 @@ Repository와 UseCase의 생성·연결·앱 단위 singleton 수명주기는 Aw
 주입합니다. DI 등록은 `frontend/src/app/di`에서 Repository, UseCase, AppServices 역할별 모듈로
 분리해 관리합니다.
 
-현재는 대화와 검색 결과를 브라우저 메모리에 보관합니다. 실제 API 연결 전에는 요청 취소, 메시지
-보관 한도·서버 저장과 명시적인 검색 캐시 정책을 추가합니다. 현재 구현 평가와 구체적인 확장 원칙은
+현재는 대화와 검색 결과를 브라우저 메모리에 보관합니다. Core API는 필요할 때 외부 공고를 조회하고
+한 시간 동안 메모리에 캐시하며, 갱신 실패 시 최대 24시간 이내의 직전 데이터로 검색을 이어갑니다.
+운영 전에는 메시지 보관 한도·서버 저장과 호출량·영속 캐시 정책을 추가합니다.
+현재 구현 평가와 구체적인 확장 원칙은
 [Frontend 상태 관리 설계](frontend/README.md#상태-관리-설계와-확장-원칙)와
 [Provider에서 ViewModel까지 Store 전달](frontend/README.md#redux-provider에서-viewmodel까지-store-전달)을
 참고하세요.
@@ -63,8 +70,9 @@ Repository와 UseCase의 생성·연결·앱 단위 singleton 수명주기는 Aw
 - Spring Boot의 Controller → Service → Domain 흐름
 - Zod와 Bean Validation을 이용한 요청·응답 계약 검증
 - FastAPI 내부 Health API와 Core API의 upstream 오류 변환
+- 공공데이터포털 응답을 GovBiz 공고 모델로 변환하는 외부 API adapter
 - Vite 프록시를 사용하는 Docker Compose 개발 환경
-- 서비스별 테스트와 정상·장애·복구를 확인하는 Compose smoke 검증
+- 실제 키 없이 로컬 공공데이터 스텁을 사용하는 결정적 Compose smoke 검증
 
 ## SampleItem 예제
 
@@ -88,17 +96,27 @@ SampleItemPage
 
 Docker daemon과 Docker Compose가 준비되어 있어야 합니다.
 
+저장소 루트의 `.env`에 공공데이터포털에서 발급한 일반 인증키를 설정합니다. Encoding 또는
+Decoding 키를 사용할 수 있으며 Core API가 호출 전에 정규화합니다. 새 환경에서는 예시 파일을
+복사한 뒤 값만 채웁니다. `.env`는 Git에서 제외됩니다.
+
 ```bash
-docker compose --file infrastructure/compose.yaml up --build
+cp .env.example .env
+# DATA_GO_KR_SERVICE_KEY=발급받은_인증키
+```
+
+```bash
+docker compose --env-file .env --file infrastructure/compose.yaml up --build
 ```
 
 브라우저에서 [http://127.0.0.1:5173](http://127.0.0.1:5173)을 열면 GovBiz 채팅 화면을 볼 수
-있습니다. 화면 상단에 `샘플 데이터 모드`가 표시되면 외부 공고 API를 아직 사용하지 않는 상태입니다.
+있습니다.
 
 | 주소 | 용도 |
 |---|---|
 | `http://127.0.0.1:5173` | React 개발 서버 |
 | `http://127.0.0.1:5173/api/v1/health` | Vite 프록시를 거친 Core API Health |
+| `http://127.0.0.1:5173/api/v1/support-programs/search?query=%EC%88%98%EC%B6%9C&acceptingOnly=true` | 실제 지원사업 검색 |
 | `http://127.0.0.1:5173/api/v1/health/ai-service` | Core API를 거친 AI Service Health |
 | `http://127.0.0.1:8080` | Core API 직접 디버깅 |
 
@@ -110,7 +128,8 @@ docker compose --file infrastructure/compose.yaml down --volumes --remove-orphan
 
 ## 검증
 
-전체 컨테이너 경로와 AI Service 장애·복구까지 확인합니다.
+전체 컨테이너 경로, 지원사업 검색 계약, AI Service 장애·복구까지 확인합니다. 이 검증은 로컬
+공공데이터 스텁과 dummy key를 사용하므로 개인 인증키나 외부 네트워크가 필요하지 않습니다.
 
 ```bash
 ./infrastructure/scripts/verify-compose.sh
@@ -133,6 +152,7 @@ govBiz/
 ## 문서
 
 - [아키텍처와 의존성 규칙](docs/architecture.md)
+- [지원사업 검색 HTTP 계약](docs/support-program-search-contract.md)
 - [SampleItem HTTP 계약](docs/sample-item-contract.md)
 - [새 프로젝트로 바꾸는 방법](docs/customization-guide.md)
 - [Frontend 실행·구조](frontend/README.md)
@@ -142,11 +162,10 @@ govBiz/
 
 ## 다음 단계
 
-1. 샘플 공고 검색 결과와 채팅 UX를 확정합니다.
-2. Core API에 같은 검색 계약을 연결합니다.
-3. PostgreSQL 또는 서버 저장소에 공고를 저장합니다.
-4. 기업마당·K-Startup API adapter로 샘플 Repository를 교체합니다.
-5. 이후 기업정보 기반 추천과 GovClause의 PDF·조건 판정을 결합합니다.
+1. 대표 검색 질문과 Top-5 관련성 기준으로 현재 검색 품질을 측정합니다.
+2. 외부 API 호출량·응답 시간에 따라 서버 캐시 또는 주기 수집 저장소를 도입합니다.
+3. 데이터가 부족하다는 근거가 생기면 K-Startup 등 두 번째 공식 소스를 추가합니다.
+4. 이후 기업정보 기반 추천과 GovClause의 PDF·조건 판정을 결합합니다.
 
 GovBiz 계층을 유지하며 데이터 소스와 기능을 확장하는 방법은
 [GovBiz 확장·적용 안내](docs/customization-guide.md)를 참고하세요.

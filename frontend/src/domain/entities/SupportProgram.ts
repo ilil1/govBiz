@@ -1,4 +1,4 @@
-export type SupportProgramStatus = 'OPEN' | 'UPCOMING' | 'CLOSED'
+export type SupportProgramStatus = 'OPEN' | 'UPCOMING' | 'CLOSED' | 'UNKNOWN'
 
 export type SupportProgram = {
   id: string
@@ -9,8 +9,9 @@ export type SupportProgram = {
   regions: string[]
   targetDescription: string
   supportAmount: string
-  applicationStartDate: string
-  applicationEndDate: string
+  applicationPeriod: string
+  applicationStartDate: string | null
+  applicationEndDate: string | null
   status: SupportProgramStatus
   sourceName: string
   sourceUrl: string

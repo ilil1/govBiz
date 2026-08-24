@@ -10,7 +10,17 @@ WAIT_INTERVAL_SECONDS="${VERIFY_COMPOSE_INTERVAL_SECONDS:-2}"
 KEEP_RUNNING="${VERIFY_COMPOSE_KEEP_RUNNING:-false}"
 PROJECT_NAME="${VERIFY_COMPOSE_PROJECT_NAME:-govbiz-verify}"
 
-COMPOSE=(docker compose --project-name "${PROJECT_NAME}" --file "${COMPOSE_FILE}")
+# Verification never uses a developer's real key or the live public API. Exported values take
+# precedence over a root .env file for every Compose command executed by this script.
+export BIZINFO_API_BASE_URL="http://bizinfo-stub:8001"
+export DATA_GO_KR_SERVICE_KEY="compose%2Bverification%2Fkey%3D"
+
+COMPOSE=(
+  docker compose
+  --profile verification
+  --project-name "${PROJECT_NAME}"
+  --file "${COMPOSE_FILE}"
+)
 RESPONSE_DIR="$(mktemp -d)"
 LAST_RESPONSE_FILE="${RESPONSE_DIR}/last-response"
 
@@ -38,9 +48,11 @@ wait_for_http() {
   local label=$1
   local url=$2
   local expected_status=$3
-  local expected_body_pattern=${4:-}
+  local expected_body_patterns=("${@:4}")
   local deadline=$((SECONDS + WAIT_TIMEOUT_SECONDS))
   local actual_status="000"
+  local body_matches
+  local pattern
 
   while ((SECONDS < deadline)); do
     : >"${LAST_RESPONSE_FILE}"
@@ -54,7 +66,15 @@ wait_for_http() {
     )"
 
     if [[ "${actual_status}" == "${expected_status}" ]]; then
-      if [[ -z "${expected_body_pattern}" ]] || grep -Eq "${expected_body_pattern}" "${LAST_RESPONSE_FILE}"; then
+      body_matches=true
+      for pattern in "${expected_body_patterns[@]}"; do
+        if [[ -n "${pattern}" ]] && ! grep -Eq "${pattern}" "${LAST_RESPONSE_FILE}"; then
+          body_matches=false
+          break
+        fi
+      done
+
+      if [[ "${body_matches}" == "true" ]]; then
         echo "Verified ${label}: HTTP ${actual_status}"
         return 0
       fi
@@ -118,6 +138,15 @@ echo "Building and starting the GovBiz verification stack (${PROJECT_NAME})"
 
 wait_for_http "Vite web" "http://127.0.0.1:5173/" "200"
 wait_for_http "Vite-proxied Core API health" "http://127.0.0.1:5173/api/v1/health" "200" '"status"[[:space:]]*:[[:space:]]*"up".*"service"[[:space:]]*:[[:space:]]*"govbiz-core-api"'
+wait_for_http \
+  "Vite-proxied support program search through the Bizinfo adapter" \
+  "http://127.0.0.1:5173/api/v1/support-programs/search?query=%EC%88%98%EC%B6%9C&acceptingOnly=true" \
+  "200" \
+  '"query"[[:space:]]*:[[:space:]]*"수출"' \
+  '"id"[[:space:]]*:[[:space:]]*"PBLN_COMPOSE_EXPORT"' \
+  '"applicationPeriod"[[:space:]]*:[[:space:]]*"2026-08-20 ~ 2099-09-11"' \
+  '"status"[[:space:]]*:[[:space:]]*"OPEN"' \
+  '"sourceUrl"[[:space:]]*:[[:space:]]*"https://www.bizinfo.go.kr/compose-verification"'
 wait_for_json_post \
   "Vite-proxied sample item preparation" \
   "http://127.0.0.1:5173/api/v1/sample-items/prepare" \
@@ -137,4 +166,4 @@ echo "Restarting AI Service to verify recovery without restarting Core API"
 
 wait_for_http "Core to AI Service recovery" "http://127.0.0.1:5173/api/v1/health/ai-service" "200" '"status"[[:space:]]*:[[:space:]]*"up".*"service"[[:space:]]*:[[:space:]]*"govbiz-ai-service"'
 
-echo "Compose verification passed: startup, failure isolation, and recovery are valid."
+echo "Compose verification passed: search, startup, failure isolation, and recovery are valid."

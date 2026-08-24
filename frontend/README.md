@@ -11,7 +11,7 @@ ViewModel Hook이 명시적으로 관리합니다.
 저장소 루트에서 실행합니다.
 
 ```bash
-docker compose --file infrastructure/compose.yaml up --build
+docker compose --env-file .env --file infrastructure/compose.yaml up --build
 ```
 
 브라우저는 `http://127.0.0.1:5173`으로 접속합니다. Compose에서는 React가 `/api` 상대 주소를
@@ -48,7 +48,7 @@ src/
 ├── presentation/features/sample-item/  # 계층 연결 예제 View와 ViewModel
 ├── presentation/shared/                # Core API 연결 상태 UI
 ├── domain/                             # Entity, Repository port, UseCase
-└── data/                               # Fixture·Fetch API·Zod DTO·Repository 구현
+└── data/                               # Fetch API·Zod DTO·HTTP Repository와 테스트 fixture
 ```
 
 `ChatPage`는 `useSupportProgramChatViewModel`이 반환한 상태와 행동만 사용합니다. ViewModel은 typed
@@ -63,7 +63,8 @@ ChatPage
           → AppServices facade
               → Awilix가 생성한 SearchSupportProgramsUseCase
                   → Awilix가 주입한 SupportProgramRepository
-                      → chat slice 성공·실패 상태
+                      → Core API Fetch·Zod 응답 검증
+                          → chat slice 성공·실패 상태
 ```
 
 사이드바 열림과 DOM 스크롤처럼 화면에만 필요한 상태는 React 로컬 hook에 남깁니다. 공고 검색
@@ -72,8 +73,9 @@ workflow는 ViewModel의 Thunk에 명시하고, 대화 상태는 Redux에 둡니
 
 ## 상태 관리 설계와 확장 원칙
 
-현재 구현은 샘플 데이터 기반 프로토타입에 필요한 상태 분리, DI, 비동기 응답 방어를 갖추고 있습니다.
-같은 상태를 React Hook과 Redux 양쪽에 중복 저장하지 않고 다음 기준으로 소유권을 나눕니다.
+현재 구현은 실제 Core API 검색에 필요한 상태 분리, DI, 런타임 응답 검증과 비동기 응답 방어를
+갖추고 있습니다. 같은 상태를 React Hook과 Redux 양쪽에 중복 저장하지 않고 다음 기준으로 소유권을
+나눕니다.
 
 | 소유자 | 담당 상태 | 현재 예시 |
 |---|---|---|
@@ -89,23 +91,21 @@ Hook이 반환한 상태와 행동만 사용합니다. Redux에는 문자열·�
 현재 채팅 흐름은 다음 안전장치를 적용합니다.
 
 - 검색 중 중복 전송을 차단합니다.
+- 새 대화 시작과 화면 이탈 시 진행 중인 Fetch를 `AbortController`로 취소합니다.
 - 새 대화를 시작한 뒤 도착한 이전 성공·실패 응답은 `requestId`가 다르면 무시합니다.
 - 내부 예외를 그대로 노출하지 않고 안전한 사용자 오류로 변환합니다.
 - 성공, 중복 요청, 늦은 응답, 오류 흐름을 ViewModel Thunk → 주입 서비스 → Slice 통합 테스트로
   검증합니다.
 
-실제 API와 장기 대화를 연결하기 전에는 다음 항목을 보완합니다.
+운영 환경과 장기 대화를 연결하기 전에는 다음 항목을 보완합니다.
 
-1. Fixture Repository를 HTTP Repository로 교체해도 ViewModel Thunk와 UseCase 호출 순서를
-   유지합니다.
-2. 새 대화 시작과 화면 이탈 시 진행 중인 HTTP·LLM 요청을 `AbortSignal`로 취소합니다.
-3. 전체 채팅 이력은 서버에 저장하고 Redux에는 현재 대화의 최근 메시지만 보관합니다.
-4. 메시지마다 공고 객체 전체를 반복 저장하지 않고, 데이터 규모에 맞춰 공고 ID·요약 또는 정규화된
+1. 전체 채팅 이력은 서버에 저장하고 Redux에는 현재 대화의 최근 메시지만 보관합니다.
+2. 메시지마다 공고 객체 전체를 반복 저장하지 않고, 데이터 규모에 맞춰 공고 ID·요약 또는 정규화된
    상태를 저장합니다.
-5. 요청 취소·입력 검증·네트워크·서버 오류를 구분할 안전한 오류 코드와 개발용 관측 정보를
+3. 요청 취소·입력 검증·네트워크·서버 오류를 구분할 안전한 오류 코드와 개발용 관측 정보를
    추가합니다.
 
-따라서 현재 Redux 구조를 다시 만드는 것이 아니라, 실제 API 도입 시 캐시·취소·장기 보관 정책을
+따라서 현재 Redux 구조를 다시 만드는 것이 아니라, 운영 확장 시 서버 캐시와 장기 보관 정책을
 추가하는 방향으로 확장합니다. 더 넓은 계층 규칙은 [아키텍처 문서](../docs/architecture.md#frontend)를
 참고하세요.
 

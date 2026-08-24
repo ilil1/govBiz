@@ -7,13 +7,14 @@ Browser
   → React Web
       → 공개 HTTP API
           → Spring Boot Core API
-              → 내부 HTTP API
-                  → FastAPI AI Service
+              ├→ 외부 HTTP API → 공공데이터포털
+              └→ 내부 HTTP API → FastAPI AI Service
 ```
 
 React는 Core API만 호출합니다. FastAPI는 브라우저에 공개하지 않으며, Core API가 호출 결과를
-자신의 공개 DTO와 오류 계약으로 변환합니다. 이후 정책 엔진, 데이터베이스, 큐, 외부 API도 같은
-방식으로 Core API 뒤에 추가합니다.
+자신의 공개 DTO와 오류 계약으로 변환합니다. 공공데이터포털 인증키도 Core API에만 보관하고,
+외부 공고 응답을 GovBiz 지원사업 모델로 변환한 뒤 공개합니다. 이후 정책 엔진, 데이터베이스와 큐도
+같은 방식으로 Core API 뒤에 추가합니다.
 
 ## Frontend
 
@@ -56,12 +57,15 @@ Health 조회처럼 업무 도메인이 아닌 연결 상태는 UseCase·Reposit
 
 ```text
 Controller → Service → Domain
-                    ↘ client/ai → FastAPI
+                    ├→ client/bizinfo → 공공데이터포털
+                    └→ client/ai → FastAPI
 ```
 
 - **Controller**는 HTTP 요청·응답 DTO 변환과 Bean Validation을 담당합니다.
 - **Service**는 use case와 상태 전이를 담당합니다.
 - **Domain**은 프레임워크에 의존하지 않는 record·enum·불변식을 둡니다.
+- **client/bizinfo**는 공공데이터포털 전송 계약과 인증키를 소유합니다. Service가 외부 공고를
+  GovBiz 모델로 변환하고 검색·정렬·캐시 정책을 적용합니다.
 - **client/ai**는 FastAPI와의 HTTP 계약을 소비합니다.
 - **config**는 외부 서비스 주소와 HTTP Client 설정을 조립합니다.
 
@@ -81,7 +85,8 @@ Browser (127.0.0.1:5173)
   → Vite web container
       → /api proxy
           → core-api:8080
-              → ai-service:8000
+              ├→ https://apis.data.go.kr
+              └→ ai-service:8000
 ```
 
 브라우저는 `core-api`와 `ai-service`라는 Compose 내부 DNS 이름을 알 수 없습니다. React는 `/api`
@@ -96,5 +101,9 @@ Browser (127.0.0.1:5173)
   facade 밖으로 노출하지 않습니다.
 - Core API는 FastAPI 전송 DTO를 브라우저에 그대로 노출하지 않습니다.
 - FastAPI는 Core API 소스 코드를 import하거나 Core API 데이터 저장소를 수정하지 않습니다.
+- 공공데이터포털 인증키는 Core API 환경변수에만 주입하고 Frontend bundle·응답·로그에 노출하지
+  않습니다.
+- 외부 공고의 신청기간을 확실히 해석할 수 없으면 `UNKNOWN`으로 유지하며 접수 상태를 추정하지
+  않습니다.
 - 서비스 간 통신은 명시적인 HTTP·JSON 계약과 테스트로 검증합니다.
 - 필요하지 않은 빈 계층이나 인프라를 미리 만들지 않습니다.

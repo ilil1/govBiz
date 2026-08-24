@@ -1,8 +1,11 @@
+import { useEffect, useRef } from 'react'
+
 import { useAppDispatch, useAppSelector } from '../../../../app/hooks'
 import type { AppThunk } from '../../../../app/store'
 import {
   conversationReset,
   draftChanged,
+  searchCancelled,
   searchFailed,
   searchStarted,
   searchSucceeded,
@@ -23,6 +26,10 @@ export const supportProgramChatSuggestions = [
 
 export function useSupportProgramChatViewModel() {
   const dispatch = useAppDispatch()
+  const activeRequest = useRef<{
+    controller: AbortController
+    requestId: string
+  } | null>(null)
   const conversationCount = useAppSelector(selectConversationCount)
   const draft = useAppSelector(selectChatDraft)
   const isReadyToSubmit = useAppSelector(selectIsReadyToSubmit)
@@ -30,7 +37,19 @@ export function useSupportProgramChatViewModel() {
   const messages = useAppSelector(selectChatMessages)
   const searchError = useAppSelector(selectChatSearchError)
 
+  useEffect(() => () => {
+    const request = activeRequest.current
+    activeRequest.current = null
+    if (!request) return
+
+    request.controller.abort()
+    dispatch(searchCancelled({ requestId: request.requestId }))
+  }, [dispatch])
+
   function startNewConversation() {
+    const request = activeRequest.current
+    activeRequest.current = null
+    request?.controller.abort()
     dispatch(conversationReset())
   }
 
@@ -53,16 +72,27 @@ export function useSupportProgramChatViewModel() {
       if (!query || chat.searchStatus === 'pending') return
 
       const startedAction = searchStarted(query)
+      const controller = new AbortController()
       thunkDispatch(startedAction)
+      activeRequest.current = {
+        controller,
+        requestId: startedAction.payload.requestId,
+      }
 
       try {
-        const result = await appServices.searchSupportPrograms.execute(query)
+        const result = await appServices.searchSupportPrograms.execute(query, controller.signal)
+        if (controller.signal.aborted) return
         thunkDispatch(searchSucceeded({
           programs: result.programs,
           requestId: startedAction.payload.requestId,
         }))
       } catch {
+        if (controller.signal.aborted) return
         thunkDispatch(searchFailed({ requestId: startedAction.payload.requestId }))
+      } finally {
+        if (activeRequest.current?.requestId === startedAction.payload.requestId) {
+          activeRequest.current = null
+        }
       }
     }
 

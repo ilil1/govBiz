@@ -75,12 +75,12 @@ export function ChatPage() {
         </div>
 
         <div className="sidebar-section sidebar-stats">
-          <p className="sidebar-label">샘플 데이터</p>
-          <div><strong>6</strong><span>공고</span></div>
+          <p className="sidebar-label">공고 데이터</p>
+          <div><strong>공식</strong><span>기업마당</span></div>
           <div><strong>{conversationCount}</strong><span>이번 대화 검색</span></div>
         </div>
 
-        <p className="sidebar-note">현재는 API 연결 전 샘플 공고로 동작합니다.</p>
+        <p className="sidebar-note">검색 결과는 기업마당 공식 공고와 원문 링크를 기반으로 합니다.</p>
       </aside>
 
       <section className="chat-workspace" aria-label="GovBiz 지원사업 검색 채팅">
@@ -90,7 +90,7 @@ export function ChatPage() {
             <p className="header-eyebrow">지원사업 검색</p>
             <h1>GovBiz에게 물어보세요</h1>
           </div>
-          <span className="data-status"><i /> 샘플 데이터 모드</span>
+          <span className="data-status">기업마당 공식 데이터</span>
         </header>
 
         <div className="message-timeline" ref={timelineRef}>
@@ -151,7 +151,7 @@ function ProgramCard({ program }: { program: SupportProgram }) {
     <article className="program-card">
       <div className="program-card-topline">
         <span className="program-badge">관련 공고</span>
-        <span className="program-deadline">마감 {formatDate(program.applicationEndDate)}</span>
+        <span className="program-deadline">{formatApplicationDeadline(program)}</span>
       </div>
       <h2>{program.title}</h2>
       <p className="program-organization">{program.organization}</p>
@@ -171,7 +171,9 @@ function ProgramCard({ program }: { program: SupportProgram }) {
   )
 }
 
-function formatDate(value: string) {
-  const [, month, day] = value.split('-')
-  return `${Number(month)}월 ${Number(day)}일`
+function formatApplicationDeadline(program: SupportProgram) {
+  if (!program.applicationEndDate) return program.applicationPeriod
+
+  const [, month, day] = program.applicationEndDate.split('-')
+  return `마감 ${Number(month)}월 ${Number(day)}일`
 }

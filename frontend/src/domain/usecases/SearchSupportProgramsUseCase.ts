@@ -13,11 +13,14 @@ export class SearchSupportProgramsUseCase {
     this.repository = repository
   }
 
-  async execute(query: string): Promise<SearchSupportProgramsResult> {
+  async execute(query: string, signal?: AbortSignal): Promise<SearchSupportProgramsResult> {
     const normalizedQuery = query.trim()
     return {
       query: normalizedQuery,
-      programs: await this.repository.search({ query: normalizedQuery, acceptingOnly: true }),
+      programs: await this.repository.search(
+        { query: normalizedQuery, acceptingOnly: true },
+        signal,
+      ),
     }
   }
 }
