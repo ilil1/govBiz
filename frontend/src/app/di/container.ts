@@ -1,6 +1,6 @@
 import { createContainer, InjectionMode } from 'awilix/browser'
 
-import { registerAppServices } from './registerAppServices'
+import { registerExternalServices } from './registerExternalServices'
 import { registerRepositories } from './registerRepositories'
 import { registerUseCases } from './registerUseCases'
 import type { AppContainer, AppCradle } from './types'
@@ -14,7 +14,7 @@ export function createAppContainer(): AppContainer {
 
   registerRepositories(container)
   registerUseCases(container)
-  registerAppServices(container)
+  registerExternalServices(container)
 
   return container
 }

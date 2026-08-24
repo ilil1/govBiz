@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react'
 
+import { appContainer } from '../../../../app/appContainer'
 import { useAppDispatch, useAppSelector } from '../../../../app/hooks'
-import type { AppThunk } from '../../../../app/store'
+import type { AppDispatch, RootState } from '../../../../app/store'
+import type { SearchSupportProgramsUseCase } from '../../../../domain/usecases/SearchSupportProgramsUseCase'
 import {
   conversationReset,
   draftChanged,
@@ -24,9 +26,12 @@ export const supportProgramChatSuggestions = [
   '제조기업 R&D 사업을 찾아줘',
 ]
 
-export function useSupportProgramChatViewModel() {
-  const dispatch = useAppDispatch()
-  const activeRequest = useRef<{
+export function useSupportProgramChatViewModel(
+  searchSupportProgramsUseCase: Pick<SearchSupportProgramsUseCase, 'execute'> =
+    appContainer.resolve('searchSupportProgramsUseCase'),
+) {
+  const dispatchToStore = useAppDispatch()
+  const activeSearchRequest = useRef<{
     controller: AbortController
     requestId: string
   } | null>(null)
@@ -38,65 +43,78 @@ export function useSupportProgramChatViewModel() {
   const searchError = useAppSelector(selectChatSearchError)
 
   useEffect(() => () => {
-    const request = activeRequest.current
-    activeRequest.current = null
-    if (!request) return
+    const currentRequest = activeSearchRequest.current
+    activeSearchRequest.current = null
+    if (!currentRequest) return
 
-    request.controller.abort()
-    dispatch(searchCancelled({ requestId: request.requestId }))
-  }, [dispatch])
+    currentRequest.controller.abort()
+    dispatchToStore(searchCancelled({ requestId: currentRequest.requestId }))
+  }, [dispatchToStore])
 
   function startNewConversation() {
-    const request = activeRequest.current
-    activeRequest.current = null
-    request?.controller.abort()
-    dispatch(conversationReset())
+    const currentRequest = activeSearchRequest.current
+    activeSearchRequest.current = null
+    currentRequest?.controller.abort()
+    dispatchToStore(conversationReset())
   }
 
   function selectSuggestion(suggestion: string) {
-    dispatch(draftChanged(suggestion))
+    dispatchToStore(draftChanged(suggestion))
   }
 
   function updateDraft(value: string) {
-    dispatch(draftChanged(value))
+    dispatchToStore(draftChanged(value))
   }
 
   function submitMessage() {
-    const searchWorkflow: AppThunk<Promise<void>> = async (
-      thunkDispatch,
-      getState,
-      appServices,
-    ) => {
-      const chat = selectChatState(getState())
-      const query = chat.draft.trim()
-      if (!query || chat.searchStatus === 'pending') return
+    async function runSupportProgramSearch(
+      dispatchAction: AppDispatch,
+      readCurrentState: () => RootState,
+    ): Promise<void> {
+      const currentState = readCurrentState()
+      const currentChatState = selectChatState(currentState)
+      const searchQuery = currentChatState.draft.trim()
 
-      const startedAction = searchStarted(query)
-      const controller = new AbortController()
-      thunkDispatch(startedAction)
-      activeRequest.current = {
-        controller,
-        requestId: startedAction.payload.requestId,
+      if (searchQuery.length === 0) return
+      if (currentChatState.searchStatus === 'pending') return
+
+      const searchStartedAction = searchStarted(searchQuery)
+      const requestController = new AbortController()
+      const requestId = searchStartedAction.payload.requestId
+
+      dispatchAction(searchStartedAction)
+      activeSearchRequest.current = {
+        controller: requestController,
+        requestId,
       }
 
       try {
-        const result = await appServices.searchSupportPrograms.execute(query, controller.signal)
-        if (controller.signal.aborted) return
-        thunkDispatch(searchSucceeded({
-          programs: result.programs,
-          requestId: startedAction.payload.requestId,
-        }))
+        const searchResult = await searchSupportProgramsUseCase.execute(
+          searchQuery,
+          requestController.signal,
+        )
+
+        if (requestController.signal.aborted) return
+
+        const searchSucceededAction = searchSucceeded({
+          programs: searchResult.programs,
+          requestId,
+        })
+        dispatchAction(searchSucceededAction)
       } catch {
-        if (controller.signal.aborted) return
-        thunkDispatch(searchFailed({ requestId: startedAction.payload.requestId }))
+        if (requestController.signal.aborted) return
+
+        const searchFailedAction = searchFailed({ requestId })
+        dispatchAction(searchFailedAction)
       } finally {
-        if (activeRequest.current?.requestId === startedAction.payload.requestId) {
-          activeRequest.current = null
+        const isCurrentRequest = activeSearchRequest.current?.requestId === requestId
+        if (isCurrentRequest) {
+          activeSearchRequest.current = null
         }
       }
     }
 
-    return dispatch(searchWorkflow)
+    return dispatchToStore(runSupportProgramSearch)
   }
 
   return {

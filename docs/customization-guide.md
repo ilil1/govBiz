@@ -38,9 +38,9 @@ SampleItem은 실제 GovBiz 도메인이 아니라 Frontend와 Core API 계층�
 
 ```text
 Frontend
-  앱 조립: Awilix → AppServices facade → Redux Store
-  채팅: View → ViewModel의 Thunk → AppServices → UseCase → Repository
-  단순 요청: View → ViewModel의 local state·Thunk → AppServices
+  앱 조립: Awilix → 전역 appContainer Service Locator
+  채팅: View → ViewModel이 UseCase resolve → Thunk → UseCase → Repository
+  단순 요청: View → ViewModel의 local state·UseCase resolve → UseCase → Repository
 
 Core API
   Controller → Service → Domain
@@ -48,13 +48,14 @@ Core API
 
 폼 입력과 한 번의 요청으로 끝나는 기능은 SampleItem처럼 React Hook Form과 ViewModel의 로컬 요청
 상태로 구성할 수 있습니다. 채팅처럼 여러 상태 전이를 직접 제어할 작업 흐름은 ViewModel 안의 Redux
-Thunk가 주입된 UseCase를 호출하고, Redux Slice가 결과 상태를 보관합니다. 두 경우 모두 실제
-Repository는 ViewModel이 생성하지 않고 AppServices를 통해 주입받습니다.
+Thunk가 이미 resolve한 UseCase를 호출하고, Redux Slice가 결과 상태를 보관합니다. 두 경우 모두 실제
+Repository는 ViewModel이 생성하거나 resolve하지 않고 UseCase 뒤에 둡니다. 테스트는 전역 컨테이너를
+바꾸지 않고 ViewModel Hook의 선택적 인자에 plain Fake UseCase를 넣습니다.
 
-Awilix는 `app/di` 등록 모듈과 `app/services.ts` 공개 facade 안에서만 사용합니다. 화면이나 Domain에서
-컨테이너를 직접 조회하지 않고, 새 구현체는 최초 resolve 전에 역할에 맞는 등록 모듈에 추가합니다.
-테스트에서 운영 컨테이너를 변경하지 말고 각 테스트용 새 컨테이너나 plain Fake `AppServices`를
-사용합니다.
+Awilix 등록과 조립은 `app/di`에 두고, `app/appContainer.ts`가 GetIt 같은 단일 Service Locator를
+공개합니다. ViewModel은 UseCase·외부 함수만 조회하고 Domain은 컨테이너를 알지 못합니다. 새 구현체는
+최초 resolve 전에 역할에 맞는 등록 모듈에 추가합니다. 테스트에서 운영 컨테이너를 변경하지 말고 각
+테스트용 새 컨테이너나 plain Fake UseCase를 사용합니다.
 
 ## 4. 데이터베이스와 비동기 처리 추가 시점
 

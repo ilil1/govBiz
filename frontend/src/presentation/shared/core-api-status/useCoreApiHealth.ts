@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { useAppDispatch } from '../../../app/hooks'
-import type { AppThunk } from '../../../app/store'
+import { appContainer } from '../../../app/appContainer'
+import type { FetchCoreApiHealth } from '../../../app/di/types'
 import type { CoreApiHealth } from '../../../data/core-api/coreApiHealth'
 
 type CoreApiHealthState = {
@@ -17,8 +17,11 @@ const initialState: CoreApiHealthState = {
 }
 
 /** Core API Health 요청과 화면 수명에 따른 취소를 직접 관리합니다. */
-export function useCoreApiHealth() {
-  const dispatch = useAppDispatch()
+export function useCoreApiHealth(
+  fetchCoreApiHealth: FetchCoreApiHealth = appContainer.resolve(
+    'fetchCoreApiHealth',
+  ),
+) {
   const activeController = useRef<AbortController | null>(null)
   const activeRequestId = useRef(0)
   const isMounted = useRef(false)
@@ -33,14 +36,8 @@ export function useCoreApiHealth() {
     activeRequestId.current = requestId
     setState({ data: undefined, isError: false, isLoading: true })
 
-    const healthWorkflow: AppThunk<Promise<CoreApiHealth>> = (
-      _thunkDispatch,
-      _getState,
-      appServices,
-    ) => appServices.fetchCoreApiHealth(controller.signal)
-
     try {
-      const data = await dispatch(healthWorkflow)
+      const data = await fetchCoreApiHealth(controller.signal)
       if (!isMounted.current || activeRequestId.current !== requestId) return
       setState({ data, isError: false, isLoading: false })
     } catch {
@@ -51,7 +48,7 @@ export function useCoreApiHealth() {
       ) return
       setState({ data: undefined, isError: true, isLoading: false })
     }
-  }, [dispatch])
+  }, [fetchCoreApiHealth])
 
   useEffect(() => {
     isMounted.current = true

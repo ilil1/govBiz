@@ -1,14 +1,12 @@
 // @vitest-environment jsdom
 
-import type { FormEvent, ReactNode } from 'react'
-import { Provider } from 'react-redux'
+import type { FormEvent } from 'react'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { AppServices } from '../../../../app/services'
-import { createAppStore } from '../../../../app/store'
 import type { SampleItem } from '../../../../domain/entities/SampleItem'
 import type { SampleItemPreparation } from '../../../../domain/entities/SampleItemPreparation'
+import type { PrepareSampleItemUseCase } from '../../../../domain/usecases/PrepareSampleItemUseCase'
 import { useSampleItemViewModel } from './useSampleItemViewModel'
 
 afterEach(cleanup)
@@ -19,8 +17,7 @@ describe('useSampleItemViewModel', () => {
     const prepareSampleItem = vi.fn(
       (_item: SampleItem, _signal?: AbortSignal) => pending.promise,
     )
-    const store = createAppStore(createTestServices({ prepareSampleItem }))
-    render(<TestHarness />, { wrapper: createWrapper(store) })
+    render(<TestHarness useCase={createPrepareSampleItemUseCase(prepareSampleItem)} />)
 
     fireEvent.change(screen.getByLabelText('이름'), { target: { value: '예제' } })
     fireEvent.change(screen.getByLabelText('메모'), { target: { value: '  설명  ' } })
@@ -51,8 +48,7 @@ describe('useSampleItemViewModel', () => {
       requestSignal = signal
       return pending.promise
     })
-    const store = createAppStore(createTestServices({ prepareSampleItem }))
-    render(<TestHarness />, { wrapper: createWrapper(store) })
+    render(<TestHarness useCase={createPrepareSampleItemUseCase(prepareSampleItem)} />)
 
     fireEvent.change(screen.getByLabelText('이름'), { target: { value: '이전 값' } })
     await waitFor(() => expect(submitButton().disabled).toBe(false))
@@ -76,8 +72,9 @@ describe('useSampleItemViewModel', () => {
     const prepareSampleItem = vi.fn()
       .mockRejectedValueOnce(new Error('private server detail'))
       .mockImplementationOnce((_item: SampleItem, _signal?: AbortSignal) => pending.promise)
-    const store = createAppStore(createTestServices({ prepareSampleItem }))
-    const { unmount } = render(<TestHarness />, { wrapper: createWrapper(store) })
+    const { unmount } = render(
+      <TestHarness useCase={createPrepareSampleItemUseCase(prepareSampleItem)} />,
+    )
 
     fireEvent.change(screen.getByLabelText('이름'), { target: { value: '오류 예제' } })
     await waitFor(() => expect(submitButton().disabled).toBe(false))
@@ -101,8 +98,12 @@ describe('useSampleItemViewModel', () => {
   })
 })
 
-function TestHarness() {
-  const viewModel = useSampleItemViewModel()
+function TestHarness({
+  useCase,
+}: {
+  useCase: Pick<PrepareSampleItemUseCase, 'execute'>
+}) {
+  const viewModel = useSampleItemViewModel(useCase)
 
   function submit(event: FormEvent<HTMLFormElement>) {
     void viewModel.prepare(event)
@@ -126,27 +127,10 @@ function submitButton() {
   return screen.getByRole('button') as HTMLButtonElement
 }
 
-function createWrapper(store: ReturnType<typeof createAppStore>) {
-  return function TestWrapper({ children }: { children: ReactNode }) {
-    return <Provider store={store}>{children}</Provider>
-  }
-}
-
-function createTestServices(overrides: Partial<AppServices>): AppServices {
-  return {
-    async fetchCoreApiHealth() {
-      throw new Error('not used')
-    },
-    async prepareSampleItem() {
-      throw new Error('not configured')
-    },
-    searchSupportPrograms: {
-      async execute() {
-        throw new Error('not used')
-      },
-    },
-    ...overrides,
-  }
+function createPrepareSampleItemUseCase(
+  execute: PrepareSampleItemUseCase['execute'],
+): Pick<PrepareSampleItemUseCase, 'execute'> {
+  return { execute }
 }
 
 function successfulPreparation(name: string): SampleItemPreparation {

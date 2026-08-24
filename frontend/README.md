@@ -1,8 +1,8 @@
 # GovBiz Web
 
 React, TypeScript, Vite 기반의 지원사업 검색 채팅입니다. Redux Toolkit이 대화 상태를 관리하고,
-ViewModel 안의 Thunk가 주입된 서비스를 직접 실행합니다. 서버 요청의 로딩·성공·실패 상태도 각
-ViewModel Hook이 명시적으로 관리합니다.
+각 ViewModel Hook은 GetIt과 비슷한 전역 Awilix Service Locator에서 필요한 UseCase나 외부 API 기능을
+직접 조회합니다. 서버 요청의 로딩·성공·실패 상태도 각 ViewModel Hook이 명시적으로 관리합니다.
 
 ## 실행
 
@@ -42,8 +42,8 @@ pnpm dev
 
 ```text
 src/
-├── app/                                # Redux Store와 AppServices 공개 facade
-│   └── di/                             # Repository·UseCase·AppServices 역할별 Awilix 등록
+├── app/                                # Redux Store와 앱 단위 Awilix Service Locator
+│   └── di/                             # Repository·UseCase·외부 서비스 역할별 Awilix 등록
 ├── presentation/features/chat/         # View, 인라인 Thunk ViewModel, Redux slice·selector
 ├── presentation/features/sample-item/  # 계층 연결 예제 View와 ViewModel
 ├── presentation/shared/                # Core API 연결 상태 UI
@@ -52,19 +52,19 @@ src/
 ```
 
 `ChatPage`는 `useSupportProgramChatViewModel`이 반환한 상태와 행동만 사용합니다. ViewModel은 typed
-Redux hook으로 selector를 읽고, `submitMessage` 안의 Thunk가 Store에 주입된 UseCase를 직접
-실행합니다. 구체 Repository 등록과 singleton 수명주기는 `app/di`의 역할별 등록 모듈에서 관리하고,
-`app/services.ts`는 완성된 `AppServices`만 Store에 제공합니다.
+Redux hook으로 selector를 읽고, `appContainer.resolve('searchSupportProgramsUseCase')`로 검색 UseCase를
+직접 조회합니다. `submitMessage` 안의 Thunk는 그 UseCase를 실행하고 Redux 상태 전이를 제어합니다.
+구체 Repository 등록과 singleton 수명주기는 `app/di`의 역할별 등록 모듈에서 관리합니다.
 
 ```text
 ChatPage
   → useSupportProgramChatViewModel
+      → appContainer.resolve('searchSupportProgramsUseCase')
       → submitMessage 안의 Redux Thunk
-          → AppServices facade
-              → Awilix가 생성한 SearchSupportProgramsUseCase
-                  → Awilix가 주입한 SupportProgramRepository
-                      → Core API Fetch·Zod 응답 검증
-                          → chat slice 성공·실패 상태
+          → Awilix가 생성한 SearchSupportProgramsUseCase
+              → Awilix가 주입한 SupportProgramRepository
+                  → Core API Fetch·Zod 응답 검증
+                      → chat slice 성공·실패 상태
 ```
 
 사이드바 열림과 DOM 스크롤처럼 화면에만 필요한 상태는 React 로컬 hook에 남깁니다. 공고 검색
@@ -83,10 +83,10 @@ workflow는 ViewModel의 Thunk에 명시하고, 대화 상태는 Redux에 둡니
 | Redux Toolkit | 여러 컴포넌트가 공유하는 작업 흐름 | 입력 초안, 메시지, 검색 상태, 활성 요청 ID |
 | 서버 저장소 | 새로고침 후에도 남아야 하는 장기 데이터 | 이후 추가할 전체 대화 이력과 공고 데이터 |
 
-Awilix가 완성한 `AppServices`를 Store에 주입하므로 테스트에서는 plain Fake 서비스나 별도의 테스트
-컨테이너를 사용할 수 있습니다. View는 typed selector와 dispatch를 직접 조립하지 않고 ViewModel
-Hook이 반환한 상태와 행동만 사용합니다. Redux에는 문자열·배열·일반 객체처럼 직렬화 가능한 값만
-저장합니다.
+운영 ViewModel은 전역 `appContainer`의 singleton을 사용하고, 테스트는 Hook의 선택적 의존성 인자에
+plain Fake UseCase를 전달하거나 새 테스트 컨테이너를 만듭니다. 전역 컨테이너를 테스트에서 덮어쓰지
+않으므로 테스트 간 singleton 오염을 막습니다. Redux에는 문자열·배열·일반 객체처럼 직렬화 가능한
+값만 저장합니다.
 
 현재 채팅 흐름은 다음 안전장치를 적용합니다.
 
@@ -94,7 +94,7 @@ Hook이 반환한 상태와 행동만 사용합니다. Redux에는 문자열·�
 - 새 대화 시작과 화면 이탈 시 진행 중인 Fetch를 `AbortController`로 취소합니다.
 - 새 대화를 시작한 뒤 도착한 이전 성공·실패 응답은 `requestId`가 다르면 무시합니다.
 - 내부 예외를 그대로 노출하지 않고 안전한 사용자 오류로 변환합니다.
-- 성공, 중복 요청, 늦은 응답, 오류 흐름을 ViewModel Thunk → 주입 서비스 → Slice 통합 테스트로
+- 성공, 중복 요청, 늦은 응답, 오류 흐름을 ViewModel Thunk → resolved UseCase → Slice 통합 테스트로
   검증합니다.
 
 운영 환경과 장기 대화를 연결하기 전에는 다음 항목을 보완합니다.
@@ -109,21 +109,26 @@ Hook이 반환한 상태와 행동만 사용합니다. Redux에는 문자열·�
 추가하는 방향으로 확장합니다. 더 넓은 계층 규칙은 [아키텍처 문서](../docs/architecture.md#frontend)를
 참고하세요.
 
-## Redux Provider에서 ViewModel까지 Store 전달
+## Redux Provider와 Service Locator에서 ViewModel까지 전달
 
 `useSupportProgramChatViewModel`이 Store를 직접 import하지 않아도 `dispatch`와 State를 사용할 수
-있는 이유는 React 컴포넌트 트리의 상위에 Redux `Provider`가 있기 때문입니다.
+있는 이유는 React 컴포넌트 트리의 상위에 Redux `Provider`가 있기 때문입니다. UseCase는 React
+Context가 아니라 `app/appContainer.ts`가 한 번 생성한 전역 Awilix 컨테이너에서 조회합니다.
 
 ```text
 Provider store={store}
 └─ App
-   └─ ChatPage
-      └─ useSupportProgramChatViewModel
+   └─ ChatPage → useSupportProgramChatViewModel
 ```
 
-`main.tsx`는 앱 시작 시 생성한 Store를 Provider에 전달합니다.
+현재 `App`은 첫 화면으로 ChatPage만 렌더링합니다. SampleItemPage나 Health UI를 이후 같은 `App` 아래의
+라우트·화면에 연결해도 별도 Provider 없이 같은 `appContainer` singleton을 사용합니다.
+
+`main.tsx`에는 Redux Store Provider만 남습니다.
 
 ```tsx
+const store = createAppStore()
+
 <Provider store={store}>
   <App />
 </Provider>
@@ -179,37 +184,45 @@ useAppSelector(selectChatDraft)
 → state.chat.draft
 ```
 
+ViewModel이 의존성을 가져오는 경로는 Store와 별개입니다.
+
+```text
+appContainer
+→ resolve('prepareSampleItemUseCase')
+→ Awilix가 연결한 PrepareSampleItemUseCase singleton
+→ execute(item, signal)
+```
+
 일반 action을 dispatch하면 Slice가 처리합니다.
 
 ```ts
 dispatch(draftChanged(value))
 ```
 
-함수인 Thunk를 dispatch하면 Redux Thunk middleware가 가로채서 Store에 주입된 `AppServices`를 세
-번째 인자로 전달합니다.
+함수인 Thunk를 dispatch하면 Redux Thunk middleware가 가로채서 `dispatch`와 `getState`를 인자로
+전달합니다. UseCase는 이미 ViewModel이 Service Locator에서 조회했으므로 세 번째 인자가 없습니다.
 
 ```ts
-dispatch(searchWorkflow)
+dispatchToStore(runSupportProgramSearch)
 
 // Redux Thunk가 내부적으로 실행하는 형태
-searchWorkflow(store.dispatch, store.getState, appServices)
+runSupportProgramSearch(store.dispatch, store.getState)
 ```
 
 전체 의존성 전달 흐름은 다음과 같습니다.
 
 ```text
-Awilix
-→ AppServices 생성
-→ Store의 Thunk extraArgument에 저장
-→ Provider가 Store를 React 트리에 제공
-→ ViewModel이 useAppDispatch()로 store.dispatch 획득
-→ ViewModel이 searchWorkflow를 dispatch
-→ Thunk가 AppServices를 세 번째 인자로 전달
-→ UseCase와 Repository 실행
+appContainer 모듈 로드
+→ Awilix 컨테이너 한 번 생성
+→ ViewModel이 필요한 토큰을 resolve
+├─ Chat: SearchSupportProgramsUseCase + Redux Thunk
+├─ SampleItem: PrepareSampleItemUseCase 직접 실행
+└─ Health: fetchCoreApiHealth 함수 직접 실행
 ```
 
-Provider 없이 `ChatPage`를 렌더링하거나 ViewModel Hook을 React 컴포넌트 렌더링 밖에서 직접 호출하면
-React Redux Context를 찾을 수 없으므로 정상 동작하지 않습니다.
+Redux Provider 없이 `ChatPage`를 렌더링하면 React Redux Context를 찾을 수 없습니다. UseCase 조회에는
+React Provider가 필요하지 않습니다. Hook을 React 컴포넌트 렌더링 밖에서 직접 호출하는 것은 여전히
+허용되지 않습니다.
 
 ## Awilix DI 컨테이너 이해하기
 
@@ -220,23 +233,24 @@ DI 라이브러리를 사용해도 구현체 등록 자체는 필요합니다. �
 createAppContainer()
   → registerRepositories()
   → registerUseCases()
-  → registerAppServices()
+  → registerExternalServices()
   → PROXY 방식으로 의존성 해석
   → 앱 컨테이너 안에서 singleton 재사용
-  → appServices facade 한 번 resolve
-  → createAppStore(appServices)
+  → appContainer 모듈이 root container 한 번 보관
+  → ViewModel이 필요한 UseCase를 이름으로 resolve
 ```
 
-컨테이너 조립과 등록은 `app/di`에만 존재하고, `app/services.ts`는 공개 facade 역할만 합니다.
-ViewModel과 Domain은 Awilix를 import하거나 `container.resolve()`를 호출하지 않습니다. 따라서 DI
-라이브러리를 다른 구현으로 바꾸더라도 화면·UseCase·Repository 계약은 영향을 받지 않습니다.
+컨테이너 조립과 등록은 `app/di`에 있고, `app/appContainer.ts`가 GetIt 같은 앱 단위 Service Locator를
+공개합니다. ViewModel은 필요한 UseCase나 외부 함수만 resolve하고 Repository는 직접 조회하지 않습니다.
+Domain은 Awilix를 import하지 않으므로 UseCase·Repository 계약은 컨테이너 구현과 분리됩니다.
 
 등록 책임은 다음과 같이 분리합니다.
 
 - `registerRepositories.ts`: Data Layer Repository 구현체
 - `registerUseCases.ts`: Domain UseCase와 Repository 연결
-- `registerAppServices.ts`: 외부 서비스와 Redux Thunk용 `AppServices` facade
+- `registerExternalServices.ts`: Health처럼 UseCase가 아닌 외부 API 기능
 - `container.ts`: 위 등록 모듈을 하나의 컨테이너로 조립
+- `appContainer.ts`: 조립한 컨테이너를 앱 전체에서 한 번만 생성하는 Service Locator
 
 현재 정책은 다음과 같습니다.
 
@@ -244,7 +258,8 @@ ViewModel과 Domain은 Awilix를 import하거나 `container.resolve()`를 호출
 - 수명주기 오류를 조기에 찾도록 Awilix `strict` 모드를 사용합니다.
 - 상태가 없는 Repository·UseCase는 앱 컨테이너 안에서 singleton으로 관리합니다.
 - 요청별 `AbortController`, 폼 상태와 Redux Store는 컨테이너에 등록하지 않습니다.
-- 테스트는 전역 컨테이너를 수정하지 않고 매번 새 컨테이너 또는 plain `AppServices` Fake를 사용합니다.
+- ViewModel은 UseCase·외부 함수만 resolve하며 Repository 구현체를 직접 조회하지 않습니다.
+- 테스트는 전역 컨테이너를 수정하지 않고 매번 새 컨테이너 또는 plain Fake UseCase를 사용합니다.
 - 현재는 정리할 외부 자원이 없으며, WebSocket·Worker 같은 disposable 서비스를 추가할 때는 컨테이너
   handle을 앱 수명 동안 보관하고 종료 시 `container.dispose()`를 호출합니다.
 
@@ -262,11 +277,11 @@ SampleItemPage
       │    └─ 입력값과 입력 오류 관리
       ├─ React local state
       │    └─ 로딩·성공·실패 상태 관리
-      └─ prepare 안의 Redux Thunk
-           └─ AppServices.prepareSampleItem 실행
+      └─ appContainer.resolve('prepareSampleItemUseCase')
+           └─ PrepareSampleItemUseCase.execute 직접 실행
 ```
 
-View는 `useForm`, Thunk, 요청 상태를 직접 조립하지 않고 ViewModel이 반환한 값만 사용합니다.
+View는 `useForm`, 서비스 호출, 요청 상태를 직접 조립하지 않고 ViewModel이 반환한 값만 사용합니다.
 
 ```tsx
 function SampleItemPage() {
@@ -286,33 +301,29 @@ function SampleItemPage() {
 요청을 보내는 핵심 코드는 ViewModel 안에 직접 보입니다.
 
 ```ts
-const preparationWorkflow: AppThunk<Promise<SampleItemPreparation>> = (
-  _dispatch,
-  _getState,
-  appServices,
-) => appServices.prepareSampleItem(item, controller.signal)
+const prepareSampleItemUseCase =
+  appContainer.resolve('prepareSampleItemUseCase')
 
-const result = await dispatch(preparationWorkflow)
+const result = await prepareSampleItemUseCase.execute(item, controller.signal)
 ```
 
-- `dispatch(preparationWorkflow)`가 Store의 Thunk middleware를 통과합니다.
-- Store에 주입된 같은 `AppServices` 객체가 세 번째 인자 `appServices`로 전달됩니다.
-- `appServices.prepareSampleItem(...)`이 UseCase와 Repository를 거쳐 Core API를 호출합니다.
+- `appContainer.resolve(...)`가 Awilix에 singleton으로 등록한 실제 UseCase 인스턴스를 가져옵니다.
+- Redux dispatch, Thunk나 React Context Provider를 거치지 않습니다.
+- `PrepareSampleItemUseCase.execute(...)`가 Repository를 거쳐 Core API를 호출합니다.
 - 성공 결과, 로딩 여부와 안전한 오류 메시지는 ViewModel의 React state에 저장됩니다.
 - 입력이 바뀌면 이전 결과를 지우고, 늦게 도착한 과거 응답은 요청 ID가 다르면 무시합니다.
 
 ViewModel이 Repository를 직접 생성하는 것은 아닙니다. 실제 Repository와 UseCase는
-`app/di`의 Awilix 컨테이너에서 한 번 해석되고, `app/services.ts`를 거쳐 `app/store.ts`가 완성된
-facade를 Thunk의 `extraArgument`로 주입합니다. 따라서 운영 Store에는 실제 구현을, 테스트 Store에는
-Fake 구현을 넣을 수 있습니다.
+`app/di`의 Awilix 컨테이너에서 연결되고, ViewModel은 `appContainer`에서 UseCase만 조회합니다. 운영
+호출은 기본 singleton을 사용하고 테스트는 Hook의 선택적 인자에 Fake UseCase를 넣습니다.
 
 ```text
 사용자 입력
   → useForm이 값과 오류 관리
   → 제출
   → ViewModel이 local state를 pending으로 변경
-  → ViewModel 안의 Thunk 실행
-  → Store가 주입한 AppServices의 UseCase·Repository 호출
+  → appContainer에서 PrepareSampleItemUseCase 조회
+  → UseCase.execute()와 Repository 실행
   → ViewModel이 성공 또는 실패를 local state에 저장
   → ViewModel이 화면용 상태로 변환
   → React가 다시 렌더링

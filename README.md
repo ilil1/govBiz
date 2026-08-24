@@ -22,13 +22,14 @@ React Web
 사용자 메시지
   → ChatPage
       → useSupportProgramChatViewModel
+          → appContainer.resolve('searchSupportProgramsUseCase')
           → ViewModel 안의 Redux Thunk
-              → 주입된 SearchSupportProgramsUseCase
+              → SearchSupportProgramsUseCase.execute
                   → SupportProgramRepository
                       → GET /api/v1/support-programs/search
                           → 공공데이터포털 기업마당 공고 조회·변환·검색
-                      → Redux Toolkit chat slice
-                          → 지원사업 카드·마감일·추천 이유 표시
+              → Redux Toolkit chat slice
+                  → 지원사업 카드·마감일·추천 이유 표시
 ```
 
 현재 화면은 다음 질문을 처리할 수 있습니다.
@@ -45,22 +46,22 @@ Frontend는 HTTP 응답을 Zod로 검증하고, 화면 이탈이나 새 대화 �
 ### 채팅 상태 관리
 
 React Hook은 사이드바·DOM 참조처럼 화면과 함께 사라지는 상태를 담당합니다. Redux Toolkit은
-메시지·검색 진행 상태를 보관하고, ViewModel 안의 Thunk가 주입된 UseCase를 직접 호출해 검색 순서를
-제어합니다. Health와 SampleItem도 ViewModel Hook 안의 Thunk가 주입된 서비스를 직접 호출하고,
-로딩·성공·실패 상태는 해당 Hook이 관리합니다. 검색 중 중복 전송을 막고, 새 대화를 시작한 뒤 도착한
-이전 응답은 요청 ID를 비교해 무시합니다.
+메시지·검색 진행 상태를 보관하고, ViewModel은 전역 `appContainer`에서 검색 UseCase를 직접 조회한 뒤
+Thunk 안에서 검색 순서를 제어합니다. Health와 SampleItem도 같은 Service Locator에서 필요한 외부 함수와
+UseCase를 직접 조회하며, 로딩·성공·실패 상태는 해당 Hook이 관리합니다. 검색 중 중복 전송을 막고, 새
+대화를 시작한 뒤 도착한 이전 응답은 요청 ID를 비교해 무시합니다.
 
 Repository와 UseCase의 생성·연결·앱 단위 singleton 수명주기는 Awilix 컨테이너가 관리합니다.
-컨테이너 자체를 ViewModel에 노출하지 않고, 컨테이너가 완성한 `AppServices`만 Redux Thunk에
-주입합니다. DI 등록은 `frontend/src/app/di`에서 Repository, UseCase, AppServices 역할별 모듈로
-분리해 관리합니다.
+`frontend/src/app/appContainer.ts`가 GetIt처럼 하나의 root container를 Service Locator로 공개하고,
+ViewModel은 Repository가 아니라 필요한 UseCase만 resolve합니다. DI 등록은 `frontend/src/app/di`에서
+Repository, UseCase와 외부 서비스 역할별 모듈로 분리해 관리합니다.
 
 현재는 대화와 검색 결과를 브라우저 메모리에 보관합니다. Core API는 필요할 때 외부 공고를 조회하고
 한 시간 동안 메모리에 캐시하며, 갱신 실패 시 최대 24시간 이내의 직전 데이터로 검색을 이어갑니다.
 운영 전에는 메시지 보관 한도·서버 저장과 호출량·영속 캐시 정책을 추가합니다.
 현재 구현 평가와 구체적인 확장 원칙은
 [Frontend 상태 관리 설계](frontend/README.md#상태-관리-설계와-확장-원칙)와
-[Provider에서 ViewModel까지 Store 전달](frontend/README.md#redux-provider에서-viewmodel까지-store-전달)을
+[Provider와 Service Locator에서 ViewModel까지 전달](frontend/README.md#redux-provider와-service-locator에서-viewmodel까지-전달)을
 참고하세요.
 
 ## 포함한 기반

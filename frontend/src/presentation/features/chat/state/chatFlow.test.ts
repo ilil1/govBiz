@@ -10,9 +10,9 @@ import { Provider } from 'react-redux'
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { AppServices } from '../../../../app/services'
 import { createAppStore } from '../../../../app/store'
 import { supportPrograms } from '../../../../data/fixtures/supportPrograms'
+import type { SearchSupportProgramsUseCase } from '../../../../domain/usecases/SearchSupportProgramsUseCase'
 import { useSupportProgramChatViewModel } from '../viewmodel/useSupportProgramChatViewModel'
 import { draftChanged } from './chatSlice'
 
@@ -24,8 +24,8 @@ describe('Redux chat flow', () => {
       query: '서울 AI',
       programs: [supportPrograms[0]],
     })
-    const store = createAppStore(createTestServices(execute))
-    const { result } = renderChatViewModel(store)
+    const store = createAppStore()
+    const { result } = renderChatViewModel(store, createSearchUseCase(execute))
 
     act(() => store.dispatch(draftChanged('서울 AI')))
     await act(async () => result.current.submitMessage())
@@ -44,8 +44,8 @@ describe('Redux chat flow', () => {
   it('does not start a duplicate search while the first request is pending', async () => {
     const pending = deferredSearchResult()
     const execute = vi.fn().mockReturnValue(pending.promise)
-    const store = createAppStore(createTestServices(execute))
-    const { result } = renderChatViewModel(store)
+    const store = createAppStore()
+    const { result } = renderChatViewModel(store, createSearchUseCase(execute))
 
     act(() => store.dispatch(draftChanged('수출')))
     let firstSearch!: Promise<void>
@@ -68,8 +68,8 @@ describe('Redux chat flow', () => {
       requestSignal = signal
       return pending.promise
     })
-    const store = createAppStore(createTestServices(execute))
-    const { result } = renderChatViewModel(store)
+    const store = createAppStore()
+    const { result } = renderChatViewModel(store, createSearchUseCase(execute))
 
     act(() => store.dispatch(draftChanged('제조')))
     let search!: Promise<void>
@@ -95,8 +95,8 @@ describe('Redux chat flow', () => {
       firstSignal = signal
       return firstPending.promise
     })
-    const store = createAppStore(createTestServices(execute))
-    const { result } = renderChatViewModel(store)
+    const store = createAppStore()
+    const { result } = renderChatViewModel(store, createSearchUseCase(execute))
 
     act(() => store.dispatch(draftChanged('서울')))
     let firstSearch!: Promise<void>
@@ -122,8 +122,8 @@ describe('Redux chat flow', () => {
 
   it('stores a safe error when the search service fails', async () => {
     const execute = vi.fn().mockRejectedValue(new Error('private server detail'))
-    const store = createAppStore(createTestServices(execute))
-    const { result } = renderChatViewModel(store)
+    const store = createAppStore()
+    const { result } = renderChatViewModel(store, createSearchUseCase(execute))
 
     act(() => store.dispatch(draftChanged('서울')))
     await act(async () => result.current.submitMessage())
@@ -141,8 +141,8 @@ describe('Redux chat flow', () => {
       requestSignal = signal
       return pending.promise
     })
-    const store = createAppStore(createTestServices(execute))
-    const { result, unmount } = renderChatViewModel(store)
+    const store = createAppStore()
+    const { result, unmount } = renderChatViewModel(store, createSearchUseCase(execute))
 
     act(() => store.dispatch(draftChanged('창업')))
     let search!: Promise<void>
@@ -161,8 +161,11 @@ describe('Redux chat flow', () => {
   })
 })
 
-function renderChatViewModel(store: ReturnType<typeof createAppStore>) {
-  return renderHook(() => useSupportProgramChatViewModel(), {
+function renderChatViewModel(
+  store: ReturnType<typeof createAppStore>,
+  searchUseCase: Pick<SearchSupportProgramsUseCase, 'execute'>,
+) {
+  return renderHook(() => useSupportProgramChatViewModel(searchUseCase), {
     wrapper: createWrapper(store),
   })
 }
@@ -175,22 +178,14 @@ function createWrapper(store: ReturnType<typeof createAppStore>) {
   }
 }
 
-function createTestServices(
-  execute: AppServices['searchSupportPrograms']['execute'],
-): AppServices {
-  return {
-    async fetchCoreApiHealth() {
-      throw new Error('not used')
-    },
-    async prepareSampleItem() {
-      throw new Error('not used')
-    },
-    searchSupportPrograms: { execute },
-  }
+function createSearchUseCase(
+  execute: SearchSupportProgramsUseCase['execute'],
+): Pick<SearchSupportProgramsUseCase, 'execute'> {
+  return { execute }
 }
 
 function deferredSearchResult() {
-  type Result = Awaited<ReturnType<AppServices['searchSupportPrograms']['execute']>>
+  type Result = Awaited<ReturnType<SearchSupportProgramsUseCase['execute']>>
   let resolve!: (result: Result) => void
   let reject!: (reason?: unknown) => void
   const promise = new Promise<Result>((complete, fail) => {

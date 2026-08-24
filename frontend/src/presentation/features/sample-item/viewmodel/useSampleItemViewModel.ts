@@ -2,14 +2,17 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
-import { useAppDispatch } from '../../../../app/hooks'
-import type { AppThunk } from '../../../../app/store'
+import { appContainer } from '../../../../app/appContainer'
 import type { SampleItem } from '../../../../domain/entities/SampleItem'
 import type { SampleItemPreparation } from '../../../../domain/entities/SampleItemPreparation'
+import type { PrepareSampleItemUseCase } from '../../../../domain/usecases/PrepareSampleItemUseCase'
 import { sampleItemFormSchema, type SampleItemFormValues } from '../validation/sampleItemFormSchema'
 
-export function useSampleItemViewModel() {
-  const dispatch = useAppDispatch()
+type SampleItemUseCase = Pick<PrepareSampleItemUseCase, 'execute'>
+
+export function useSampleItemViewModel(
+  prepareSampleItemUseCase: SampleItemUseCase = appContainer.resolve('prepareSampleItemUseCase'),
+) {
   const form = useForm<SampleItemFormValues>({
     resolver: zodResolver(sampleItemFormSchema),
     mode: 'onChange',
@@ -72,14 +75,8 @@ export function useSampleItemViewModel() {
     setPreparation(null)
     setPreparationError(null)
 
-    const preparationWorkflow: AppThunk<Promise<SampleItemPreparation>> = (
-      _thunkDispatch,
-      _getState,
-      appServices,
-    ) => appServices.prepareSampleItem(item, controller.signal)
-
     try {
-      const result = await dispatch(preparationWorkflow)
+      const result = await prepareSampleItemUseCase.execute(item, controller.signal)
       if (!isMounted.current || activeRequestId.current !== requestId) return
       setPreparation(result)
     } catch {

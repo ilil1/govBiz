@@ -20,20 +20,26 @@ React는 Core API만 호출합니다. FastAPI는 브라우저에 공개하지 �
 
 ```text
 앱 시작:
-Awilix Composition Root
-  → AppServices facade
-      → Redux Store의 Thunk extraArgument
+appContainer 모듈
+  → Awilix Composition Root 한 번 생성
+      ├→ Repository singleton
+      ├→ UseCase singleton
+      └→ 외부 API 함수
 
 요청 실행:
 View
   → ViewModel Hook
-      → typed Redux hooks
-          → ViewModel 안의 Redux Thunk
-              → injected AppServices facade
-                  → Domain UseCase
-                      → Repository interface
-                          → Fixture 또는 HTTP Repository
-          → Redux Toolkit slice·selector
+      ├→ Chat: typed Redux hooks
+      │   → appContainer.resolve(SearchSupportProgramsUseCase)
+      │   → ViewModel 안의 Redux Thunk
+      │       → Domain UseCase.execute
+      │           → Repository interface
+      │               → Fixture 또는 HTTP Repository
+      │   → Redux Toolkit slice·selector
+      └→ SampleItem·Health
+          → appContainer에서 필요한 UseCase·외부 함수 resolve
+          → 직접 실행
+          → React local state
 ```
 
 - **View**는 JSX, 접근성, 표시를 담당합니다.
@@ -44,7 +50,8 @@ View
   관리합니다.
 - **Awilix Composition Root**는 `app/di`의 역할별 등록 모듈을 하나의 객체 graph로 조립하고 앱 단위
   singleton 수명주기를 관리합니다.
-- **AppServices**는 컨테이너 전체를 노출하지 않고 ViewModel에 필요한 기능만 전달하는 facade입니다.
+- **appContainer**는 GetIt처럼 앱 전체에서 동일한 Awilix root container를 조회하는 Service
+  Locator입니다. ViewModel은 Repository가 아닌 UseCase·외부 함수 토큰만 resolve합니다.
 - **UseCase**는 화면과 HTTP 구현 사이의 업무 행동입니다.
 - **Repository interface**는 Domain이 필요한 통신을 정의합니다.
 - **Data Layer**는 Fetch, URL, Zod 응답 검증을 소유합니다.
@@ -95,10 +102,10 @@ Browser (127.0.0.1:5173)
 ## 의존성 규칙
 
 - React View는 Redux Store 또는 Data Layer를 직접 호출하지 않고 ViewModel을 사용합니다.
-- ViewModel의 Redux Thunk는 구체 Repository를 생성하지 않고 AppServices에서 필요한 의존성을
-  주입받습니다.
-- Awilix 컨테이너와 `container.resolve()`는 `app/di` Composition Root와 `app/services.ts` 공개
-  facade 밖으로 노출하지 않습니다.
+- ViewModel은 전역 `appContainer`에서 필요한 UseCase나 외부 API 함수만 resolve하고, Repository를
+  직접 resolve하거나 생성하지 않습니다.
+- `createAppContainer()`는 운영 코드에서 `app/appContainer.ts`만 호출합니다. 테스트는 격리된 새
+  컨테이너를 만들 수 있습니다.
 - Core API는 FastAPI 전송 DTO를 브라우저에 그대로 노출하지 않습니다.
 - FastAPI는 Core API 소스 코드를 import하거나 Core API 데이터 저장소를 수정하지 않습니다.
 - 공공데이터포털 인증키는 Core API 환경변수에만 주입하고 Frontend bundle·응답·로그에 노출하지

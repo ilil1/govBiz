@@ -5,11 +5,26 @@ import { supportPrograms } from '../data/fixtures/supportPrograms'
 import type { SampleItem } from '../domain/entities/SampleItem'
 import type { SampleItemRepository } from '../domain/repositories/SampleItemRepository'
 import type { SupportProgramRepository } from '../domain/repositories/SupportProgramRepository'
+import { PrepareSampleItemUseCase } from '../domain/usecases/PrepareSampleItemUseCase'
+import { SearchSupportProgramsUseCase } from '../domain/usecases/SearchSupportProgramsUseCase'
+import { appContainer } from './appContainer'
 import { createAppContainer } from './di/container'
 
-describe('Awilix application container', () => {
+describe('Awilix application container and Service Locator', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
+  })
+
+  it('resolves the same UseCase singletons from the global Service Locator', () => {
+    const prepareUseCase = appContainer.resolve('prepareSampleItemUseCase')
+    const searchUseCase = appContainer.resolve('searchSupportProgramsUseCase')
+
+    expect(prepareUseCase).toBeInstanceOf(PrepareSampleItemUseCase)
+    expect(searchUseCase).toBeInstanceOf(SearchSupportProgramsUseCase)
+    expect(appContainer.resolve('prepareSampleItemUseCase')).toBe(prepareUseCase)
+    expect(appContainer.resolve('searchSupportProgramsUseCase')).toBe(
+      searchUseCase,
+    )
   })
 
   it('resolves the production graph and executes the Core API search', async () => {
@@ -23,8 +38,8 @@ describe('Awilix application container', () => {
     vi.stubGlobal('fetch', fetchMock)
     const container = createAppContainer()
     const result = await container
-      .resolve('appServices')
-      .searchSupportPrograms.execute('서울 AI')
+      .resolve('searchSupportProgramsUseCase')
+      .execute('서울 AI')
 
     expect(result.query).toBe('서울 AI')
     expect(result.programs[0]?.id).toBe('fixture-seoul-ai-business')
@@ -35,13 +50,17 @@ describe('Awilix application container', () => {
     const first = createAppContainer()
     const second = createAppContainer()
 
-    expect(first.resolve('appServices')).toBe(first.resolve('appServices'))
+    expect(first.resolve('prepareSampleItemUseCase')).toBe(
+      first.resolve('prepareSampleItemUseCase'),
+    )
     expect(first.resolve('supportProgramRepository')).toBe(
       first.resolve('supportProgramRepository'),
     )
-    expect(first.resolve('appServices')).not.toBe(second.resolve('appServices'))
-    expect(first.resolve('searchSupportPrograms')).not.toBe(
-      second.resolve('searchSupportPrograms'),
+    expect(first.resolve('prepareSampleItemUseCase')).not.toBe(
+      second.resolve('prepareSampleItemUseCase'),
+    )
+    expect(first.resolve('searchSupportProgramsUseCase')).not.toBe(
+      second.resolve('searchSupportProgramsUseCase'),
     )
   })
 
@@ -51,7 +70,9 @@ describe('Awilix application container', () => {
     const container = createAppContainer()
     container.register({ supportProgramRepository: asValue(repository) })
 
-    const result = await container.resolve('appServices').searchSupportPrograms.execute('수출')
+    const result = await container
+      .resolve('searchSupportProgramsUseCase')
+      .execute('수출')
 
     expect(search).toHaveBeenCalledWith(
       { acceptingOnly: true, query: '수출' },
@@ -74,8 +95,8 @@ describe('Awilix application container', () => {
     const controller = new AbortController()
 
     const result = await container
-      .resolve('appServices')
-      .prepareSampleItem(item, controller.signal)
+      .resolve('prepareSampleItemUseCase')
+      .execute(item, controller.signal)
 
     expect(prepare).toHaveBeenCalledWith(item, controller.signal)
     expect(result).toEqual(preparation)
