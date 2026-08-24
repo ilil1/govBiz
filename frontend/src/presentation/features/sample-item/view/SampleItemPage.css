@@ -4,6 +4,27 @@
   padding: 4rem 0;
 }
 
+.sample-back-button {
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+  margin: 0 0 1.5rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid #d8e0f3;
+  border-radius: 0.7rem;
+  color: #43527a;
+  background: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sample-back-button:hover {
+  border-color: #3664d8;
+  color: #2857d0;
+}
+
 .sample-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);

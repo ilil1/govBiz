@@ -7,7 +7,11 @@ import {
 } from '../viewmodel/useSupportProgramChatViewModel'
 import './ChatPage.css'
 
-export function ChatPage() {
+type ChatPageProps = {
+  onOpenSampleItem: () => void
+}
+
+export function ChatPage({ onOpenSampleItem }: ChatPageProps) {
   const {
     conversationCount,
     draft,
@@ -61,9 +65,14 @@ export function ChatPage() {
           </div>
         </div>
 
-        <button className="new-chat-button" onClick={handleStartNewConversation}>
-          <span aria-hidden="true">＋</span> 새 대화 시작
-        </button>
+        <div className="sidebar-actions">
+          <button className="new-chat-button" type="button" onClick={handleStartNewConversation}>
+            <span aria-hidden="true">＋</span> 새 대화 시작
+          </button>
+          <button className="sample-page-button" type="button" onClick={onOpenSampleItem}>
+            <span aria-hidden="true">▦</span> ViewModel 구조 예제
+          </button>
+        </div>
 
         <div className="sidebar-section">
           <p className="sidebar-label">인기 질문</p>

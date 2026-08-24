@@ -39,10 +39,15 @@
 .brand-lockup strong { font-size: 1.12rem; letter-spacing: -0.04em; }
 .brand-lockup span { margin-top: 0.2rem; color: #a7b1d4; font-size: 0.72rem; }
 
-.new-chat-button, .sidebar-prompt, .suggestion-list button, .program-actions button {
+.new-chat-button, .sample-page-button, .sidebar-prompt, .suggestion-list button, .program-actions button {
   border: 0;
   font: inherit;
   cursor: pointer;
+}
+
+.sidebar-actions {
+  display: grid;
+  gap: 0.6rem;
 }
 
 .new-chat-button {
@@ -56,6 +61,20 @@
 }
 
 .new-chat-button span { margin-right: 0.45rem; font-size: 1.2rem; vertical-align: -0.05em; }
+.sample-page-button {
+  padding: 0.78rem 1rem;
+  border: 1px solid rgb(200 208 235 / 18%);
+  border-radius: 0.85rem;
+  color: #d9dff4;
+  background: rgb(113 128 197 / 12%);
+  font-weight: 700;
+  text-align: left;
+}
+.sample-page-button:hover {
+  color: #fff;
+  background: rgb(113 128 197 / 28%);
+}
+.sample-page-button span { margin-right: 0.45rem; }
 .sidebar-section { display: grid; gap: 0.5rem; }
 .sidebar-label { margin: 0 0 0.25rem; color: #8995bd; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
 

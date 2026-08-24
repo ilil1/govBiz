@@ -3,7 +3,11 @@ import './SampleItemPage.css'
 import { CoreApiConnectionStatus } from '../../../shared/core-api-status/CoreApiConnectionStatus'
 import { useSampleItemViewModel } from '../viewmodel/useSampleItemViewModel'
 
-export function SampleItemPage() {
+type SampleItemPageProps = {
+  onBackToChat: () => void
+}
+
+export function SampleItemPage({ onBackToChat }: SampleItemPageProps) {
   const {
     errors,
     isPreparing,
@@ -16,6 +20,10 @@ export function SampleItemPage() {
 
   return (
     <main className="sample-shell">
+      <button className="sample-back-button" type="button" onClick={onBackToChat}>
+        <span aria-hidden="true">←</span> 지원사업 채팅으로 돌아가기
+      </button>
+
       <section className="sample-hero" aria-label="GovBiz 구조 예제 소개">
         <div>
           <p className="eyebrow">GovBiz Architecture Example</p>
