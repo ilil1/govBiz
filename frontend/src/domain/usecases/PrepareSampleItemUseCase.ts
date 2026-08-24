@@ -1,11 +1,16 @@
+import type { SampleItem } from '../entities/SampleItem'
 import type { SampleItemPreparation } from '../entities/SampleItemPreparation'
-import type { PrepareSampleItemCommand, SampleItemRepository } from '../repositories/SampleItemRepository'
+import type { SampleItemRepository } from '../repositories/SampleItemRepository'
 
-/** UseCase는 HTTP 구현을 모르고 Repository port만 사용합니다. */
-export function prepareSampleItem(
-  repository: SampleItemRepository,
-  command: PrepareSampleItemCommand,
-  signal?: AbortSignal,
-): Promise<SampleItemPreparation> {
-  return repository.prepare(command, signal)
+/** Repository는 생성할 때 주입하고, 실행할 때는 처리할 항목만 받습니다. */
+export class PrepareSampleItemUseCase {
+  private readonly repository: SampleItemRepository
+
+  constructor(repository: SampleItemRepository) {
+    this.repository = repository
+  }
+
+  execute(item: SampleItem, signal?: AbortSignal): Promise<SampleItemPreparation> {
+    return this.repository.prepare(item, signal)
+  }
 }

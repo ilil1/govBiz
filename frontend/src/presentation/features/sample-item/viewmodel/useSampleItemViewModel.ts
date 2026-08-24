@@ -76,7 +76,7 @@ export function useSampleItemViewModel() {
       _thunkDispatch,
       _getState,
       appServices,
-    ) => appServices.prepareSampleItem({ item }, controller.signal)
+    ) => appServices.prepareSampleItem(item, controller.signal)
 
     try {
       const result = await dispatch(preparationWorkflow)

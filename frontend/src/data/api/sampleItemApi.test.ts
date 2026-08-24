@@ -1,19 +1,17 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { PrepareSampleItemCommand } from '../../domain/repositories/SampleItemRepository'
+import type { SampleItem } from '../../domain/entities/SampleItem'
 import { SampleItemApiError, prepareSampleItemApi } from './sampleItemApi'
 
-const command: PrepareSampleItemCommand = {
-  item: {
-    name: 'Example item',
-    category: 'BASIC',
-    note: 'Demonstrates a typed API boundary.',
-  },
+const item: SampleItem = {
+  name: 'Example item',
+  category: 'BASIC',
+  note: 'Demonstrates a typed API boundary.',
 }
 
 const preparationResponse = {
   phase: 'READY_FOR_PROCESSING',
-  item: command.item,
+  item,
   processing: {
     status: 'NOT_STARTED',
   },
@@ -24,12 +22,12 @@ afterEach(() => {
 })
 
 describe('prepareSampleItemApi', () => {
-  it('posts the typed sample command and validates the preparation response', async () => {
+  it('posts the sample item and validates the preparation response', async () => {
     const controller = new AbortController()
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(preparationResponse))
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(prepareSampleItemApi(command, controller.signal)).resolves.toEqual(
+    await expect(prepareSampleItemApi(item, controller.signal)).resolves.toEqual(
       preparationResponse,
     )
 
@@ -43,7 +41,7 @@ describe('prepareSampleItemApi', () => {
       },
       signal: controller.signal,
     })
-    expect(JSON.parse(String(init.body))).toEqual(command)
+    expect(JSON.parse(String(init.body))).toEqual({ item })
   })
 
   it('rejects a response that violates the typed API contract', async () => {
@@ -53,13 +51,13 @@ describe('prepareSampleItemApi', () => {
     }))
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(prepareSampleItemApi(command)).rejects.toThrow()
+    await expect(prepareSampleItemApi(item)).rejects.toThrow()
   })
 
   it('turns a non-success HTTP response into an API boundary error', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 400 })))
 
-    await expect(prepareSampleItemApi(command)).rejects.toBeInstanceOf(SampleItemApiError)
+    await expect(prepareSampleItemApi(item)).rejects.toBeInstanceOf(SampleItemApiError)
   })
 })
 

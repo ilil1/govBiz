@@ -290,7 +290,7 @@ const preparationWorkflow: AppThunk<Promise<SampleItemPreparation>> = (
   _dispatch,
   _getState,
   appServices,
-) => appServices.prepareSampleItem({ item })
+) => appServices.prepareSampleItem(item, controller.signal)
 
 const result = await dispatch(preparationWorkflow)
 ```

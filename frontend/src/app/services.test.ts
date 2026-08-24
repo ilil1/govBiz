@@ -2,6 +2,8 @@ import { asValue } from 'awilix/browser'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { supportPrograms } from '../data/fixtures/supportPrograms'
+import type { SampleItem } from '../domain/entities/SampleItem'
+import type { SampleItemRepository } from '../domain/repositories/SampleItemRepository'
 import type { SupportProgramRepository } from '../domain/repositories/SupportProgramRepository'
 import { createAppContainer } from './di/container'
 
@@ -56,5 +58,26 @@ describe('Awilix application container', () => {
       undefined,
     )
     expect(result.programs).toEqual([supportPrograms[3]])
+  })
+
+  it('injects the sample repository and executes with one item argument', async () => {
+    const item: SampleItem = { category: null, name: '예제', note: null }
+    const preparation = {
+      item,
+      phase: 'READY_FOR_PROCESSING' as const,
+      processing: { status: 'NOT_STARTED' as const },
+    }
+    const prepare = vi.fn().mockResolvedValue(preparation)
+    const repository: SampleItemRepository = { prepare }
+    const container = createAppContainer()
+    container.register({ sampleItemRepository: asValue(repository) })
+    const controller = new AbortController()
+
+    const result = await container
+      .resolve('appServices')
+      .prepareSampleItem(item, controller.signal)
+
+    expect(prepare).toHaveBeenCalledWith(item, controller.signal)
+    expect(result).toEqual(preparation)
   })
 })

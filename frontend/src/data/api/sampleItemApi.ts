@@ -1,4 +1,4 @@
-import type { PrepareSampleItemCommand } from '../../domain/repositories/SampleItemRepository'
+import type { SampleItem } from '../../domain/entities/SampleItem'
 import { getCoreApiBaseUrl } from '../core-api/coreApiConfig'
 import {
   sampleItemPreparationDtoSchema,
@@ -16,7 +16,7 @@ export class SampleItemApiError extends Error {
 
 /** 외부 JSON 응답을 Zod로 검증하는 Data Layer의 HTTP 경계입니다. */
 export async function prepareSampleItemApi(
-  command: PrepareSampleItemCommand,
+  item: SampleItem,
   signal?: AbortSignal,
 ): Promise<SampleItemPreparationDto> {
   const response = await fetch(`${getCoreApiBaseUrl()}${PREPARE_SAMPLE_ITEM_PATH}`, {
@@ -25,7 +25,7 @@ export async function prepareSampleItemApi(
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(command),
+    body: JSON.stringify({ item }),
     signal,
   })
 

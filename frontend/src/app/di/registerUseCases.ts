@@ -1,6 +1,6 @@
 import { asFunction } from 'awilix/browser'
 
-import { prepareSampleItem } from '../../domain/usecases/PrepareSampleItemUseCase'
+import { PrepareSampleItemUseCase } from '../../domain/usecases/PrepareSampleItemUseCase'
 import { SearchSupportProgramsUseCase } from '../../domain/usecases/SearchSupportProgramsUseCase'
 import type { AppContainer, AppCradle, AppServices } from './types'
 
@@ -15,7 +15,8 @@ export function registerUseCases(container: AppContainer) {
 function createPrepareSampleItem({
   sampleItemRepository,
 }: Pick<AppCradle, 'sampleItemRepository'>): AppServices['prepareSampleItem'] {
-  return (command, signal) => prepareSampleItem(sampleItemRepository, command, signal)
+  const useCase = new PrepareSampleItemUseCase(sampleItemRepository)
+  return (item, signal) => useCase.execute(item, signal)
 }
 
 function createSearchSupportPrograms({
