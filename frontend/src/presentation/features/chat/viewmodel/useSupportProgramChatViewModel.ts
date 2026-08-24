@@ -26,9 +26,10 @@ export const supportProgramChatSuggestions = [
   '제조기업 R&D 사업을 찾아줘',
 ]
 
+type SupportProgramSearchUseCase = Pick<SearchSupportProgramsUseCase, 'execute'>
+
 export function useSupportProgramChatViewModel(
-  searchSupportProgramsUseCase: Pick<SearchSupportProgramsUseCase, 'execute'> =
-    appContainer.resolve('searchSupportProgramsUseCase'),
+  searchSupportProgramsUseCase: SupportProgramSearchUseCase = appContainer.resolve('searchSupportProgramsUseCase')
 ) {
   const dispatchToStore = useAppDispatch()
   const activeSearchRequest = useRef<{
