@@ -93,6 +93,157 @@ HTTP 요청
 → 동일한 SearchIntentResponse
 ```
 
+## Python 파일의 수직 실행 흐름
+
+Python 파일이 요청마다 위에서 아래로 전부 다시 실행되는 것은 아닙니다. 서버 시작 시 설정과 객체를
+한 번 조립하고, 요청이 들어오면 이미 만들어 둔 객체를 순서대로 호출합니다.
+
+### 1. 서버 시작 시 한 번 실행되는 흐름
+
+Docker 컨테이너는 `python -m uvicorn app.main:app`으로 시작합니다. `app.main:app`은
+`app/main.py` 모듈에서 이름이 `app`인 FastAPI 객체를 가져오라는 뜻입니다.
+
+```text
+Dockerfile CMD
+→ Uvicorn이 app/main.py import
+→ main.py의 app = create_app()
+→ config.py의 Settings.from_environment()
+   → LLM_PROVIDER, OPENAI_API_KEY, OPENAI_MODEL, timeout 읽기
+→ bootstrap.py의 build_application_container(settings)
+   ├→ OpenAI 활성화
+   │   → AsyncOpenAI 생성
+   │   → OpenAIResponsesModel 생성
+   │   → SearchIntentAgent 생성
+   │   → SearchIntentAnalysisService(agent) 생성
+   └→ OpenAI 비활성화
+       → SearchIntentAnalysisService(None) 생성
+→ main.py가 container를 FastAPI application.state에 저장
+→ search_intents router 등록
+→ HTTP 요청 대기
+```
+
+조립이 끝난 뒤 메모리에 존재하는 객체 관계는 다음과 같습니다.
+
+```text
+FastAPI application
+└→ state.container: ApplicationContainer
+    ├→ search_intent_service: SearchIntentAnalysisService
+    │   └→ _agent: SearchIntentAgent 또는 None
+    │       └→ _agent: OpenAI Agents SDK의 Agent
+    └→ openai_client: AsyncOpenAI 또는 None
+```
+
+바깥쪽 `SearchIntentAgent`는 GovBiz가 만든 wrapper이고, 그 안쪽 `_agent`는 OpenAI Agents SDK가
+제공하는 `Agent` 객체입니다. `ApplicationContainer`와 그 안의 객체는 요청마다 새로 만들지 않고
+서버가 실행되는 동안 재사용합니다.
+
+### 2. 검색 요청의 성공 흐름
+
+Core API가 다음 내부 요청을 보냈다고 가정합니다.
+
+```json
+{
+  "query": "서울에서 AI 스타트업 지원사업 찾아줘",
+  "acceptingOnly": true
+}
+```
+
+실제 호출 순서는 다음과 같습니다.
+
+```text
+POST /internal/v1/search-intents/analyze
+→ api/search_intents.py의 analyze_search_intent()
+→ models.py의 SearchIntentRequest
+   → query 길이·acceptingOnly 타입·추가 필드 검증
+→ get_search_intent_service()
+   → request.app.state.container에서 이미 만든 service 조회
+→ service.py의 SearchIntentAnalysisService.analyze(request)
+→ agent.py의 SearchIntentAgent.analyze(query)
+→ OpenAI Agents SDK Runner.run(max_turns=1)
+   ├→ prompt.py의 SEARCH_INTENT_INSTRUCTIONS 사용
+   ├→ OpenAIResponsesModel이 AsyncOpenAI로 모델 호출
+   └→ models.py의 ExtractedSearchIntent로 출력 검증
+→ agent.py가 검증된 ExtractedSearchIntent 반환
+→ service.py가 SearchIntentResponse 생성
+→ FastAPI가 camelCase JSON으로 직렬화
+→ Core API에 반환
+```
+
+`models.py`는 별도의 업무 함수를 실행하는 파일이라기보다 요청과 AI 출력이 약속된 형식인지 검사하는
+양식입니다. FastAPI와 Agents SDK가 모델 클래스를 사용하면서 Pydantic validator를 자동 실행합니다.
+
+### 3. Agent가 없거나 실패하는 흐름
+
+`LLM_PROVIDER`가 `openai`가 아니거나 API key가 없으면 `bootstrap.py`가 Agent를 만들지 않습니다.
+이때 Service는 OpenAI를 호출하지 않고 바로 규칙 분석을 실행합니다.
+
+```text
+api/search_intents.py
+→ service.py
+→ _agent is None
+→ rules.py의 extract_with_rules(query)
+→ models.py의 ExtractedSearchIntent
+→ service.py의 SearchIntentResponse
+→ Core API
+```
+
+Agent가 존재하더라도 timeout, 모델 거부, OpenAI 오류 또는 structured output 검증 실패가 발생할 수
+있습니다. `agent.py`는 이 오류를 `port.py`의 `SearchIntentAnalysisError`로 변환하고, `service.py`가
+그 경계 오류만 잡아서 같은 규칙 분석으로 전환합니다.
+
+```text
+api/search_intents.py
+→ service.py
+→ agent.py
+→ OpenAI 또는 output 검증 실패
+→ SearchIntentAnalysisError
+→ service.py가 오류를 잡음
+→ rules.py의 extract_with_rules(query)
+→ analysisMode=RULE_BASED_FALLBACK
+→ Core API
+```
+
+Agent 설정 오류나 프로그래밍 오류까지 전부 fallback으로 숨기지는 않습니다. 공개 검색을 계속할 수
+있는 모델·통신 경계 오류만 안전하게 축소합니다.
+
+### 4. 파일별 호출 관계
+
+| 파일 | 누가 사용하거나 호출하는가 | 실행 책임 |
+|---|---|---|
+| `main.py` | Uvicorn | FastAPI 생성, container 저장, router와 lifespan 등록 |
+| `config.py` | `main.py` | 환경변수를 `Settings`로 변환 |
+| `bootstrap.py` | `main.py` | OpenAI client, model, Agent, Service 조립 |
+| `api/search_intents.py` | FastAPI | HTTP 요청 수신, Service 조회와 호출 |
+| `service.py` | API router | Agent 우선 실행과 규칙 fallback 전환 |
+| `agent.py` | Service | Agents SDK `Runner.run()` 실행과 오류 경계 변환 |
+| `rules.py` | Service | OpenAI 없이 결정적으로 검색 조건 추출 |
+| `models.py` | FastAPI, Agent, Service, Rules | 요청·출력·응답 형식과 불변식 검증 |
+| `prompt.py` | `agent.py` | 모델에 전달할 instructions 제공 |
+| `port.py` | `agent.py`, `service.py`, `bootstrap.py` | 분석기 Protocol과 경계 오류 정의 |
+| `__init__.py` | Python import system | 디렉터리를 패키지로 인식하고 패키지 설명 제공 |
+
+의존성 import 방향과 실제 런타임 호출 순서는 다릅니다. 예를 들어 `models.py`는 여러 파일에서
+import되지만 HTTP 요청을 직접 받거나 OpenAI를 직접 호출하지 않습니다.
+
+### 5. 서버 종료 흐름
+
+Uvicorn이 종료되면 `main.py`가 등록한 lifespan의 `finally`가 실행됩니다.
+
+```text
+Uvicorn 종료
+→ main.py lifespan 종료
+→ ApplicationContainer.close()
+→ AsyncOpenAI.close()
+→ 프로세스 종료
+```
+
+가장 짧게 기억할 수 있는 요청 흐름은 다음 두 줄입니다.
+
+```text
+성공: HTTP → api → service → agent → OpenAI → models 검증 → service → HTTP
+대체: HTTP → api → service → agent 실패 또는 없음 → rules → service → HTTP
+```
+
 검색 의도 추출이라는 한 책임에 manager/triage/region/category agent를 따로 만들지는 않습니다.
 실제 사업 조회 tool이나 서로 다른 전문가에게 실행권을 넘기는 요구가 생길 때만 tool, handoff 또는
 추가 agent를 도입합니다.
