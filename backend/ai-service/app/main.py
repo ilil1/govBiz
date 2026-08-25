@@ -22,11 +22,11 @@ def create_app(
     )
 
     @asynccontextmanager
-    async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
+    async def lifespan(application: FastAPI) -> AsyncGenerator[None]:
         try:
             yield
         finally:
-            await container.close()
+            await application.state.container.close()
 
     application = FastAPI(
         title="GovBiz AI Service",
