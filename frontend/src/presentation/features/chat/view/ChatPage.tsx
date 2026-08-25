@@ -70,7 +70,7 @@ export function ChatPage({ onOpenSampleItem }: ChatPageProps) {
             <span aria-hidden="true">＋</span> 새 대화 시작
           </button>
           <button className="sample-page-button" type="button" onClick={onOpenSampleItem}>
-            <span aria-hidden="true">▦</span> ViewModel 구조 예제
+            <span aria-hidden="true">▦</span> 상태관리 비교 예제
           </button>
         </div>
 

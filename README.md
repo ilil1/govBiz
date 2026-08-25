@@ -58,7 +58,8 @@ OpenAI 인증·rate limit·timeout·refusal·응답 검증에 실패해도 규�
 React Hook은 사이드바·DOM 참조처럼 화면과 함께 사라지는 상태를 담당합니다. Redux Toolkit은
 메시지·검색 진행 상태를 보관하고, ViewModel은 전역 `appContainer`에서 검색 UseCase를 직접 조회한 뒤
 Thunk 안에서 검색 순서를 제어합니다. Health와 SampleItem도 같은 Service Locator에서 필요한 외부 함수와
-UseCase를 직접 조회하며, 로딩·성공·실패 상태는 해당 Hook이 관리합니다. 검색 중 중복 전송을 막고, 새
+UseCase를 직접 조회합니다. SampleItem은 React Hook과 Redux Toolkit 두 구현을 제공해 상태 수명 차이를
+비교할 수 있습니다. 검색 중 중복 전송을 막고, 새
 대화를 시작한 뒤 도착한 이전 응답은 요청 ID를 비교해 무시합니다.
 
 Repository와 UseCase의 생성·연결·앱 단위 singleton 수명주기는 Awilix 컨테이너가 관리합니다.
@@ -88,12 +89,13 @@ Repository, UseCase와 외부 서비스 역할별 모듈로 분리해 관리합�
 
 ## SampleItem 예제
 
-GovBiz에는 계층 연결을 확인할 수 있는 최소 수직 슬라이스 예제가 포함되어 있습니다.
+GovBiz에는 같은 업무 계층을 두 가지 상태 관리 방식으로 실행하는 최소 수직 슬라이스 예제가
+포함되어 있습니다.
 
 ```text
-SampleItemPage
-  → useSampleItemViewModel
-  → PrepareSampleItemUseCase
+React Hook 화면 ─┐
+                 ├→ PrepareSampleItemUseCase
+Redux 화면 ──────┘
   → SampleItemRepository
   → POST /api/v1/sample-items/prepare
   → SampleItemPreparationService
@@ -101,8 +103,10 @@ SampleItemPage
 
 `name`은 필수이고 `category`, `note`는 선택입니다. 성공 응답은 처리 시작 전의
 `READY_FOR_PROCESSING` / `NOT_STARTED` 상태만 반환합니다. 즉 실제 비동기 작업이나 영속성은
-의도적으로 포함하지 않습니다. 이 예제의 ViewModel Hook이 요청과 화면 상태를 직접 관리하는 방식은
-[SampleItem Hook 구조 설명](frontend/README.md#sampleitem-viewmodel-hook-이해하기)을 참고하세요.
+의도적으로 포함하지 않습니다. Hook 버전은 화면 이동 시 상태가 초기화되고, Redux 버전은 같은
+`Provider` 아래에서 화면을 이동해도 입력과 결과가 유지됩니다. 새로고침하면 둘 다 초기화되며 API,
+UseCase와 Repository는 완전히 동일합니다. 자세한 비교는
+[SampleItem 상태 관리 비교](frontend/README.md#sampleitem-react-hook과-redux-비교)를 참고하세요.
 
 ## 빠른 시작
 

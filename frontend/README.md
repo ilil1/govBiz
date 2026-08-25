@@ -45,7 +45,7 @@ src/
 ├── app/                                # Redux Store와 앱 단위 Awilix Service Locator
 │   └── di/                             # Repository·UseCase·외부 서비스 역할별 Awilix 등록
 ├── presentation/features/chat/         # View, 인라인 Thunk ViewModel, Redux slice·selector
-├── presentation/features/sample-item/  # 계층 연결 예제 View와 ViewModel
+├── presentation/features/sample-item/  # React Hook·Redux 비교 View, ViewModel, slice
 ├── presentation/shared/                # Core API 연결 상태 UI
 ├── domain/                             # Entity, Repository port, UseCase
 └── data/                               # Fetch API·Zod DTO·HTTP Repository와 테스트 fixture
@@ -68,8 +68,9 @@ ChatPage
 ```
 
 사이드바 열림과 DOM 스크롤처럼 화면에만 필요한 상태는 React 로컬 hook에 남깁니다. 공고 검색
-workflow는 ViewModel의 Thunk에 명시하고, 대화 상태는 Redux에 둡니다. Health와 SampleItem처럼 한
-화면에서 끝나는 요청 상태는 해당 ViewModel의 React 로컬 state가 관리합니다.
+workflow는 ViewModel의 Thunk에 명시하고, 대화 상태는 Redux에 둡니다. Health와 React Hook
+SampleItem 요청 상태는 해당 ViewModel의 로컬 state가 관리합니다. 비교용 Redux SampleItem은 같은
+요청 상태를 Store에 두어 상태 수명의 차이를 직접 보여 줍니다.
 
 ## 상태 관리 설계와 확장 원칙
 
@@ -79,8 +80,8 @@ workflow는 ViewModel의 Thunk에 명시하고, 대화 상태는 Redux에 둡니
 
 | 소유자 | 담당 상태 | 현재 예시 |
 |---|---|---|
-| React Hook | 화면과 함께 사라지는 UI·요청 상태 | 사이드바, 폼, Health·SampleItem 요청 상태 |
-| Redux Toolkit | 여러 컴포넌트가 공유하는 작업 흐름 | 입력 초안, 메시지, 검색 상태, 활성 요청 ID |
+| React Hook | 화면과 함께 사라지는 UI·요청 상태 | 사이드바, Health, Hook SampleItem |
+| Redux Toolkit | 여러 화면에서 유지할 작업 흐름 | 채팅과 Redux SampleItem 입력·요청·결과 |
 | 서버 저장소 | 새로고침 후에도 남아야 하는 장기 데이터 | 이후 추가할 전체 대화 이력과 공고 데이터 |
 
 운영 ViewModel은 전역 `appContainer`의 singleton을 사용하고, 테스트는 Hook의 선택적 의존성 인자에
@@ -121,8 +122,9 @@ Provider store={store}
    └─ ChatPage → useSupportProgramChatViewModel
 ```
 
-현재 `App`은 첫 화면으로 ChatPage만 렌더링합니다. SampleItemPage나 Health UI를 이후 같은 `App` 아래의
-라우트·화면에 연결해도 별도 Provider 없이 같은 `appContainer` singleton을 사용합니다.
+현재 `App`은 ChatPage를 첫 화면으로 렌더링하고, 상태관리 비교 화면에서 React Hook 또는 Redux
+SampleItemPage로 전환합니다. 세 화면 모두 같은 `Provider` 아래에 있어 Redux 예제의 입력과 완료
+결과는 화면 이동 후에도 유지됩니다.
 
 `main.tsx`에는 Redux Store Provider만 남습니다.
 
@@ -216,7 +218,8 @@ appContainer 모듈 로드
 → Awilix 컨테이너 한 번 생성
 → ViewModel이 필요한 토큰을 resolve
 ├─ Chat: SearchSupportProgramsUseCase + Redux Thunk
-├─ SampleItem: PrepareSampleItemUseCase 직접 실행
+├─ Hook SampleItem: PrepareSampleItemUseCase 직접 실행
+├─ Redux SampleItem: PrepareSampleItemUseCase + Redux Thunk
 └─ Health: fetchCoreApiHealth 함수 직접 실행
 ```
 
@@ -266,7 +269,24 @@ Domain은 Awilix를 import하지 않으므로 UseCase·Repository 계약은 컨�
 Awilix의 브라우저 지원·주입 방식·수명주기 규칙은
 [공식 문서](https://github.com/jeffijoe/awilix#readme)를 참고하세요.
 
-## SampleItem ViewModel Hook 이해하기
+## SampleItem React Hook과 Redux 비교
+
+두 화면은 같은 schema, Domain mapper, UseCase, Repository와 HTTP endpoint를 사용합니다. 차이는
+오직 화면 상태와 요청 상태를 어디에서 보관하고 누가 상태 전이를 기록하는지입니다.
+
+| 항목 | React Hook 버전 | Redux Toolkit 버전 |
+|---|---|---|
+| 폼 값 | React Hook Form | `state.sampleItemRedux.values` |
+| 요청 상태·결과 | ViewModel의 `useState` | `sampleItemRedux` slice |
+| 상태 전이 | ViewModel의 setter | action·reducer·selector |
+| 화면 이동 후 | 초기화 | 입력·완료 결과 유지 |
+| 새로고침 후 | 초기화 | 초기화 |
+| API·UseCase | 동일 | 동일 |
+
+`AbortController`는 직렬화할 수 없으므로 두 버전 모두 ViewModel의 `useRef`가 관리합니다. Redux
+Store에는 문자열, 폼 값, request ID와 API 성공 결과처럼 직렬화 가능한 값만 저장합니다.
+
+### React Hook ViewModel
 
 `SampleItem`은 한 페이지의 입력 폼과 한 번의 서버 요청을 ViewModel Hook으로 묶는 예제입니다.
 
@@ -333,6 +353,25 @@ ViewModel이 Repository를 직접 생성하는 것은 아닙니다. 실제 Repos
 컴포넌트가 공유하고 오래 이어지는 작업은 Redux Slice가 담당하고, 각 페이지의 입력·포커스·DOM 상태는
 React Hook에 둡니다. 따라서 SampleItem 방식과 Redux 방식은 둘 중 하나만 고르는 관계가 아니라 함께
 사용하는 관계입니다.
+
+### Redux Toolkit ViewModel
+
+```text
+ReduxSampleItemPage
+  → useReduxSampleItemViewModel
+      ├→ typed selector로 state.sampleItemRedux 구독
+      ├→ ViewModel 안의 Thunk가 getState로 최신 상태 확인
+      ├→ PrepareSampleItemUseCase.execute
+      └→ started·succeeded·failed·cancelled action
+          → sampleItemRedux reducer
+          → selector 재계산
+          → 화면 재렌더링
+```
+
+Redux 화면에서 값을 입력하고 Hook 화면이나 채팅으로 이동했다가 돌아오면 같은 Store의 입력과 성공
+결과가 남습니다. `Redux 상태 초기화` 버튼은 slice를 명시적으로 초기 상태로 되돌립니다. 이 구현은
+단순 폼도 항상 Redux에 넣으라는 권장이 아니라, 상태 공유·화면 간 유지 요구가 생겼을 때 추가되는
+비용과 동작을 비교하기 위한 예제입니다.
 
 ## 검증
 

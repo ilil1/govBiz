@@ -2,20 +2,23 @@ import './SampleItemPage.css'
 
 import { CoreApiConnectionStatus } from '../../../shared/core-api-status/CoreApiConnectionStatus'
 import { useSampleItemViewModel } from '../viewmodel/useSampleItemViewModel'
+import { SampleItemComparisonSummary, SampleItemVersionSwitch } from './SampleItemComparison'
 
 type SampleItemPageProps = {
   onBackToChat: () => void
+  onOpenReduxVersion: () => void
 }
 
-export function SampleItemPage({ onBackToChat }: SampleItemPageProps) {
+export function SampleItemPage({ onBackToChat, onOpenReduxVersion }: SampleItemPageProps) {
   const {
+    actionMessage,
     errors,
-    isPreparing,
     isReady,
     preparation,
     preparationError,
     prepare,
     registerField,
+    submitButtonLabel,
   } = useSampleItemViewModel()
 
   return (
@@ -24,17 +27,26 @@ export function SampleItemPage({ onBackToChat }: SampleItemPageProps) {
         <span aria-hidden="true">←</span> 지원사업 채팅으로 돌아가기
       </button>
 
+      <SampleItemVersionSwitch
+        activeVersion="hook"
+        onOpenHookVersion={() => undefined}
+        onOpenReduxVersion={onOpenReduxVersion}
+      />
+
       <section className="sample-hero" aria-label="GovBiz 구조 예제 소개">
         <div>
-          <p className="eyebrow">GovBiz Architecture Example</p>
+          <p className="eyebrow">React Hook Architecture Example</p>
           <h1>재사용 가능한 수직 슬라이스</h1>
           <p>
             이 예제는 React의 View·ViewModel·UseCase·Repository와 Spring Boot의
             Controller·Service·Domain을 실제 HTTP 계약으로 연결합니다.
+            폼과 요청 상태는 이 화면의 Hook이 직접 소유합니다.
           </p>
         </div>
         <CoreApiConnectionStatus />
       </section>
+
+      <SampleItemComparisonSummary activeVersion="hook" />
 
       <form className="sample-form" onSubmit={prepare}>
         <div className="form-heading">
@@ -77,18 +89,24 @@ export function SampleItemPage({ onBackToChat }: SampleItemPageProps) {
 
         <div className="form-action">
           <div>
-            <strong>{isReady ? '준비 요청을 보낼 수 있습니다.' : '이름을 입력하면 준비됩니다.'}</strong>
-            <p>성공해도 실제 비동기 처리는 시작하지 않습니다.</p>
+            <strong>{actionMessage}</strong>
+            <p>이 예제는 요청 계약만 확인하므로 실제 후속 작업은 시작하지 않습니다.</p>
           </div>
           <button type="submit" disabled={!isReady}>
-            {isPreparing ? '요청 중…' : '준비 상태 확인'}
+            {submitButtonLabel}
           </button>
         </div>
 
         {preparation ? (
           <output className="sample-result" aria-live="polite">
-            <strong>{preparation.item.name}</strong> · {preparation.phase} · 처리 상태{' '}
-            <strong>{preparation.processing.status}</strong>
+            <strong className="sample-result-title">✓ Core API 요청 성공</strong>
+            <span>
+              <strong>{preparation.item.name}</strong> 입력을 서버가 정상적으로 받았습니다.
+            </span>
+            <small>
+              phase: {preparation.phase} · processing.status: {preparation.processing.status}
+              {' '}— 실제 처리는 아직 시작하지 않은 정상 상태입니다.
+            </small>
           </output>
         ) : null}
 

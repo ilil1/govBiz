@@ -40,17 +40,23 @@ SampleItem은 실제 GovBiz 도메인이 아니라 Frontend와 Core API 계층�
 Frontend
   앱 조립: Awilix → 전역 appContainer Service Locator
   채팅: View → ViewModel이 UseCase resolve → Thunk → UseCase → Repository
-  단순 요청: View → ViewModel의 local state·UseCase resolve → UseCase → Repository
+  단순 요청 A: View → ViewModel local state → UseCase → Repository
+  단순 요청 B: View → Redux ViewModel Thunk → slice → 같은 UseCase → Repository
 
 Core API
   Controller → Service → Domain
 ```
 
-폼 입력과 한 번의 요청으로 끝나는 기능은 SampleItem처럼 React Hook Form과 ViewModel의 로컬 요청
-상태로 구성할 수 있습니다. 채팅처럼 여러 상태 전이를 직접 제어할 작업 흐름은 ViewModel 안의 Redux
-Thunk가 이미 resolve한 UseCase를 호출하고, Redux Slice가 결과 상태를 보관합니다. 두 경우 모두 실제
+폼 입력과 한 번의 요청으로 끝나는 기능은 SampleItem의 Hook 버전처럼 React Hook Form과 ViewModel의
+로컬 요청 상태로 구성할 수 있습니다. 화면을 이동해도 입력·결과를 유지하거나 여러 컴포넌트가
+공유해야 하면 Redux 버전처럼 ViewModel Thunk가 이미 resolve한 UseCase를 호출하고 Slice가 상태를
+보관합니다. 두 경우 모두 실제
 Repository는 ViewModel이 생성하거나 resolve하지 않고 UseCase 뒤에 둡니다. 테스트는 전역 컨테이너를
 바꾸지 않고 ViewModel Hook의 선택적 인자에 plain Fake UseCase를 넣습니다.
+
+두 SampleItem 화면은 같은 mapper·UseCase·Repository·HTTP 계약을 공유합니다. Redux Store에는
+AbortController, Promise, Error나 UseCase 인스턴스를 넣지 않고 직렬화 가능한 폼 값, status, request ID,
+안전한 오류 문자열과 성공 결과만 저장합니다.
 
 Awilix 등록과 조립은 `app/di`에 두고, `app/appContainer.ts`가 GetIt 같은 단일 Service Locator를
 공개합니다. ViewModel은 UseCase·외부 함수만 조회하고 Domain은 컨테이너를 알지 못합니다. 새 구현체는

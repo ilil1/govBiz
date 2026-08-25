@@ -39,17 +39,17 @@ View
       │               → Fixture 또는 HTTP Repository
       │   → Redux Toolkit slice·selector
       └→ SampleItem·Health
-          → appContainer에서 필요한 UseCase·외부 함수 resolve
-          → 직접 실행
-          → React local state
+          ├→ Hook SampleItem·Health: 직접 실행 → React local state
+          └→ Redux SampleItem: Thunk → 같은 UseCase → Redux slice·selector
 ```
 
 - **View**는 JSX, 접근성, 표시를 담당합니다.
 - **ViewModel**은 selector와 action을 화면이 사용하기 좋은 상태·행동으로 묶고, 검색 Thunk의 전체
   실행 순서를 한곳에 보여 줍니다.
-- **Redux Toolkit**은 대화 메시지·검색 조건처럼 공유할 클라이언트 상태를 관리합니다.
-- **React Hook state**는 Health와 SampleItem처럼 한 화면에서 끝나는 요청의 로딩·성공·실패 상태를
-  관리합니다.
+- **Redux Toolkit**은 대화 메시지·검색 조건과 Redux SampleItem처럼 여러 화면에서 유지할 클라이언트
+  상태를 관리합니다.
+- **React Hook state**는 Health와 Hook SampleItem처럼 한 화면에서 끝나는 요청의 로딩·성공·실패
+  상태를 관리합니다.
 - **Awilix Composition Root**는 `app/di`의 역할별 등록 모듈을 하나의 객체 graph로 조립하고 앱 단위
   singleton 수명주기를 관리합니다.
 - **appContainer**는 GetIt처럼 앱 전체에서 동일한 Awilix root container를 조회하는 Service
@@ -58,7 +58,9 @@ View
 - **Repository interface**는 Domain이 필요한 통신을 정의합니다.
 - **Data Layer**는 Fetch, URL, Zod 응답 검증을 소유합니다.
 
-사이드바 열림과 DOM 참조 같은 화면 전용 상태는 Redux에 넣지 않고 React 로컬 hook에 둡니다.
+SampleItem의 두 화면은 같은 UseCase·Repository·endpoint를 사용하며 상태 보관 위치만 다릅니다.
+Hook 화면은 이탈 시 초기화되고 Redux 화면의 완료 상태는 같은 Store가 유지됩니다. 둘 다 새로고침
+후에는 초기화됩니다. 사이드바 열림과 DOM 참조 같은 화면 전용 상태는 Redux에 넣지 않고 React 로컬 hook에 둡니다.
 Health 조회처럼 업무 도메인이 아닌 연결 상태는 UseCase·Repository를 억지로 거치지 않지만, 서버
 요청과 취소 lifecycle은 해당 Hook이 직접 관리합니다.
 

@@ -38,6 +38,7 @@ describe('useSampleItemViewModel', () => {
       await pending.promise
     })
     expect(screen.getByTestId('preparation').textContent).toBe('예제')
+    expect(screen.getByTestId('action-message').textContent).toBe('Core API 요청이 성공했습니다.')
     expect(screen.getByTestId('status').textContent).toBe('idle')
   })
 
@@ -96,6 +97,40 @@ describe('useSampleItemViewModel', () => {
     pending.resolve(successfulPreparation('재시도'))
     await pending.promise
   })
+
+  it('retries the same valid input after a failure', async () => {
+    const retryPending = deferred<SampleItemPreparation>()
+    const prepareSampleItem = vi.fn()
+      .mockRejectedValueOnce(new Error('temporary connection failure'))
+      .mockImplementationOnce((_item: SampleItem, _signal?: AbortSignal) => retryPending.promise)
+    render(<TestHarness useCase={createPrepareSampleItemUseCase(prepareSampleItem)} />)
+
+    fireEvent.change(screen.getByLabelText('이름'), { target: { value: '같은 입력' } })
+    await waitFor(() => expect(submitButton().disabled).toBe(false))
+    fireEvent.submit(screen.getByRole('form'))
+
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('다시 요청'))
+    expect(submitButton().disabled).toBe(false)
+    expect(submitButton().textContent).toBe('다시 요청')
+
+    fireEvent.submit(screen.getByRole('form'))
+
+    await waitFor(() => expect(prepareSampleItem).toHaveBeenCalledTimes(2))
+    expect(screen.getByTestId('status').textContent).toBe('pending')
+    expect(submitButton().textContent).toBe('다시 요청 중…')
+    expect(prepareSampleItem.mock.calls[1][0]).toEqual(prepareSampleItem.mock.calls[0][0])
+    expect(prepareSampleItem.mock.calls[1][1]).not.toBe(prepareSampleItem.mock.calls[0][1])
+
+    await act(async () => {
+      retryPending.resolve(successfulPreparation('같은 입력'))
+      await retryPending.promise
+    })
+
+    expect(screen.getByTestId('preparation').textContent).toBe('같은 입력')
+    expect(screen.getByTestId('action-message').textContent).toBe('Core API 요청이 성공했습니다.')
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(submitButton().textContent).toBe('다시 확인')
+  })
 })
 
 function TestHarness({
@@ -113,7 +148,12 @@ function TestHarness({
     <form aria-label="sample form" onSubmit={submit}>
       <input aria-label="이름" {...viewModel.registerField('name')} />
       <textarea aria-label="메모" {...viewModel.registerField('note')} />
-      <button type="submit" disabled={!viewModel.isReady}>요청</button>
+      <button type="submit" disabled={!viewModel.isReady}>
+        {viewModel.submitButtonLabel === '준비 상태 확인'
+          ? '요청'
+          : viewModel.submitButtonLabel}
+      </button>
+      <span data-testid="action-message">{viewModel.actionMessage}</span>
       <span data-testid="status">{viewModel.isPreparing ? 'pending' : 'idle'}</span>
       {viewModel.preparation ? (
         <output data-testid="preparation">{viewModel.preparation.item.name}</output>

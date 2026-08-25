@@ -4,6 +4,9 @@ SampleItem은 GovBiz의 Frontend·Core API 계층 연결을 보여 주는 최소
 도메인을 추가할 때는 이
 계약을 그대로 확장하기보다, 필요한 상태와 필드를 새로 정의하세요.
 
+Frontend의 React Hook 예제와 Redux Toolkit 예제는 모두 이 endpoint를 사용합니다. 두 화면은 상태
+수명만 다르며 요청·응답 계약과 Domain 변환 규칙은 동일합니다.
+
 ## Endpoint
 
 ```text

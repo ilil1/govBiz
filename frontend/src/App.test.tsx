@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Provider } from 'react-redux'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import App from './App'
 import { createAppStore } from './app/store'
@@ -11,8 +11,29 @@ vi.mock('./presentation/shared/core-api-status/CoreApiConnectionStatus', () => (
   CoreApiConnectionStatus: () => null,
 }))
 
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+})
+
 describe('App navigation', () => {
-  it('채팅과 ViewModel 구조 예제 화면을 오갈 수 있다', () => {
+  it('두 예제의 상태 수명과 Redux의 production DI·HTTP 흐름을 비교한다', async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const request = JSON.parse(String(init?.body)) as {
+        item: { category: string | null; name: string; note: string | null }
+      }
+
+      return new Response(JSON.stringify({
+        item: request.item,
+        phase: 'READY_FOR_PROCESSING',
+        processing: { status: 'NOT_STARTED' },
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
     render(
       <Provider store={createAppStore()}>
         <App />
@@ -23,9 +44,55 @@ describe('App navigation', () => {
     const chatInput = screen.getByRole('textbox', { name: '지원사업 검색 메시지' })
     fireEvent.change(chatInput, { target: { value: '서울 AI 지원사업' } })
 
-    fireEvent.click(screen.getByRole('button', { name: 'ViewModel 구조 예제' }))
+    fireEvent.click(screen.getByRole('button', { name: '상태관리 비교 예제' }))
 
     expect(screen.getByRole('heading', { name: '재사용 가능한 수직 슬라이스' })).toBeTruthy()
+
+    fireEvent.change(screen.getByRole('textbox', { name: '이름' }), {
+      target: { value: 'Hook에서만 유지되는 입력' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Redux Toolkit 버전' }))
+    expect(screen.getByRole('heading', { name: 'Redux 기반 수직 슬라이스' })).toBeTruthy()
+    fireEvent.change(screen.getByRole('textbox', { name: '이름' }), {
+      target: { value: 'Redux에 유지되는 입력' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'React Hook 버전' }))
+    expect(screen.getByRole('heading', { name: '재사용 가능한 수직 슬라이스' })).toBeTruthy()
+    expect((screen.getByRole('textbox', { name: '이름' }) as HTMLInputElement).value).toBe('')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Redux Toolkit 버전' }))
+    expect((screen.getByRole('textbox', { name: '이름' }) as HTMLInputElement).value).toBe(
+      'Redux에 유지되는 입력',
+    )
+
+    await waitFor(() => {
+      expect((screen.getByRole('button', { name: '준비 상태 확인' }) as HTMLButtonElement).disabled)
+        .toBe(false)
+    })
+    fireEvent.click(screen.getByRole('button', { name: '준비 상태 확인' }))
+
+    await screen.findByText('✓ Redux Store에 요청 성공 저장')
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(String(fetchMock.mock.calls[0]?.[0])).toMatch(/\/api\/v1\/sample-items\/prepare$/)
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
+      item: {
+        category: null,
+        name: 'Redux에 유지되는 입력',
+        note: null,
+      },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'React Hook 버전' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Redux Toolkit 버전' }))
+    expect(screen.getByText('✓ Redux Store에 요청 성공 저장')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Redux 상태 초기화' }))
+    expect((screen.getByRole('textbox', { name: '이름' }) as HTMLInputElement).value).toBe('')
+    expect(screen.queryByText('✓ Redux Store에 요청 성공 저장')).toBeNull()
+    expect((screen.getByRole('button', { name: '준비 상태 확인' }) as HTMLButtonElement).disabled)
+      .toBe(true)
 
     fireEvent.click(screen.getByRole('button', { name: '지원사업 채팅으로 돌아가기' }))
 
