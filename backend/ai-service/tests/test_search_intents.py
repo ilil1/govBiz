@@ -4,24 +4,26 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from app.config import Settings
-from app.main import create_app
-from app.schemas.search_intent import (
+from app.agents.search_intent.models import (
     ExtractedSearchIntent,
     SupportCategory,
     SupportRegion,
 )
+from app.agents.search_intent.port import SearchIntentAnalysisError
+from app.config import Settings
+from app.main import create_app
 
 
 DISABLED_SETTINGS = Settings(
     llm_provider="disabled",
     openai_api_key=None,
     openai_model="unused-model",
-    llm_timeout_seconds=2.0,
+    llm_model_timeout_seconds=2.0,
+    llm_run_timeout_seconds=2.5,
 )
 
 
-class SuccessfulProvider:
+class SuccessfulAgent:
     def __init__(self) -> None:
         self.queries: list[str] = []
 
@@ -37,18 +39,9 @@ class SuccessfulProvider:
         )
 
 
-class FailingProvider:
+class FailingAgent:
     async def analyze(self, query: str) -> ExtractedSearchIntent:
-        raise TimeoutError("private provider response must not escape")
-
-
-class ClosableProvider(SuccessfulProvider):
-    def __init__(self) -> None:
-        super().__init__()
-        self.closed = False
-
-    async def close(self) -> None:
-        self.closed = True
+        raise SearchIntentAnalysisError("private agent response must not escape")
 
 
 def test_rejects_terms_longer_than_core_contract() -> None:
@@ -64,8 +57,8 @@ def test_rejects_terms_longer_than_core_contract() -> None:
 
 
 def test_returns_structured_llm_intent_and_preserves_caller_filter() -> None:
-    provider = SuccessfulProvider()
-    client = TestClient(create_app(search_intent_provider=provider))
+    agent = SuccessfulAgent()
+    client = TestClient(create_app(search_intent_agent=agent))
 
     response = client.post(
         "/internal/v1/search-intents/analyze",
@@ -87,21 +80,7 @@ def test_returns_structured_llm_intent_and_preserves_caller_filter() -> None:
         "clarificationQuestion": None,
         "analysisMode": "LLM",
     }
-    assert provider.queries == ["서울의 AI 반도체 스타트업 지원사업"]
-
-
-def test_application_lifespan_closes_provider() -> None:
-    provider = ClosableProvider()
-
-    with TestClient(create_app(search_intent_provider=provider)) as client:
-        assert provider.closed is False
-        response = client.post(
-            "/internal/v1/search-intents/analyze",
-            json={"query": "서울 AI", "acceptingOnly": True},
-        )
-        assert response.status_code == 200
-
-    assert provider.closed is True
+    assert agent.queries == ["서울의 AI 반도체 스타트업 지원사업"]
 
 
 @pytest.mark.parametrize(
@@ -184,10 +163,10 @@ def test_rule_based_fallback_requests_clarification_for_empty_intent() -> None:
     }
 
 
-def test_provider_failure_returns_safe_fallback_without_leaking_details(
+def test_agent_failure_returns_safe_fallback_without_leaking_details(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    client = TestClient(create_app(search_intent_provider=FailingProvider()))
+    client = TestClient(create_app(search_intent_agent=FailingAgent()))
     caplog.set_level(logging.WARNING)
 
     response = client.post(
@@ -197,7 +176,7 @@ def test_provider_failure_returns_safe_fallback_without_leaking_details(
 
     assert response.status_code == 200
     assert response.json()["analysisMode"] == "RULE_BASED_FALLBACK"
-    assert "private provider response" not in caplog.text
+    assert "private agent response" not in caplog.text
     assert "secret-company" not in caplog.text
 
 

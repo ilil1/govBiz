@@ -2,15 +2,15 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
 
-from app.schemas.search_intent import SearchIntentRequest, SearchIntentResponse
-from app.services.search_intent import SearchIntentAnalysisService
+from app.agents.search_intent.models import SearchIntentRequest, SearchIntentResponse
+from app.agents.search_intent.service import SearchIntentAnalysisService
 
 
 router = APIRouter(prefix="/internal/v1", tags=["internal"])
 
 
 def get_search_intent_service(request: Request) -> SearchIntentAnalysisService:
-    return request.app.state.search_intent_service
+    return request.app.state.container.search_intent_service
 
 
 @router.post(

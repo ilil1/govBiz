@@ -68,7 +68,7 @@ class SearchIntentRequest(BaseModel):
 
 
 class ExtractedSearchIntent(BaseModel):
-    """LLM provider가 Structured Output으로 반환해야 하는 엄격한 스키마."""
+    """검색 의도 Agent가 Structured Output으로 반환해야 하는 엄격한 스키마."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 

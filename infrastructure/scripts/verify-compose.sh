@@ -16,7 +16,8 @@ export BIZINFO_API_BASE_URL="http://bizinfo-stub:8001"
 export DATA_GO_KR_SERVICE_KEY="compose%2Bverification%2Fkey%3D"
 export LLM_PROVIDER="disabled"
 export OPENAI_API_KEY=""
-export LLM_TIMEOUT_SECONDS="2.5"
+export LLM_MODEL_TIMEOUT_SECONDS="2.0"
+export LLM_RUN_TIMEOUT_SECONDS="2.5"
 export AI_SERVICE_READ_TIMEOUT="3s"
 
 COMPOSE=(

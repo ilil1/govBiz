@@ -20,7 +20,7 @@ Browser (127.0.0.1:5173)
 | web 컨테이너 | `http://core-api:8080` | Compose 내부 DNS |
 | Core API 컨테이너 | `http://ai-service:8000` | Compose 내부 DNS |
 | Core API 컨테이너 | `https://apis.data.go.kr` | 실제 기업마당 공고 upstream |
-| AI Service 컨테이너 | `https://api.openai.com` | 설정된 경우 검색 의도 Structured Outputs |
+| AI Service 컨테이너 | `https://api.openai.com` | 설정된 경우 검색 의도 typed agent |
 | Host 터미널 | `http://127.0.0.1:8080` | Host에 공개된 Core API 포트 |
 
 `core-api`와 `ai-service`는 컨테이너 네트워크 안에서만 해석되는 이름입니다. 브라우저 JavaScript가
@@ -45,15 +45,16 @@ OPENAI_API_KEY=발급받은_OpenAI_API_키
 | `BIZINFO_API_READ_TIMEOUT` | `10s` | 외부 API 응답 제한시간 |
 | `LLM_PROVIDER` | `disabled` | `openai`이면 LLM 분석, 그 외에는 규칙 fallback |
 | `OPENAI_API_KEY` | 빈 값 | AI Service만 사용하는 OpenAI 인증키 |
-| `OPENAI_MODEL` | [`gpt-5.6-luna`](https://developers.openai.com/api/docs/models/gpt-5.6-luna) | Structured Outputs에 사용할 모델 |
-| `LLM_TIMEOUT_SECONDS` | `2.5` | OpenAI 호출 전체 제한시간(초) |
+| `OPENAI_MODEL` | [`gpt-5.6-luna`](https://developers.openai.com/api/docs/models/gpt-5.6-luna) | Agent의 Structured Output 모델 |
+| `LLM_MODEL_TIMEOUT_SECONDS` | `2.0` | OpenAI 모델 호출 한 번의 제한시간(초) |
+| `LLM_RUN_TIMEOUT_SECONDS` | `2.5` | parsing을 포함한 전체 agent run 제한시간(초) |
 | `AI_SERVICE_READ_TIMEOUT` | `3s` | Core API의 AI Service 읽기 제한시간 |
 
 `LLM_PROVIDER=openai`여도 키가 없거나 OpenAI 호출·검증에 실패하면 AI Service가 HTTP 200의
 `RULE_BASED_FALLBACK` 응답을 반환합니다. Core API도 내부 응답을 검증하고 문제가 있으면 로컬 parser를
 사용하므로 LLM 설정은 공고 검색의 필수 조건이 아닙니다. Core API의 AI Service 읽기 제한시간 기본값은
-`3s`로 LLM 제한시간 `2.5s`보다 길게 유지합니다. 값을 조정할 때도 Core의 upstream 제한시간에 짧은
-응답 처리 여유를 남겨야 합니다.
+`3s`로 agent run 제한시간 `2.5s`보다 길게 유지합니다. 모델 호출 제한은 run 제한보다 짧아야 하며,
+값을 조정할 때도 Core의 upstream 제한시간에 짧은 응답 처리 여유를 남겨야 합니다.
 
 저장소 루트에서 실행합니다.
 

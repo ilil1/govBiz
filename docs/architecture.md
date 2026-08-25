@@ -92,14 +92,14 @@ Content-Type: application/json
 {"query":"서울 AI 창업지원 찾아줘","acceptingOnly":true}
 ```
 
-AI Service는 OpenAI가 설정되어 있으면 [OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs)를
-직접 요청해 키워드, 지역, 분야와 지원대상 표현을 제한된 JSON schema로 받습니다. 공고 내용·자격·금액·
-접수상태를 생성하거나 공공데이터 원문을 대체하지 않습니다.
+AI Service는 OpenAI가 설정되어 있으면 [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/)의
+단일 typed agent를 실행해 키워드, 지역, 분야와 지원대상 표현을 제한된 JSON schema로 받습니다.
+공고 내용·자격·금액·접수상태를 생성하거나 공공데이터 원문을 대체하지 않습니다.
 
 ```text
 AI Service
-  ├→ OpenAI 성공 + schema 검증 성공 → analysisMode=LLM
-  └→ provider 비활성·키 누락·timeout·인증·rate limit·refusal·검증 실패
+  ├→ Agent + Runner 성공 + schema 검증 성공 → analysisMode=LLM
+  └→ agent 비활성·키 누락·timeout·인증·rate limit·refusal·검증 실패
        → analysisMode=RULE_BASED_FALLBACK (HTTP 200)
 
 Core API
@@ -113,10 +113,15 @@ AI Service가 유효하지 않은 요청을 받은 경우만 422를 반환합니
 규칙 응답으로 흡수되고, Core API에도 두 번째 fallback이 있으므로 AI Service나 OpenAI 장애가 공개
 검색 오류로 전파되지 않습니다. 공개 응답은 계속 `{query, programs}` 계약을 유지합니다.
 
-현재는 단일 provider에 한 번의 짧고 구조화된 호출만 필요하므로 LangChain을 도입하지 않습니다.
-OpenAI client를 직접 사용하면 schema, timeout, refusal과 오류→fallback 경계가 코드에 명시적으로
-남습니다. 여러 provider, 도구 호출 또는 다단계 chain이 실제 요구사항이 될 때 추상화 도입을 다시
-평가합니다.
+현재는 한 번의 짧고 구조화된 추출만 필요하므로 agent 하나를 `max_turns=1`로 실행합니다. tool,
+handoff, session이나 manager agent는 실제 역할이 없어 추가하지 않습니다. 검색 의도 기능의 Agent,
+prompt, model, port, fallback과 서비스 흐름은 `agents/search_intent` 수직 슬라이스에 모으고, OpenAI
+client 소유권과 DI는 root `bootstrap.py`에 둡니다. 실제 사업 조회 도구나 서로 다른 전문가로 실행권을
+넘기는 요구가 생길 때 `agents/<agent_name>` 모듈과 tool 또는 handoff 도입을 다시 평가합니다.
+
+모델 HTTP 호출과 전체 Runner 실행은 별도 timeout으로 제한합니다. 전체 run 제한을 모델 호출
+제한보다 길고 Core API의 AI Service 읽기 제한보다 짧게 두어, 모델 오류를 규칙 fallback으로 바꿀
+시간을 확보합니다.
 
 ## Docker Compose 개발 흐름
 

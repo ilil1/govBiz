@@ -9,7 +9,7 @@ React Web
   → Spring Boot Core API
       ├→ 공공데이터포털 지원사업 공고 API
       └→ FastAPI AI Service
-          └→ OpenAI Structured Outputs (설정된 경우)
+          └→ OpenAI Agents SDK typed agent (설정된 경우)
 ```
 
 브라우저는 Core API만 호출하므로 공공데이터포털 인증키가 JavaScript bundle이나 브라우저 요청에
@@ -30,7 +30,7 @@ React Web
                   → SupportProgramRepository
                       → GET /api/v1/support-programs/search
                           → POST /internal/v1/search-intents/analyze
-                              → OpenAI Structured Outputs 또는 규칙 fallback
+                              → 단일 typed agent 또는 규칙 fallback
                           → Core API 로컬 parser 결과에 검증된 분석을 병합
                           → 공공데이터포털 기업마당 공고 조회·변환·검색·정렬
               → Redux Toolkit chat slice
@@ -81,7 +81,7 @@ Repository, UseCase와 외부 서비스 역할별 모듈로 분리해 관리합�
 - Spring Boot의 Controller → Service → Domain 흐름
 - Zod와 Bean Validation을 이용한 요청·응답 계약 검증
 - FastAPI 내부 Health API와 Core API의 upstream 오류 변환
-- OpenAI Structured Outputs를 직접 사용하는 검색 의도 분석과 이중 규칙 fallback
+- OpenAI Agents SDK의 typed agent를 사용하는 검색 의도 분석과 이중 규칙 fallback
 - 공공데이터포털 응답을 GovBiz 공고 모델로 변환하는 외부 API adapter
 - Vite 프록시를 사용하는 Docker Compose 개발 환경
 - 실제 키 없이 로컬 공공데이터 스텁을 사용하는 결정적 Compose smoke 검증
@@ -174,6 +174,7 @@ govBiz/
 - [Frontend 실행·구조](frontend/README.md)
 - [Core API 실행·구조](backend/core-api/README.md)
 - [AI Service 실행·구조](backend/ai-service/README.md)
+- [AI Agent 모듈 구조](backend/ai-service/docs/agent-structure.md)
 - [Docker Compose 안내](infrastructure/README.md)
 
 ## 다음 단계

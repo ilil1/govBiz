@@ -1,24 +1,12 @@
-import logging
 import re
 import unicodedata
-from inspect import isawaitable
 
-from app.config import Settings
-from app.providers.search_intent import (
-    OpenAISearchIntentProvider,
-    SearchIntentProvider,
-)
-from app.schemas.search_intent import (
-    AnalysisMode,
+from .models import (
     ExtractedSearchIntent,
-    SearchIntentRequest,
-    SearchIntentResponse,
     SupportCategory,
     SupportRegion,
 )
 
-
-logger = logging.getLogger(__name__)
 
 TOKEN_SEPARATOR = re.compile(r"[^\w&]+", re.UNICODE)
 BUSINESS_AGE = re.compile(
@@ -133,68 +121,8 @@ REGION_SUFFIXES = (
 TARGET_HINTS = ("기업", "사업자", "법인", "스타트업", "창업자", "소상공인")
 
 
-class SearchIntentAnalysisService:
-    """LLM 분석을 시도하고 언제나 결정적 fallback을 제공한다."""
-
-    def __init__(self, provider: SearchIntentProvider | None = None) -> None:
-        self._provider = provider
-
-    async def close(self) -> None:
-        """수명주기를 제공하는 provider의 자원을 정상 종료한다."""
-
-        if self._provider is None:
-            return
-        close = getattr(self._provider, "close", None)
-        if not callable(close):
-            return
-        close_result = close()
-        if isawaitable(close_result):
-            await close_result
-
-    async def analyze(self, request: SearchIntentRequest) -> SearchIntentResponse:
-        analysis_mode = AnalysisMode.RULE_BASED_FALLBACK
-        extracted: ExtractedSearchIntent
-
-        if self._provider is None:
-            extracted = extract_with_rules(request.query)
-        else:
-            try:
-                extracted = await self._provider.analyze(request.query)
-                analysis_mode = AnalysisMode.LLM
-            except Exception:
-                logger.warning(
-                    "LLM search intent analysis failed; using rule-based fallback",
-                    extra={"provider": type(self._provider).__name__},
-                )
-                extracted = extract_with_rules(request.query)
-
-        return SearchIntentResponse(
-            original_query=request.query,
-            keywords=extracted.keywords,
-            regions=extracted.regions,
-            categories=extracted.categories,
-            target_terms=extracted.target_terms,
-            accepting_only=request.accepting_only,
-            clarification_needed=extracted.clarification_needed,
-            clarification_question=extracted.clarification_question,
-            analysis_mode=analysis_mode,
-        )
-
-
-def build_search_intent_service(settings: Settings) -> SearchIntentAnalysisService:
-    provider: SearchIntentProvider | None = None
-    if settings.openai_enabled:
-        assert settings.openai_api_key is not None
-        provider = OpenAISearchIntentProvider(
-            api_key=settings.openai_api_key,
-            model=settings.openai_model,
-            timeout_seconds=settings.llm_timeout_seconds,
-        )
-    return SearchIntentAnalysisService(provider)
-
-
 def extract_with_rules(query: str) -> ExtractedSearchIntent:
-    """LLM을 사용할 수 없을 때 적용하는 보수적인 한국어 토큰 분석."""
+    """모델을 사용할 수 없을 때 적용하는 보수적인 한국어 토큰 분석."""
 
     normalized_query = unicodedata.normalize("NFKC", query).casefold()
     regions: list[SupportRegion] = []
