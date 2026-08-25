@@ -115,6 +115,7 @@ wait_for_json_post() {
         --request POST \
         --header 'Accept: application/json' \
         --header 'Content-Type: application/json' \
+        --header 'Origin: http://127.0.0.1:5173' \
         --data "${request_body}" \
         "${url}" || true
     )"

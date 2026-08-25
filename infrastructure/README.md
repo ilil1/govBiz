@@ -49,6 +49,7 @@ OPENAI_API_KEY=발급받은_OpenAI_API_키
 | `LLM_MODEL_TIMEOUT_SECONDS` | `2.0` | OpenAI 모델 호출 한 번의 제한시간(초) |
 | `LLM_RUN_TIMEOUT_SECONDS` | `2.5` | parsing을 포함한 전체 agent run 제한시간(초) |
 | `AI_SERVICE_READ_TIMEOUT` | `3s` | Core API의 AI Service 읽기 제한시간 |
+| `APP_CORS_ALLOWED_ORIGIN` | `http://127.0.0.1:5173` | Compose에서 Core API가 허용할 브라우저 origin |
 
 `LLM_PROVIDER=openai`여도 키가 없거나 OpenAI 호출·검증에 실패하면 AI Service가 HTTP 200의
 `RULE_BASED_FALLBACK` 응답을 반환합니다. Core API도 내부 응답을 검증하고 문제가 있으면 로컬 parser를
