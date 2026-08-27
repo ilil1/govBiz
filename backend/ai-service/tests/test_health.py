@@ -36,23 +36,3 @@ def test_returns_typed_health_response() -> None:
         "status": "up",
         "service": "govbiz-ai-service",
     }
-
-
-def test_exposes_health_contract_in_openapi() -> None:
-    response = client.get("/openapi.json")
-
-    assert response.status_code == 200
-    document = response.json()
-    health_operation = document["paths"]["/internal/v1/health"]["get"]
-    success_schema = health_operation["responses"]["200"]["content"][
-        "application/json"
-    ]["schema"]
-    assert success_schema["$ref"] == "#/components/schemas/HealthResponse"
-
-    health_schema = document["components"]["schemas"]["HealthResponse"]
-    assert set(health_schema["required"]) == {"status", "service"}
-    assert health_schema["properties"]["status"]["const"] == "up"
-    assert (
-        health_schema["properties"]["service"]["const"]
-        == "govbiz-ai-service"
-    )

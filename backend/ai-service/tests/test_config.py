@@ -71,17 +71,15 @@ def test_uses_legacy_timeout_as_run_timeout(
     assert Settings.from_environment().llm_run_timeout_seconds == 2.25
 
 
-def test_requires_openai_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-
-    with pytest.raises(SettingsConfigurationError, match="OPENAI_API_KEY is required"):
-        Settings.from_environment()
-
-
-def test_rejects_blank_openai_api_key(
+@pytest.mark.parametrize("value", [None, "   "])
+def test_requires_nonblank_openai_api_key(
     monkeypatch: pytest.MonkeyPatch,
+    value: str | None,
 ) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "   ")
+    if value is None:
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    else:
+        monkeypatch.setenv("OPENAI_API_KEY", value)
 
     with pytest.raises(SettingsConfigurationError, match="OPENAI_API_KEY is required"):
         Settings.from_environment()

@@ -135,7 +135,7 @@ tests/
 
 - Agent 단위 테스트는 `tests/agents/<agent_name>/`에서 공식 `ScriptedModel`로 실제 Runner를
   실행합니다.
-- API 성공·실패 계약과 OpenAPI 검증은 HTTP 경계 테스트에 남깁니다.
+- API 성공·실패와 요청·응답 JSON 계약은 HTTP 경계 테스트에 남깁니다.
 - client 생성과 lifespan 종료는 `test_bootstrap.py`에서 검증합니다.
 - 실제 OpenAI 네트워크를 사용하지 않고, provider wire 계약이 필요할 때만 mock transport를
   사용합니다.

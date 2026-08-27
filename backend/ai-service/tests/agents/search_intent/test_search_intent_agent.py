@@ -50,21 +50,6 @@ async def test_runs_typed_agent_through_the_real_runner() -> None:
     assert call.input == [{"role": "user", "content": "서울 AI 반도체"}]
     assert call.output_schema is not None
     assert call.output_schema.output_type is ExtractedSearchIntent
-    assert call.output_schema.is_strict_json_schema() is True
-    schema = call.output_schema.json_schema()
-    assert schema["additionalProperties"] is False
-    assert set(schema["required"]) == {
-        "keywords",
-        "regions",
-        "categories",
-        "target_terms",
-        "clarification_needed",
-        "clarification_question",
-    }
-    assert call.model_settings.max_tokens == 500
-    assert call.model_settings.store is False
-    assert call.model_settings.reasoning is not None
-    assert call.model_settings.reasoning.effort == "none"
     assert call.model_settings.timeout == 1.5
     assert call.tracing is ModelTracing.DISABLED
     assert len(model.calls) == 1

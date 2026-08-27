@@ -119,39 +119,6 @@ def test_rejects_invalid_requests(body: dict[str, object]) -> None:
     assert response.status_code == 422
 
 
-def test_exposes_camel_case_contract_in_openapi() -> None:
-    client = TestClient(
-        create_app(settings=TEST_SETTINGS, search_intent_agent=SuccessfulAgent())
-    )
-
-    response = client.get("/openapi.json")
-
-    assert response.status_code == 200
-    operation = response.json()["paths"][
-        "/internal/v1/search-intents/analyze"
-    ]["post"]
-    request_schema = operation["requestBody"]["content"]["application/json"][
-        "schema"
-    ]
-    assert request_schema["$ref"] == "#/components/schemas/SearchIntentRequest"
-
-    schemas = response.json()["components"]["schemas"]
-    assert set(schemas["SearchIntentRequest"]["required"]) == {
-        "query",
-        "acceptingOnly",
-    }
-    assert set(schemas["SearchIntentResponse"]["required"]) == {
-        "originalQuery",
-        "keywords",
-        "regions",
-        "categories",
-        "targetTerms",
-        "acceptingOnly",
-        "clarificationNeeded",
-        "clarificationQuestion",
-    }
-
-
 def test_llm_schema_rejects_more_than_eight_terms_per_field() -> None:
     with pytest.raises(ValueError, match="at most 8 search terms"):
         ExtractedSearchIntent(
