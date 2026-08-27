@@ -1,16 +1,15 @@
+from .agent import SearchIntentAgent
 from .models import (
     ExtractedSearchIntent,
     SearchIntentRequest,
     SearchIntentResponse,
 )
-from .port import (
-    SearchIntentAnalyzer,
-)
+
 
 class SearchIntentAnalysisService:
     """필수 검색 의도 Agent를 실행하고 응답 계약을 조립한다."""
 
-    def __init__(self, agent: SearchIntentAnalyzer) -> None:
+    def __init__(self, agent: SearchIntentAgent) -> None:
         self._agent = agent
 
     async def analyze(self, request: SearchIntentRequest) -> SearchIntentResponse:

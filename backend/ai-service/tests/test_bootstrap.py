@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 import app.bootstrap as bootstrap_module
 import app.main as main_module
+from app.agents.search_intent.agent import SearchIntentAgent
 from app.agents.search_intent.models import (
     ExtractedSearchIntent,
     SearchIntentRequest,
@@ -29,7 +30,10 @@ class FakeOpenAIClient:
         self.closed = True
 
 
-class NeverCalledAgent:
+class NeverCalledAgent(SearchIntentAgent):
+    def __init__(self) -> None:
+        pass
+
     async def analyze(self, query: str) -> ExtractedSearchIntent:
         raise AssertionError("health and lifespan tests must not invoke the agent")
 

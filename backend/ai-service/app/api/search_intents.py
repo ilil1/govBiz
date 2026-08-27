@@ -2,8 +2,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
+from app.agents.errors import AgentExecutionError
 from app.agents.search_intent.models import SearchIntentRequest, SearchIntentResponse
-from app.agents.search_intent.port import SearchIntentAnalysisError
 from app.agents.search_intent.service import SearchIntentAnalysisService
 
 
@@ -30,7 +30,7 @@ async def analyze_search_intent(
 
     try:
         return await service.analyze(payload)
-    except SearchIntentAnalysisError as error:
+    except AgentExecutionError as error:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Search intent analysis is temporarily unavailable.",

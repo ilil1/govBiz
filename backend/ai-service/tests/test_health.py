@@ -1,11 +1,15 @@
 from fastapi.testclient import TestClient
 
+from app.agents.search_intent.agent import SearchIntentAgent
 from app.agents.search_intent.models import ExtractedSearchIntent
 from app.config import Settings
 from app.main import create_app
 
 
-class NeverCalledAgent:
+class NeverCalledAgent(SearchIntentAgent):
+    def __init__(self) -> None:
+        pass
+
     async def analyze(self, query: str) -> ExtractedSearchIntent:
         raise AssertionError("health tests must not invoke the agent")
 

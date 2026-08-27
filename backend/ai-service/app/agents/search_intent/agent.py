@@ -15,8 +15,9 @@ from openai import OpenAIError
 from openai.types.shared import Reasoning
 from pydantic import ValidationError
 
+from app.agents.errors import AgentExecutionError
+
 from .models import ExtractedSearchIntent
-from .port import SearchIntentAnalysisError
 from .prompt import SEARCH_INTENT_INSTRUCTIONS
 
 
@@ -69,13 +70,13 @@ class SearchIntentAgent:
             TimeoutError,
             ValidationError,
         ) as error:
-            raise SearchIntentAnalysisError(
+            raise AgentExecutionError(
                 "Search intent agent did not produce a usable result"
             ) from error
 
         output = result.final_output
         if not isinstance(output, ExtractedSearchIntent):
-            raise SearchIntentAnalysisError(
+            raise AgentExecutionError(
                 "Search intent agent returned an unexpected output type"
             )
         return output

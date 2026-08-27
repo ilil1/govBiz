@@ -68,11 +68,11 @@ Agent 오류 본문과 사용자 질의는 로그에 남기지 않으며, 애플
 ```text
 app/
 ├── agents/
+│   ├── errors.py         # 모든 Agent가 공유하는 실행 실패 경계 오류
 │   └── search_intent/    # 검색 의도 Agent 수직 슬라이스
 │       ├── agent.py      # Agent 설정과 Runner 실행
 │       ├── prompt.py     # instructions
 │       ├── models.py     # 입력·출력·Structured Output 계약
-│       ├── port.py       # SearchIntentAnalyzer 추상화
 │       └── service.py    # 필수 agent 실행과 응답 조립
 ├── api/                  # FastAPI 라우터와 HTTP 의존성 조회
 ├── schemas/              # Agent와 무관한 공통 HTTP schema
@@ -168,14 +168,14 @@ POST /internal/v1/search-intents/analyze
 
 `OPENAI_API_KEY`가 없거나 공백이면 `Settings.from_environment()`가 시작 오류를 발생시켜 잘못 구성된
 AI Service가 요청을 받지 못하게 합니다. 실행 중 timeout, 모델 거부, OpenAI 오류 또는 structured
-output 검증 실패가 발생하면 `agent.py`가 `SearchIntentAnalysisError`로 변환합니다.
+output 검증 실패가 발생하면 `agent.py`가 공통 `AgentExecutionError`로 변환합니다.
 
 ```text
 api/search_intents.py
 → service.py
 → agent.py
 → OpenAI 또는 output 검증 실패
-→ SearchIntentAnalysisError
+→ AgentExecutionError
 → api/search_intents.py가 세부정보 없는 HTTP 503 반환
 ```
 
@@ -193,7 +193,7 @@ api/search_intents.py
 | `agent.py` | Service | Agents SDK `Runner.run()` 실행과 오류 경계 변환 |
 | `models.py` | FastAPI, Agent, Service | 요청·출력·응답 형식과 불변식 검증 |
 | `prompt.py` | `agent.py` | 모델에 전달할 instructions 제공 |
-| `port.py` | `agent.py`, `service.py`, `bootstrap.py` | 분석기 Protocol과 경계 오류 정의 |
+| `agents/errors.py` | 모든 Agent와 Agent API | 공통 Agent 실행 실패 경계 오류 정의 |
 | `__init__.py` | Python import system | 디렉터리를 패키지로 인식하고 패키지 설명 제공 |
 
 의존성 import 방향과 실제 런타임 호출 순서는 다릅니다. 예를 들어 `models.py`는 여러 파일에서

@@ -2,12 +2,13 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
+from app.agents.errors import AgentExecutionError
+from app.agents.search_intent.agent import SearchIntentAgent
 from app.agents.search_intent.models import (
     ExtractedSearchIntent,
     SupportCategory,
     SupportRegion,
 )
-from app.agents.search_intent.port import SearchIntentAnalysisError
 from app.config import Settings
 from app.main import create_app
 
@@ -20,7 +21,7 @@ TEST_SETTINGS = Settings(
 )
 
 
-class SuccessfulAgent:
+class SuccessfulAgent(SearchIntentAgent):
     def __init__(self) -> None:
         self.queries: list[str] = []
 
@@ -36,9 +37,12 @@ class SuccessfulAgent:
         )
 
 
-class FailingAgent:
+class FailingAgent(SearchIntentAgent):
+    def __init__(self) -> None:
+        pass
+
     async def analyze(self, query: str) -> ExtractedSearchIntent:
-        raise SearchIntentAnalysisError("private agent response must not escape")
+        raise AgentExecutionError("private agent response must not escape")
 
 
 def test_rejects_terms_longer_than_core_contract() -> None:

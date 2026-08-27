@@ -4,7 +4,6 @@ from agents import OpenAIResponsesModel
 from openai import AsyncOpenAI
 
 from app.agents.search_intent.agent import SearchIntentAgent
-from app.agents.search_intent.port import SearchIntentAnalyzer
 from app.agents.search_intent.service import SearchIntentAnalysisService
 from app.config import Settings
 
@@ -24,7 +23,7 @@ class ApplicationContainer:
 def build_application_container(
     settings: Settings,
     *,
-    search_intent_agent: SearchIntentAnalyzer | None = None,
+    search_intent_agent: SearchIntentAgent | None = None,
 ) -> ApplicationContainer:
     """환경설정과 선택적 테스트 대역을 실제 애플리케이션 객체로 조립한다."""
 

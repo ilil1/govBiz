@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from app.api.health import router as health_router
 from app.api.search_intents import router as search_intents_router
-from app.agents.search_intent.port import SearchIntentAnalyzer
+from app.agents.search_intent.agent import SearchIntentAgent
 from app.bootstrap import build_application_container
 from app.config import Settings
 
@@ -13,7 +13,7 @@ from app.config import Settings
 def create_app(
     *,
     settings: Settings | None = None,
-    search_intent_agent: SearchIntentAnalyzer | None = None,
+    search_intent_agent: SearchIntentAgent | None = None,
 ) -> FastAPI:
     """FastAPI 객체를 조립하는 애플리케이션 팩토리다."""
     container = build_application_container(

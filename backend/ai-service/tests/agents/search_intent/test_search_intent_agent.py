@@ -13,9 +13,9 @@ from agents import (
 from agents.testing import ModelStep, ScriptedModel, assistant_message
 from openai import AsyncOpenAI
 
+from app.agents.errors import AgentExecutionError
 from app.agents.search_intent.agent import SearchIntentAgent
 from app.agents.search_intent.models import ExtractedSearchIntent
-from app.agents.search_intent.port import SearchIntentAnalysisError
 from app.agents.search_intent.prompt import SEARCH_INTENT_INSTRUCTIONS
 
 
@@ -80,7 +80,7 @@ async def test_turns_invalid_structured_output_into_boundary_error() -> None:
         run_timeout_seconds=2.0,
     )
 
-    with pytest.raises(SearchIntentAnalysisError) as captured:
+    with pytest.raises(AgentExecutionError) as captured:
         await agent.analyze("서울 AI")
 
     assert isinstance(captured.value.__cause__, ModelBehaviorError)
@@ -115,7 +115,7 @@ async def test_limits_the_extractor_to_one_model_turn() -> None:
         run_timeout_seconds=2.0,
     )
 
-    with pytest.raises(SearchIntentAnalysisError) as captured:
+    with pytest.raises(AgentExecutionError) as captured:
         await agent.analyze("서울 AI")
 
     assert isinstance(captured.value.__cause__, MaxTurnsExceeded)
@@ -135,7 +135,7 @@ async def test_enforces_whole_agent_run_deadline() -> None:
         run_timeout_seconds=0.01,
     )
 
-    with pytest.raises(SearchIntentAnalysisError) as captured:
+    with pytest.raises(AgentExecutionError) as captured:
         await agent.analyze("서울 AI")
 
     assert isinstance(captured.value.__cause__, TimeoutError)
