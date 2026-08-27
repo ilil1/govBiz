@@ -1,8 +1,8 @@
 # GovBiz AI Service
 
 Core API가 내부 HTTP로 호출하는 FastAPI 서비스입니다. OpenAI Agents SDK의 단일 typed agent가
-사용자의 질문을 지원사업 검색 조건으로 변환하고, agent를 사용할 수 없을 때는 결정적인 규칙 기반
-분석으로 자동 전환합니다.
+사용자의 질문을 지원사업 검색 조건으로 변환합니다. OpenAI는 필수 의존성이며, 설정 누락이나 실행
+실패를 불완전한 규칙 분석으로 숨기지 않습니다.
 
 ## 내부 Health 계약
 
@@ -35,20 +35,18 @@ Content-Type: application/json
   "targetTerms": ["스타트업"],
   "acceptingOnly": true,
   "clarificationNeeded": false,
-  "clarificationQuestion": null,
-  "analysisMode": "LLM"
+  "clarificationQuestion": null
 }
 ```
 
 `acceptingOnly`는 Core API가 지정한 검색 조건이므로 LLM이 변경하지 않습니다. 각 검색 조건 배열은
 최대 8개이며, 지역과 분야는 Core API가 이해하는 enum으로 제한됩니다.
 
-## LLM 설정과 fallback
+## 필수 OpenAI 설정과 오류 경계
 
 | 환경변수 | 기본값 | 설명 |
 |---|---|---|
-| `LLM_PROVIDER` | `disabled` | `openai`일 때만 OpenAI 호출 활성화 |
-| `OPENAI_API_KEY` | 없음 | AI Service에만 주입하는 비밀키 |
+| `OPENAI_API_KEY` | 없음(필수) | AI Service에만 주입하는 비밀키. 없거나 공백이면 시작 실패 |
 | `OPENAI_MODEL` | `gpt-5.6-luna` | Structured Outputs를 지원하는 모델 |
 | `LLM_MODEL_TIMEOUT_SECONDS` | `2.0` | OpenAI 모델 호출 한 번의 제한시간 |
 | `LLM_RUN_TIMEOUT_SECONDS` | `2.5` | parsing을 포함한 전체 agent run 제한시간 |
@@ -61,11 +59,9 @@ OpenAI 호출은 공식 Agents SDK의 `Agent(output_type=ExtractedSearchIntent)`
 `max_turns=1`로 제한합니다. 모델 출력은 Pydantic이 검증하고, SDK 재시도는 0회이며 reasoning
 effort는 `none`입니다. 응답 저장은 `store=false`, Agents SDK tracing은 비활성화합니다.
 
-API 오류, 거절, timeout, 불완전하거나 스키마 검증에 실패한 출력은 HTTP 오류 대신
-`analysisMode: "RULE_BASED_FALLBACK"`인 동일한 응답 계약으로 전환합니다. Agent 오류 본문과 사용자
-질의는 로그에 남기지 않으며, 애플리케이션 종료 시 container가 소유한 비동기 OpenAI client를
-닫습니다. Agent 구성이나 프로그래밍 오류는 fallback으로 숨기지 않습니다. 기존 Core API 계약을
-지키기 위해 성공 경로의 `analysisMode` 값은 계속 `LLM`입니다.
+API 오류, 거절, timeout, 불완전하거나 스키마 검증에 실패한 출력은 안전한 HTTP 503으로 반환합니다.
+Agent 오류 본문과 사용자 질의는 로그에 남기지 않으며, 애플리케이션 종료 시 container가 소유한
+비동기 OpenAI client를 닫습니다.
 
 ## 코드 구조
 
@@ -77,8 +73,7 @@ app/
 │       ├── prompt.py     # instructions
 │       ├── models.py     # 입력·출력·Structured Output 계약
 │       ├── port.py       # SearchIntentAnalyzer 추상화
-│       ├── rules.py      # 결정적 fallback
-│       └── service.py    # agent 우선/fallback 전환 흐름
+│       └── service.py    # 필수 agent 실행과 응답 조립
 ├── api/                  # FastAPI 라우터와 HTTP 의존성 조회
 ├── schemas/              # Agent와 무관한 공통 HTTP schema
 ├── bootstrap.py          # OpenAI client·model·agent·service DI 조립과 소유권
@@ -88,9 +83,9 @@ app/
 ```text
 HTTP 요청
 → SearchIntentAnalysisService
-    ├→ SearchIntentAgent → Runner.run(max_turns=1) → Pydantic output
-    └→ 실패 또는 비활성화 → extract_with_rules
-→ 동일한 SearchIntentResponse
+→ SearchIntentAgent → Runner.run(max_turns=1) → Pydantic output
+    ├→ 성공 → SearchIntentResponse
+    └→ 실패 → 안전한 HTTP 503
 ```
 
 ## Python 파일의 수직 실행 흐름
@@ -100,23 +95,20 @@ Python 파일이 요청마다 위에서 아래로 전부 다시 실행되는 것
 
 ### 1. 서버 시작 시 한 번 실행되는 흐름
 
-Docker 컨테이너는 `python -m uvicorn app.main:app`으로 시작합니다. `app.main:app`은
-`app/main.py` 모듈에서 이름이 `app`인 FastAPI 객체를 가져오라는 뜻입니다.
+Docker 컨테이너는 `python -m uvicorn app.main:create_app --factory`로 시작합니다. Uvicorn이
+`app/main.py`의 `create_app()`을 호출해 FastAPI 객체를 생성한다는 뜻입니다.
 
 ```text
 Dockerfile CMD
 → Uvicorn이 app/main.py import
-→ main.py의 app = create_app()
+→ Uvicorn이 main.py의 create_app() 호출
 → config.py의 Settings.from_environment()
-   → LLM_PROVIDER, OPENAI_API_KEY, OPENAI_MODEL, timeout 읽기
+   → 필수 OPENAI_API_KEY, OPENAI_MODEL, timeout 읽기
 → bootstrap.py의 build_application_container(settings)
-   ├→ OpenAI 활성화
-   │   → AsyncOpenAI 생성
-   │   → OpenAIResponsesModel 생성
-   │   → SearchIntentAgent 생성
-   │   → SearchIntentAnalysisService(agent) 생성
-   └→ OpenAI 비활성화
-       → SearchIntentAnalysisService(None) 생성
+   → AsyncOpenAI 생성
+   → OpenAIResponsesModel 생성
+   → SearchIntentAgent 생성
+   → SearchIntentAnalysisService(agent) 생성
 → main.py가 container를 FastAPI application.state에 저장
 → search_intents router 등록
 → HTTP 요청 대기
@@ -128,7 +120,7 @@ Dockerfile CMD
 FastAPI application
 └→ state.container: ApplicationContainer
     ├→ search_intent_service: SearchIntentAnalysisService
-    │   └→ _agent: SearchIntentAgent 또는 None
+    │   └→ _agent: SearchIntentAgent
     │       └→ _agent: OpenAI Agents SDK의 Agent
     └→ openai_client: AsyncOpenAI 또는 None
 ```
@@ -172,24 +164,11 @@ POST /internal/v1/search-intents/analyze
 `models.py`는 별도의 업무 함수를 실행하는 파일이라기보다 요청과 AI 출력이 약속된 형식인지 검사하는
 양식입니다. FastAPI와 Agents SDK가 모델 클래스를 사용하면서 Pydantic validator를 자동 실행합니다.
 
-### 3. Agent가 없거나 실패하는 흐름
+### 3. 설정 누락 또는 Agent 실패 흐름
 
-`LLM_PROVIDER`가 `openai`가 아니거나 API key가 없으면 `bootstrap.py`가 Agent를 만들지 않습니다.
-이때 Service는 OpenAI를 호출하지 않고 바로 규칙 분석을 실행합니다.
-
-```text
-api/search_intents.py
-→ service.py
-→ _agent is None
-→ rules.py의 extract_with_rules(query)
-→ models.py의 ExtractedSearchIntent
-→ service.py의 SearchIntentResponse
-→ Core API
-```
-
-Agent가 존재하더라도 timeout, 모델 거부, OpenAI 오류 또는 structured output 검증 실패가 발생할 수
-있습니다. `agent.py`는 이 오류를 `port.py`의 `SearchIntentAnalysisError`로 변환하고, `service.py`가
-그 경계 오류만 잡아서 같은 규칙 분석으로 전환합니다.
+`OPENAI_API_KEY`가 없거나 공백이면 `Settings.from_environment()`가 시작 오류를 발생시켜 잘못 구성된
+AI Service가 요청을 받지 못하게 합니다. 실행 중 timeout, 모델 거부, OpenAI 오류 또는 structured
+output 검증 실패가 발생하면 `agent.py`가 `SearchIntentAnalysisError`로 변환합니다.
 
 ```text
 api/search_intents.py
@@ -197,14 +176,10 @@ api/search_intents.py
 → agent.py
 → OpenAI 또는 output 검증 실패
 → SearchIntentAnalysisError
-→ service.py가 오류를 잡음
-→ rules.py의 extract_with_rules(query)
-→ analysisMode=RULE_BASED_FALLBACK
-→ Core API
+→ api/search_intents.py가 세부정보 없는 HTTP 503 반환
 ```
 
-Agent 설정 오류나 프로그래밍 오류까지 전부 fallback으로 숨기지는 않습니다. 공개 검색을 계속할 수
-있는 모델·통신 경계 오류만 안전하게 축소합니다.
+사용자 질문, API key, OpenAI 원문 오류는 응답이나 로그에 노출하지 않습니다.
 
 ### 4. 파일별 호출 관계
 
@@ -214,10 +189,9 @@ Agent 설정 오류나 프로그래밍 오류까지 전부 fallback으로 숨기
 | `config.py` | `main.py` | 환경변수를 `Settings`로 변환 |
 | `bootstrap.py` | `main.py` | OpenAI client, model, Agent, Service 조립 |
 | `api/search_intents.py` | FastAPI | HTTP 요청 수신, Service 조회와 호출 |
-| `service.py` | API router | Agent 우선 실행과 규칙 fallback 전환 |
+| `service.py` | API router | 필수 Agent 실행과 응답 계약 조립 |
 | `agent.py` | Service | Agents SDK `Runner.run()` 실행과 오류 경계 변환 |
-| `rules.py` | Service | OpenAI 없이 결정적으로 검색 조건 추출 |
-| `models.py` | FastAPI, Agent, Service, Rules | 요청·출력·응답 형식과 불변식 검증 |
+| `models.py` | FastAPI, Agent, Service | 요청·출력·응답 형식과 불변식 검증 |
 | `prompt.py` | `agent.py` | 모델에 전달할 instructions 제공 |
 | `port.py` | `agent.py`, `service.py`, `bootstrap.py` | 분석기 Protocol과 경계 오류 정의 |
 | `__init__.py` | Python import system | 디렉터리를 패키지로 인식하고 패키지 설명 제공 |
@@ -241,7 +215,7 @@ Uvicorn 종료
 
 ```text
 성공: HTTP → api → service → agent → OpenAI → models 검증 → service → HTTP
-대체: HTTP → api → service → agent 실패 또는 없음 → rules → service → HTTP
+실패: HTTP → api → service → agent/OpenAI 실패 → 안전한 HTTP 503
 ```
 
 검색 의도 추출이라는 한 책임에 manager/triage/region/category agent를 따로 만들지는 않습니다.
@@ -257,7 +231,8 @@ Python 3.11~3.14와 `uv`가 필요합니다.
 
 ```bash
 uv sync --locked --extra dev
-uv run --locked --extra dev python -m uvicorn app.main:app --reload --port 8000
+OPENAI_API_KEY=발급받은_키 \
+uv run --locked --extra dev python -m uvicorn app.main:create_app --factory --reload --port 8000
 ```
 
 확인:

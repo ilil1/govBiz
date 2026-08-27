@@ -14,7 +14,6 @@ public record AiSearchIntentPayload(
         List<String> targetTerms,
         Boolean acceptingOnly,
         Boolean clarificationNeeded,
-        String clarificationQuestion,
-        AiSearchIntentAnalysisMode analysisMode
+        String clarificationQuestion
 ) {
 }

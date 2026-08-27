@@ -11,8 +11,7 @@ DEFAULT_LLM_RUN_TIMEOUT_SECONDS = 2.5
 class Settings:
     """환경변수에서 읽는 검색 의도 agent 설정."""
 
-    llm_provider: str
-    openai_api_key: str | None
+    openai_api_key: str
     openai_model: str
     llm_model_timeout_seconds: float
     llm_run_timeout_seconds: float
@@ -20,9 +19,12 @@ class Settings:
     @classmethod
     def from_environment(cls) -> "Settings":
         legacy_run_timeout = environ.get("LLM_TIMEOUT_SECONDS")
+        openai_api_key = _optional_value(environ.get("OPENAI_API_KEY"))
+        if openai_api_key is None:
+            raise SettingsConfigurationError("OPENAI_API_KEY is required")
+
         return cls(
-            llm_provider=environ.get("LLM_PROVIDER", "disabled").strip().lower(),
-            openai_api_key=_optional_value(environ.get("OPENAI_API_KEY")),
+            openai_api_key=openai_api_key,
             openai_model=(
                 environ.get("OPENAI_MODEL", DEFAULT_OPENAI_MODEL).strip()
                 or DEFAULT_OPENAI_MODEL
@@ -37,9 +39,9 @@ class Settings:
             ),
         )
 
-    @property
-    def openai_enabled(self) -> bool:
-        return self.llm_provider == "openai" and self.openai_api_key is not None
+
+class SettingsConfigurationError(RuntimeError):
+    """필수 AI Service 환경설정이 없을 때 발생하는 시작 오류."""
 
 
 def _optional_value(value: str | None) -> str | None:

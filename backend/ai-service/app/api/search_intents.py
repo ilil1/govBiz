@@ -1,8 +1,9 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.agents.search_intent.models import SearchIntentRequest, SearchIntentResponse
+from app.agents.search_intent.port import SearchIntentAnalysisError
 from app.agents.search_intent.service import SearchIntentAnalysisService
 
 
@@ -25,6 +26,12 @@ async def analyze_search_intent(
         Depends(get_search_intent_service),
     ],
 ) -> SearchIntentResponse:
-    """LLM 분석 실패 여부와 관계없이 Core API가 사용할 검색 조건을 반환한다."""
+    """OpenAI Agent가 검증한 검색 조건을 Core API에 반환한다."""
 
-    return await service.analyze(payload)
+    try:
+        return await service.analyze(payload)
+    except SearchIntentAnalysisError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Search intent analysis is temporarily unavailable.",
+        ) from error

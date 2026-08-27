@@ -5,13 +5,11 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import ai.govbiz.core.client.bizinfo.BizInfoClient;
 import ai.govbiz.core.client.bizinfo.BizInfoProgramPayload;
-import ai.govbiz.core.client.ai.AiSearchIntentAnalysisMode;
 import ai.govbiz.core.domain.support.SupportProgram;
 import ai.govbiz.core.domain.support.SupportProgramStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -84,7 +82,7 @@ class SupportProgramSearchServiceTest {
     @Test
     void tokenizesNaturalLanguageAndUnderstandsRegionPostpositions() {
         when(aiSearchIntentService.analyze("서울에서 AI 지원사업 찾아줘", true))
-                .thenReturn(Optional.empty());
+                .thenReturn(emptyAnalyzedIntent());
         when(client.fetchAll()).thenReturn(List.of(
                 payload("seoul-ai", "AI 기술 사업", "상시 접수", "AI,서울"),
                 payload("gyeonggi", "유통 사업", "상시 접수", "내수,경기")));
@@ -113,15 +111,14 @@ class SupportProgramSearchServiceTest {
     @Test
     void mergesAGroundedAiCategoryAliasThatTheLocalParserCannotCanonicalize() {
         String query = "스타트업 프로그램";
-        when(aiSearchIntentService.analyze(query, true)).thenReturn(Optional.of(
+        when(aiSearchIntentService.analyze(query, true)).thenReturn(
                 new AnalyzedSearchIntent(
                         List.of("스타트업"),
                         List.of(),
                         List.of("창업"),
                         List.of(),
                         false,
-                        null,
-                        AiSearchIntentAnalysisMode.LLM)));
+                        null));
         when(client.fetchAll()).thenReturn(List.of(
                 payload("startup", "초기 기업 육성", "상시 접수", "창업,부산"),
                 payload("export", "해외 판로 개척", "상시 접수", "수출,부산")));
@@ -136,15 +133,14 @@ class SupportProgramSearchServiceTest {
     @Test
     void ignoresValidButUngroundedAiTerms() {
         String query = "서울 AI";
-        when(aiSearchIntentService.analyze(query, true)).thenReturn(Optional.of(
+        when(aiSearchIntentService.analyze(query, true)).thenReturn(
                 new AnalyzedSearchIntent(
                         List.of("반도체"),
                         List.of("부산"),
                         List.of("수출"),
                         List.of("창업기업"),
                         false,
-                        null,
-                        AiSearchIntentAnalysisMode.LLM)));
+                        null));
         when(client.fetchAll()).thenReturn(List.of(
                 payload("grounded", "인공지능 기술", "상시 접수", "AI,서울"),
                 payload(
@@ -163,15 +159,14 @@ class SupportProgramSearchServiceTest {
     @Test
     void doesNotGroundShortAsciiCategoriesInsideLongerEnglishWords() {
         String query = "training 지원";
-        when(aiSearchIntentService.analyze(query, true)).thenReturn(Optional.of(
+        when(aiSearchIntentService.analyze(query, true)).thenReturn(
                 new AnalyzedSearchIntent(
                         List.of(),
                         List.of(),
                         List.of("AI"),
                         List.of(),
                         false,
-                        null,
-                        AiSearchIntentAnalysisMode.LLM)));
+                        null));
         when(client.fetchAll()).thenReturn(List.of(
                 payload("training", "직무 교육", "상시 접수", "인력,서울"),
                 payload("other", "인공지능 기술", "상시 접수", "AI,부산")));
@@ -185,7 +180,7 @@ class SupportProgramSearchServiceTest {
     @Test
     void capsRegionScoreAndMatchedReasonsAtOnePerProgram() {
         String query = "서울 부산 대구 인천 광주 대전 울산 세종 수출";
-        when(aiSearchIntentService.analyze(query, true)).thenReturn(Optional.empty());
+        when(aiSearchIntentService.analyze(query, true)).thenReturn(emptyAnalyzedIntent());
         when(client.fetchAll()).thenReturn(List.of(
                 payload("nationwide", "일반 경영 사업", "상시 접수", "경영,전국"),
                 payload("seoul-export", "해외 판로 사업", "상시 접수", "수출,서울")));
@@ -210,6 +205,16 @@ class SupportProgramSearchServiceTest {
         service.search("   ", true);
 
         verifyNoInteractions(aiSearchIntentService);
+    }
+
+    private static AnalyzedSearchIntent emptyAnalyzedIntent() {
+        return new AnalyzedSearchIntent(
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                false,
+                null);
     }
 
     private static BizInfoProgramPayload payload(

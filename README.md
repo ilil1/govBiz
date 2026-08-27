@@ -30,7 +30,7 @@ React Web
                   → SupportProgramRepository
                       → GET /api/v1/support-programs/search
                           → POST /internal/v1/search-intents/analyze
-                              → 단일 typed agent 또는 규칙 fallback
+                              → 필수 OpenAI typed agent
                           → Core API 로컬 parser 결과에 검증된 분석을 병합
                           → 공공데이터포털 기업마당 공고 조회·변환·검색·정렬
               → Redux Toolkit chat slice
@@ -48,10 +48,9 @@ Frontend는 HTTP 응답을 Zod로 검증하고, 화면 이탈이나 새 대화 �
 추정하지 않습니다. 공개 계약은 [지원사업 검색 HTTP 계약](docs/support-program-search-contract.md)에
 정리되어 있습니다.
 
-LLM은 검색어·지역·분야·지원대상 표현을 구조화하는 보조 분석기입니다. AI Service가 비활성화됐거나
-OpenAI 인증·rate limit·timeout·refusal·응답 검증에 실패해도 규칙 분석으로 전환하며, Core API도
-로컬 parser를 항상 기준으로 실행하고 검증된 내부 분석만 병합합니다. 따라서 AI 장애나 잘못된 내부
-응답은 로컬 분석만 사용하는 경로로 축소되며, 공고 검색 장애나 사실 생성으로 이어지지 않습니다.
+LLM은 검색어·지역·분야·지원대상 표현을 구조화하는 필수 분석기입니다. OpenAI 설정 누락은 AI Service
+시작 실패로 드러나고, 인증·rate limit·timeout·refusal·응답 검증 실패는 안전한 502·503·504로
+반환합니다. 제한적인 규칙 분석으로 자연어를 이해한 것처럼 성공시키지 않습니다.
 
 ### 채팅 상태 관리
 
@@ -82,7 +81,7 @@ Repository, UseCase와 외부 서비스 역할별 모듈로 분리해 관리합�
 - Spring Boot의 Controller → Service → Domain 흐름
 - Zod와 Bean Validation을 이용한 요청·응답 계약 검증
 - FastAPI 내부 Health API와 Core API의 upstream 오류 변환
-- OpenAI Agents SDK의 typed agent를 사용하는 검색 의도 분석과 이중 규칙 fallback
+- OpenAI Agents SDK의 필수 typed agent를 사용하는 검색 의도 분석
 - 공공데이터포털 응답을 GovBiz 공고 모델로 변환하는 외부 API adapter
 - Vite 프록시를 사용하는 Docker Compose 개발 환경
 - 실제 키 없이 로컬 공공데이터 스텁을 사용하는 결정적 Compose smoke 검증
@@ -112,15 +111,13 @@ UseCase와 Repository는 완전히 동일합니다. 자세한 비교는
 
 Docker daemon과 Docker Compose가 준비되어 있어야 합니다.
 
-저장소 루트의 `.env`에 공공데이터포털에서 발급한 일반 인증키를 설정합니다. Encoding 또는
-Decoding 키를 사용할 수 있으며 Core API가 호출 전에 정규화합니다. LLM 의도 분석을 사용하려면
-`OPENAI_API_KEY`도 설정합니다. 새 환경에서는 예시 파일을 복사한 뒤 값만 채웁니다. `.env`는 Git에서
-제외됩니다.
+저장소 루트의 `.env`에 공공데이터포털에서 발급한 일반 인증키와 필수 `OPENAI_API_KEY`를 설정합니다.
+Encoding 또는 Decoding 키를 사용할 수 있으며 Core API가 호출 전에 정규화합니다. 새 환경에서는
+예시 파일을 복사한 뒤 값만 채웁니다. `.env`는 Git에서 제외됩니다.
 
 ```bash
 cp .env.example .env
 # DATA_GO_KR_SERVICE_KEY=발급받은_인증키
-# LLM_PROVIDER=openai
 # OPENAI_API_KEY=발급받은_OpenAI_API_키
 ```
 
@@ -148,8 +145,8 @@ docker compose --file infrastructure/compose.yaml down --volumes --remove-orphan
 ## 검증
 
 전체 컨테이너 경로, 지원사업 검색 계약, AI Service 장애·복구까지 확인합니다. 이 검증은 로컬
-공공데이터 스텁과 dummy key를 사용하고 LLM provider를 비활성화해 규칙 fallback을 검증하므로 개인
-인증키나 외부 네트워크가 필요하지 않습니다.
+공공데이터 스텁과 외부로 전송하지 않는 dummy OpenAI key를 사용하므로 개인 인증키나 외부 네트워크가
+필요하지 않습니다.
 
 ```bash
 ./infrastructure/scripts/verify-compose.sh

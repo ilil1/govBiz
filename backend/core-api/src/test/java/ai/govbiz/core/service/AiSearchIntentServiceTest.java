@@ -2,10 +2,8 @@ package ai.govbiz.core.service;
 
 import java.net.SocketTimeoutException;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
-import ai.govbiz.core.client.ai.AiSearchIntentAnalysisMode;
 import ai.govbiz.core.client.ai.AiSearchIntentPayload;
 import ai.govbiz.core.client.ai.AiServiceClient;
 import ai.govbiz.core.client.ai.AiServiceClientException;
@@ -18,7 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -48,15 +46,13 @@ class AiSearchIntentServiceTest {
                 List.of("창업기업"),
                 true,
                 true,
-                " 업력을 알려주세요. ",
-                AiSearchIntentAnalysisMode.LLM));
+                " 업력을 알려주세요. "));
 
-        Optional<AnalyzedSearchIntent> result = service.analyze("  " + QUERY + "  ", true);
+        AnalyzedSearchIntent result = service.analyze("  " + QUERY + "  ", true);
 
-        assertTrue(result.isPresent());
-        assertEquals(List.of("스타트업"), result.orElseThrow().keywords());
-        assertEquals(List.of("서울"), result.orElseThrow().regions());
-        assertEquals("업력을 알려주세요.", result.orElseThrow().clarificationQuestion());
+        assertEquals(List.of("스타트업"), result.keywords());
+        assertEquals(List.of("서울"), result.regions());
+        assertEquals("업력을 알려주세요.", result.clarificationQuestion());
         verify(client).analyzeSearchIntent(QUERY, true);
     }
 
@@ -65,20 +61,28 @@ class AiSearchIntentServiceTest {
     void rejectsResponsesThatViolateTheInternalContract(AiSearchIntentPayload payload) {
         when(client.analyzeSearchIntent(QUERY, true)).thenReturn(payload);
 
-        assertTrue(service.analyze(QUERY, true).isEmpty());
+        AiServiceClientException exception = assertThrows(
+                AiServiceClientException.class,
+                () -> service.analyze(QUERY, true));
+
+        assertEquals(AiServiceClientException.Failure.INVALID_RESPONSE, exception.failure());
     }
 
     @Test
-    void fallsBackWhenTheAiServiceCannotBeUsed() {
+    void propagatesFailureWhenTheRequiredAiServiceCannotBeUsed() {
         when(client.analyzeSearchIntent(QUERY, false)).thenThrow(
                 AiServiceClientException.timeout(new SocketTimeoutException("test")));
 
-        assertTrue(service.analyze(QUERY, false).isEmpty());
+        AiServiceClientException exception = assertThrows(
+                AiServiceClientException.class,
+                () -> service.analyze(QUERY, false));
+
+        assertEquals(AiServiceClientException.Failure.TIMEOUT, exception.failure());
     }
 
     @Test
-    void skipsTheAiServiceForBlankQueries() {
-        assertTrue(service.analyze("   ", true).isEmpty());
+    void rejectsBlankQueriesBeforeCallingTheAiService() {
+        assertThrows(IllegalArgumentException.class, () -> service.analyze("   ", true));
         verifyNoInteractions(client);
     }
 
@@ -89,39 +93,35 @@ class AiSearchIntentServiceTest {
                 new AiSearchIntentPayload(
                         "다른 질문",
                         valid.keywords(), valid.regions(), valid.categories(), valid.targetTerms(),
-                        true, false, null, valid.analysisMode()),
+                        true, false, null),
                 new AiSearchIntentPayload(
                         QUERY,
                         valid.keywords(), valid.regions(), valid.categories(), valid.targetTerms(),
-                        false, false, null, valid.analysisMode()),
+                        false, false, null),
                 new AiSearchIntentPayload(
                         QUERY,
                         null, valid.regions(), valid.categories(), valid.targetTerms(),
-                        true, false, null, valid.analysisMode()),
+                        true, false, null),
                 new AiSearchIntentPayload(
                         QUERY,
                         valid.keywords(), List.of("달나라"), valid.categories(), valid.targetTerms(),
-                        true, false, null, valid.analysisMode()),
+                        true, false, null),
                 new AiSearchIntentPayload(
                         QUERY,
                         valid.keywords(), valid.regions(), List.of("법률"), valid.targetTerms(),
-                        true, false, null, valid.analysisMode()),
+                        true, false, null),
                 new AiSearchIntentPayload(
                         QUERY,
                         List.of("AI\n지시"), valid.regions(), valid.categories(), valid.targetTerms(),
-                        true, false, null, valid.analysisMode()),
+                        true, false, null),
                 new AiSearchIntentPayload(
                         QUERY,
                         valid.keywords(), valid.regions(), valid.categories(), valid.targetTerms(),
-                        true, false, "불필요한 질문", valid.analysisMode()),
+                        true, false, "불필요한 질문"),
                 new AiSearchIntentPayload(
                         QUERY,
                         valid.keywords(), valid.regions(), valid.categories(), valid.targetTerms(),
-                        true, true, null, valid.analysisMode()),
-                new AiSearchIntentPayload(
-                        QUERY,
-                        valid.keywords(), valid.regions(), valid.categories(), valid.targetTerms(),
-                        true, false, null, null));
+                        true, true, null));
     }
 
     private static AiSearchIntentPayload validPayload() {
@@ -133,7 +133,6 @@ class AiSearchIntentServiceTest {
                 List.of("창업기업"),
                 true,
                 false,
-                null,
-                AiSearchIntentAnalysisMode.LLM);
+                null);
     }
 }

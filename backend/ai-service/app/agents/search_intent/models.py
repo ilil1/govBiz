@@ -42,13 +42,6 @@ class SupportCategory(StrEnum):
     SMALL_BUSINESS = "소상공인"
 
 
-class AnalysisMode(StrEnum):
-    """의도 분석에 실제로 사용한 경로."""
-
-    LLM = "LLM"
-    RULE_BASED_FALLBACK = "RULE_BASED_FALLBACK"
-
-
 class SearchIntentRequest(BaseModel):
     """Core API가 보내는 검색 의도 분석 요청."""
 
@@ -140,4 +133,3 @@ class SearchIntentResponse(BaseModel):
     accepting_only: bool = Field(alias="acceptingOnly")
     clarification_needed: bool = Field(alias="clarificationNeeded")
     clarification_question: str | None = Field(alias="clarificationQuestion")
-    analysis_mode: AnalysisMode = Field(alias="analysisMode")

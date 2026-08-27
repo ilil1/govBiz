@@ -4,12 +4,13 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Optional;
 
+import ai.govbiz.core.client.ai.AiServiceClientException;
 import ai.govbiz.core.client.bizinfo.BizInfoClient;
 import ai.govbiz.core.client.bizinfo.BizInfoClientException;
 import ai.govbiz.core.client.bizinfo.BizInfoProgramPayload;
 import ai.govbiz.core.service.SupportProgramSearchService;
+import ai.govbiz.core.service.AnalyzedSearchIntent;
 import ai.govbiz.core.service.AiSearchIntentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,7 +59,7 @@ class SupportProgramControllerTest {
 
     @Test
     void returnsTheStableFrontendContractIncludingNullableParsedDates() throws Exception {
-        when(aiSearchIntentService.analyze("서울 AI", true)).thenReturn(Optional.empty());
+        when(aiSearchIntentService.analyze("서울 AI", true)).thenReturn(emptyAnalyzedIntent());
         when(client.fetchAll()).thenReturn(List.of(payload("상시 접수")));
 
         mockMvc.perform(get(PATH).queryParam("query", "  서울 AI  "))
@@ -77,7 +78,7 @@ class SupportProgramControllerTest {
 
     @Test
     void hidesConfigurationAndUpstreamDetailsBehindAStableProblem() throws Exception {
-        when(aiSearchIntentService.analyze("서울", true)).thenReturn(Optional.empty());
+        when(aiSearchIntentService.analyze("서울", true)).thenReturn(emptyAnalyzedIntent());
         when(client.fetchAll()).thenThrow(BizInfoClientException.notConfigured());
 
         mockMvc.perform(get(PATH).queryParam("query", "서울"))
@@ -89,9 +90,32 @@ class SupportProgramControllerTest {
     }
 
     @Test
+    void returnsUnavailableWhenRequiredAiIntentAnalysisIsUnavailable() throws Exception {
+        when(aiSearchIntentService.analyze("서울", true)).thenThrow(
+                AiServiceClientException.unavailable(new RuntimeException("private endpoint")));
+
+        mockMvc.perform(get(PATH).queryParam("query", "서울"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("AI_SERVICE_UNAVAILABLE"))
+                .andExpect(jsonPath("$.instance").value(PATH))
+                .andExpect(content().string(not(containsString("private endpoint"))));
+    }
+
+    @Test
     void requiresASearchQueryParameter() throws Exception {
         mockMvc.perform(get(PATH))
                 .andExpect(status().isBadRequest());
+    }
+
+    private static AnalyzedSearchIntent emptyAnalyzedIntent() {
+        return new AnalyzedSearchIntent(
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                false,
+                null);
     }
 
     private static BizInfoProgramPayload payload(String period) {

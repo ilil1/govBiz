@@ -84,6 +84,13 @@ public class AiServiceClient {
                                             "AI Service returned HTTP 204 without a search intent",
                                             null);
                                 }
+                                if (statusCode == HttpStatus.SERVICE_UNAVAILABLE.value()) {
+                                    throw AiServiceClientException.unavailable(null);
+                                }
+                                if (statusCode == HttpStatus.REQUEST_TIMEOUT.value()
+                                        || statusCode == HttpStatus.GATEWAY_TIMEOUT.value()) {
+                                    throw AiServiceClientException.timeout(null);
+                                }
                                 throw AiServiceClientException.upstreamError(
                                         "AI Service returned unexpected HTTP " + statusCode,
                                         null);

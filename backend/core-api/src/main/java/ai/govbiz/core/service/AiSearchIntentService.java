@@ -9,15 +9,12 @@ import java.util.Set;
 import ai.govbiz.core.client.ai.AiSearchIntentPayload;
 import ai.govbiz.core.client.ai.AiServiceClient;
 import ai.govbiz.core.client.ai.AiServiceClientException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-/** AI Service의 비신뢰 응답을 검증하고, 실패를 검색 가능한 로컬 폴백으로 바꾼다. */
+/** 필수 AI Service 응답을 검증하고 검색 서비스가 사용할 의도로 변환한다. */
 @Service
 public class AiSearchIntentService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AiSearchIntentService.class);
     private static final int MAX_TERMS_PER_FIELD = 8;
     private static final int MAX_TERM_LENGTH = 60;
     private static final int MAX_CLARIFICATION_LENGTH = 200;
@@ -34,30 +31,23 @@ public class AiSearchIntentService {
         this.client = client;
     }
 
-    public Optional<AnalyzedSearchIntent> analyze(String query, boolean acceptingOnly) {
+    public AnalyzedSearchIntent analyze(String query, boolean acceptingOnly) {
         String normalizedQuery = query == null ? "" : query.trim();
         if (normalizedQuery.isBlank()) {
-            return Optional.empty();
+            throw new IllegalArgumentException("query must not be blank");
         }
 
-        final AiSearchIntentPayload payload;
-        try {
-            payload = client.analyzeSearchIntent(normalizedQuery, acceptingOnly);
-        } catch (AiServiceClientException exception) {
-            LOGGER.debug(
-                    "AI search intent is unavailable; using local rules ({})",
-                    exception.failure());
-            return Optional.empty();
-        }
-
-        Optional<AnalyzedSearchIntent> validated = validate(
-                payload,
+        AiSearchIntentPayload payload = client.analyzeSearchIntent(
                 normalizedQuery,
                 acceptingOnly);
-        if (validated.isEmpty()) {
-            LOGGER.debug("AI search intent violated the internal contract; using local rules");
-        }
-        return validated;
+
+        return validate(
+                payload,
+                normalizedQuery,
+                acceptingOnly)
+                .orElseThrow(() -> AiServiceClientException.invalidResponse(
+                        "AI Service search intent violated the internal contract",
+                        null));
     }
 
     private static Optional<AnalyzedSearchIntent> validate(
@@ -69,8 +59,7 @@ public class AiSearchIntentService {
                 || !expectedQuery.equals(payload.originalQuery())
                 || payload.acceptingOnly() == null
                 || payload.acceptingOnly() != expectedAcceptingOnly
-                || payload.clarificationNeeded() == null
-                || payload.analysisMode() == null) {
+                || payload.clarificationNeeded() == null) {
             return Optional.empty();
         }
 
@@ -98,8 +87,7 @@ public class AiSearchIntentService {
                 categories.get(),
                 targetTerms.get(),
                 payload.clarificationNeeded(),
-                clarificationQuestion,
-                payload.analysisMode()));
+                clarificationQuestion));
     }
 
     private static Optional<List<String>> terms(List<String> values, Set<String> allowed) {

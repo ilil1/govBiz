@@ -113,9 +113,9 @@ public class SupportProgramSearchService {
         SearchIntent localIntent = SearchIntent.from(query);
         SearchIntent intent = query.isBlank()
                 ? localIntent
-                : aiSearchIntentService.analyze(query, acceptingOnly)
-                        .map(analyzed -> localIntent.merge(analyzed, query))
-                        .orElse(localIntent);
+                : localIntent.merge(
+                        aiSearchIntentService.analyze(query, acceptingOnly),
+                        query);
 
         List<ScoredProgram> scored = catalog().stream()
                 .filter(candidate -> !acceptingOnly

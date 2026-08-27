@@ -88,7 +88,7 @@ async def test_turns_invalid_structured_output_into_boundary_error() -> None:
 
 
 @pytest.mark.anyio
-async def test_does_not_hide_agent_configuration_errors_as_fallback_errors() -> None:
+async def test_propagates_agent_configuration_errors() -> None:
     model = ScriptedModel(
         [ModelStep.raise_error(UserError("invalid agent configuration"))]
     )

@@ -63,8 +63,8 @@ Frontend 환경변수에 기록하지 마세요.
 | `AI_SERVICE_READ_TIMEOUT` | `3s` | AI Service 응답 제한시간(LLM 기본 제한 2.5초 + 내부 응답 여유) |
 | `APP_CORS_ALLOWED_ORIGIN` | `http://localhost:5173` | 허용할 Web origin |
 
-Compose 실행은 저장소 루트 `.env`의 `DATA_GO_KR_SERVICE_KEY`를 Core API 컨테이너에만 전달합니다.
-네이티브 `bootRun`에서는 같은 이름의 프로세스 환경변수를 직접 설정해야 합니다.
+Compose 실행은 저장소 루트 `.env`의 `DATA_GO_KR_SERVICE_KEY`를 Core API에, `OPENAI_API_KEY`를 AI
+Service에만 전달합니다. 네이티브 실행에서는 각 프로세스 환경변수를 직접 설정해야 합니다.
 
 ## 지원사업 검색 동작
 
@@ -86,7 +86,7 @@ Core API는 공공데이터포털 응답을 한 시간 동안 메모리에 캐�
 
 | 상황 | HTTP | code |
 |---|---:|---|
-| 예상하지 않은 upstream 상태 | 502 | `AI_SERVICE_UPSTREAM_ERROR` |
+| AI Service/OpenAI 실패 응답 | 502 | `AI_SERVICE_UPSTREAM_ERROR` |
 | 잘못된 Content-Type·JSON·응답 body | 502 | `AI_SERVICE_INVALID_RESPONSE` |
 | 연결 불가 | 503 | `AI_SERVICE_UNAVAILABLE` |
 | 연결·읽기 시간 초과 | 504 | `AI_SERVICE_TIMEOUT` |

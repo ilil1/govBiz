@@ -1,5 +1,3 @@
-import logging
-
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
@@ -14,9 +12,8 @@ from app.config import Settings
 from app.main import create_app
 
 
-DISABLED_SETTINGS = Settings(
-    llm_provider="disabled",
-    openai_api_key=None,
+TEST_SETTINGS = Settings(
+    openai_api_key="test-key",
     openai_model="unused-model",
     llm_model_timeout_seconds=2.0,
     llm_run_timeout_seconds=2.5,
@@ -58,7 +55,7 @@ def test_rejects_terms_longer_than_core_contract() -> None:
 
 def test_returns_structured_llm_intent_and_preserves_caller_filter() -> None:
     agent = SuccessfulAgent()
-    client = TestClient(create_app(search_intent_agent=agent))
+    client = TestClient(create_app(settings=TEST_SETTINGS, search_intent_agent=agent))
 
     response = client.post(
         "/internal/v1/search-intents/analyze",
@@ -78,106 +75,25 @@ def test_returns_structured_llm_intent_and_preserves_caller_filter() -> None:
         "acceptingOnly": False,
         "clarificationNeeded": False,
         "clarificationQuestion": None,
-        "analysisMode": "LLM",
     }
     assert agent.queries == ["서울의 AI 반도체 스타트업 지원사업"]
 
 
-@pytest.mark.parametrize(
-    ("query", "expected"),
-    [
-        (
-            "서울에서 AI 창업지원 사업 찾아줘",
-            {
-                "regions": ["서울"],
-                "categories": ["AI", "창업"],
-                "targetTerms": [],
-            },
-        ),
-        (
-            "현재 접수 중인 수출 지원사업 알려줘",
-            {
-                "regions": [],
-                "categories": ["수출"],
-                "targetTerms": [],
-            },
-        ),
-        (
-            "제조기업 R&D 사업을 찾아줘",
-            {
-                "regions": [],
-                "categories": ["제조", "기술"],
-                "targetTerms": ["제조기업"],
-            },
-        ),
-        (
-            "경기도 소재 업력 7년 이내 스타트업",
-            {
-                "regions": ["경기"],
-                "categories": ["창업"],
-                "targetTerms": ["업력 7년 이내", "스타트업"],
-            },
-        ),
-    ],
-)
-def test_rule_based_fallback_extracts_supported_korean_filters(
-    query: str,
-    expected: dict[str, list[str]],
-) -> None:
-    client = TestClient(create_app(settings=DISABLED_SETTINGS))
-
-    response = client.post(
-        "/internal/v1/search-intents/analyze",
-        json={"query": query, "acceptingOnly": True},
+def test_agent_failure_returns_safe_error_without_leaking_details() -> None:
+    client = TestClient(
+        create_app(settings=TEST_SETTINGS, search_intent_agent=FailingAgent())
     )
-
-    assert response.status_code == 200
-    document = response.json()
-    assert document["analysisMode"] == "RULE_BASED_FALLBACK"
-    assert document["regions"] == expected["regions"]
-    assert document["categories"] == expected["categories"]
-    assert document["targetTerms"] == expected["targetTerms"]
-    assert document["acceptingOnly"] is True
-    assert document["clarificationNeeded"] is False
-
-
-def test_rule_based_fallback_requests_clarification_for_empty_intent() -> None:
-    client = TestClient(create_app(settings=DISABLED_SETTINGS))
-
-    response = client.post(
-        "/internal/v1/search-intents/analyze",
-        json={"query": "지원사업 추천해줘", "acceptingOnly": True},
-    )
-
-    assert response.status_code == 200
-    assert response.json() == {
-        "originalQuery": "지원사업 추천해줘",
-        "keywords": [],
-        "regions": [],
-        "categories": [],
-        "targetTerms": [],
-        "acceptingOnly": True,
-        "clarificationNeeded": True,
-        "clarificationQuestion": "원하는 지역, 지원 분야 또는 기업 유형을 알려주세요.",
-        "analysisMode": "RULE_BASED_FALLBACK",
-    }
-
-
-def test_agent_failure_returns_safe_fallback_without_leaking_details(
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    client = TestClient(create_app(search_intent_agent=FailingAgent()))
-    caplog.set_level(logging.WARNING)
-
     response = client.post(
         "/internal/v1/search-intents/analyze",
         json={"query": "서울 수출 secret-company", "acceptingOnly": True},
     )
 
-    assert response.status_code == 200
-    assert response.json()["analysisMode"] == "RULE_BASED_FALLBACK"
-    assert "private agent response" not in caplog.text
-    assert "secret-company" not in caplog.text
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "Search intent analysis is temporarily unavailable."
+    }
+    assert "private agent response" not in response.text
+    assert "secret-company" not in response.text
 
 
 @pytest.mark.parametrize(
@@ -190,7 +106,9 @@ def test_agent_failure_returns_safe_fallback_without_leaking_details(
     ],
 )
 def test_rejects_invalid_requests(body: dict[str, object]) -> None:
-    client = TestClient(create_app(settings=DISABLED_SETTINGS))
+    client = TestClient(
+        create_app(settings=TEST_SETTINGS, search_intent_agent=SuccessfulAgent())
+    )
 
     response = client.post("/internal/v1/search-intents/analyze", json=body)
 
@@ -198,7 +116,9 @@ def test_rejects_invalid_requests(body: dict[str, object]) -> None:
 
 
 def test_exposes_camel_case_contract_in_openapi() -> None:
-    client = TestClient(create_app(settings=DISABLED_SETTINGS))
+    client = TestClient(
+        create_app(settings=TEST_SETTINGS, search_intent_agent=SuccessfulAgent())
+    )
 
     response = client.get("/openapi.json")
 
@@ -225,7 +145,6 @@ def test_exposes_camel_case_contract_in_openapi() -> None:
         "acceptingOnly",
         "clarificationNeeded",
         "clarificationQuestion",
-        "analysisMode",
     }
 
 

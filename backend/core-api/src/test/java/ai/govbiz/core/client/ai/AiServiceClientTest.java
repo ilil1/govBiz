@@ -43,8 +43,7 @@ class AiServiceClientTest {
               "targetTerms":["창업기업"],
               "acceptingOnly":true,
               "clarificationNeeded":false,
-              "clarificationQuestion":null,
-              "analysisMode":"LLM"
+              "clarificationQuestion":null
             }
             """;
 
@@ -185,7 +184,6 @@ class AiServiceClientTest {
         assertEquals("서울 AI 스타트업 지원사업", response.originalQuery());
         assertEquals(List.of("서울"), response.regions());
         assertEquals(List.of("AI", "창업"), response.categories());
-        assertEquals(AiSearchIntentAnalysisMode.LLM, response.analysisMode());
     }
 
     @Test
@@ -204,13 +202,23 @@ class AiServiceClientTest {
     }
 
     @Test
-    void mapsSearchIntentProviderFailureToUpstreamError() {
+    void mapsSearchIntentUnavailableStatusToUnavailable() {
         server.expect(requestTo(SEARCH_INTENT_URL))
                 .andRespond(withStatus(HttpStatus.SERVICE_UNAVAILABLE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .body("{\"detail\":\"unavailable\"}"));
 
-        assertIntentFailure(AiServiceClientException.Failure.UPSTREAM_ERROR);
+        assertIntentFailure(AiServiceClientException.Failure.UNAVAILABLE);
+    }
+
+    @Test
+    void mapsSearchIntentGatewayTimeoutStatusToTimeout() {
+        server.expect(requestTo(SEARCH_INTENT_URL))
+                .andRespond(withStatus(HttpStatus.GATEWAY_TIMEOUT)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"detail\":\"timeout\"}"));
+
+        assertIntentFailure(AiServiceClientException.Failure.TIMEOUT);
     }
 
     private void expectResponse(org.springframework.test.web.client.ResponseCreator response) {

@@ -5,11 +5,16 @@ from app.config import (
     DEFAULT_LLM_RUN_TIMEOUT_SECONDS,
     DEFAULT_OPENAI_MODEL,
     Settings,
+    SettingsConfigurationError,
 )
 
 
+@pytest.fixture(autouse=True)
+def configure_required_openai_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+
+
 def test_reads_trimmed_openai_settings(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("LLM_PROVIDER", " OpenAI ")
     monkeypatch.setenv("OPENAI_API_KEY", " private-key ")
     monkeypatch.setenv("OPENAI_MODEL", " test-model ")
     monkeypatch.setenv("LLM_MODEL_TIMEOUT_SECONDS", "1.25")
@@ -17,12 +22,10 @@ def test_reads_trimmed_openai_settings(monkeypatch: pytest.MonkeyPatch) -> None:
 
     settings = Settings.from_environment()
 
-    assert settings.llm_provider == "openai"
     assert settings.openai_api_key == "private-key"
     assert settings.openai_model == "test-model"
     assert settings.llm_model_timeout_seconds == 1.25
     assert settings.llm_run_timeout_seconds == 1.75
-    assert settings.openai_enabled is True
 
 
 @pytest.mark.parametrize(
@@ -68,22 +71,23 @@ def test_uses_legacy_timeout_as_run_timeout(
     assert Settings.from_environment().llm_run_timeout_seconds == 2.25
 
 
-def test_defaults_to_disabled_without_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    for name in ("LLM_PROVIDER", "OPENAI_API_KEY", "OPENAI_MODEL"):
-        monkeypatch.delenv(name, raising=False)
+def test_requires_openai_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
-    settings = Settings.from_environment()
-
-    assert settings.llm_provider == "disabled"
-    assert settings.openai_api_key is None
-    assert settings.openai_model == DEFAULT_OPENAI_MODEL
-    assert settings.openai_enabled is False
+    with pytest.raises(SettingsConfigurationError, match="OPENAI_API_KEY is required"):
+        Settings.from_environment()
 
 
-def test_openai_agent_stays_disabled_for_blank_key(
+def test_rejects_blank_openai_api_key(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("LLM_PROVIDER", "openai")
     monkeypatch.setenv("OPENAI_API_KEY", "   ")
 
-    assert Settings.from_environment().openai_enabled is False
+    with pytest.raises(SettingsConfigurationError, match="OPENAI_API_KEY is required"):
+        Settings.from_environment()
+
+
+def test_uses_default_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("OPENAI_MODEL", raising=False)
+
+    assert Settings.from_environment().openai_model == DEFAULT_OPENAI_MODEL

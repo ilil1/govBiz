@@ -49,21 +49,17 @@ Content-Type: application/json
   "targetTerms": [],
   "acceptingOnly": true,
   "clarificationNeeded": false,
-  "clarificationQuestion": null,
-  "analysisMode": "LLM"
+  "clarificationQuestion": null
 }
 ```
 
-`analysisMode`는 `LLM` 또는 `RULE_BASED_FALLBACK`입니다. OpenAI가 비활성화됐거나 키가 없거나,
-timeout·인증·rate limit·refusal·잘못된 structured output이 발생하면 AI Service는 오류 대신 규칙
-분석 결과와 `RULE_BASED_FALLBACK`을 HTTP 200으로 반환합니다. 요청 body 자체가 유효하지 않은 경우만
-422입니다.
+`OPENAI_API_KEY`는 필수이며, timeout·인증·rate limit·refusal·잘못된 structured output이 발생하면
+AI Service는 불완전한 규칙 결과 대신 오류를 반환합니다.
 
-Core API는 기존 로컬 parser를 항상 먼저 실행하고, `originalQuery`와 `acceptingOnly` echo, 배열 길이·
-문자열 길이, 허용 지역·분야 값과 clarification 필드 조합을 다시 검증한 분석만 병합합니다. AI
-Service의 HTTP 오류, timeout, JSON 오류, echo 불일치나 유효하지 않은 값은 로컬 parser 결과만
-사용합니다. 이 내부 DTO와 `analysisMode`는 공개 검색 응답에 추가되지 않으며, `acceptingOnly` 필터의
-의미도 바뀌지 않습니다.
+Core API는 원문 토큰을 보존하면서 `originalQuery`와 `acceptingOnly` echo, 배열 길이·문자열 길이,
+허용 지역·분야 값과 clarification 필드 조합을 다시 검증한 AI 분석만 병합합니다. AI Service의 HTTP
+오류, timeout, JSON 오류, echo 불일치나 유효하지 않은 값은 공개 502·503·504로 변환하며 로컬 parser
+성공으로 숨기지 않습니다. 내부 검색 의도 DTO는 공개 성공 응답에 추가되지 않습니다.
 
 ## 성공 응답
 
@@ -105,10 +101,9 @@ Service의 HTTP 오류, timeout, JSON 오류, echo 불일치나 유효하지 않
 ## 비밀정보와 오류 처리
 
 `DATA_GO_KR_SERVICE_KEY`는 Core API 프로세스에, `OPENAI_API_KEY`는 AI Service 프로세스에만
-주입합니다. 응답, 로그, Frontend 환경변수와 Git 파일에 인증키를 포함하지 않습니다. 기업마당 키
-누락, 외부 API 장애, 시간 초과 또는 잘못된 외부 응답은 Core API가 `application/problem+json`
-오류로 변환하며, 외부 URL이나 내부 예외 메시지를 브라우저에 노출하지 않습니다. 반면 LLM·AI 의도
-분석 실패는 규칙 fallback으로 흡수되므로 아래 공개 오류를 새로 만들지 않습니다.
+주입합니다. 응답, 로그, Frontend 환경변수와 Git 파일에 인증키를 포함하지 않습니다. 기업마당 또는
+AI Service의 설정 누락·장애·시간 초과·잘못된 응답은 Core API가 `application/problem+json` 오류로
+변환하며, 외부 URL이나 내부 예외 메시지를 브라우저에 노출하지 않습니다.
 
 | 상황 | HTTP | `code` |
 |---|---:|---|
@@ -117,7 +112,11 @@ Service의 HTTP 오류, timeout, JSON 오류, echo 불일치나 유효하지 않
 | 잘못된 외부 응답 | 502 | `SUPPORT_PROGRAM_INVALID_RESPONSE` |
 | 외부 API 연결 불가 | 503 | `SUPPORT_PROGRAM_SOURCE_UNAVAILABLE` |
 | 외부 API 시간 초과 | 504 | `SUPPORT_PROGRAM_SOURCE_TIMEOUT` |
+| AI Service 실패 응답 | 502 | `AI_SERVICE_UPSTREAM_ERROR` |
+| AI Service 잘못된 응답 | 502 | `AI_SERVICE_INVALID_RESPONSE` |
+| AI Service 연결 불가·OpenAI 분석 불가 | 503 | `AI_SERVICE_UNAVAILABLE` |
+| AI Service 시간 초과 | 504 | `AI_SERVICE_TIMEOUT` |
 
-단위·계약 테스트와 Compose smoke는 실제 인증키나 외부 네트워크를 사용하지 않습니다. Compose
-smoke는 검증 profile의 로컬 공공데이터 스텁과 비활성 LLM provider를 사용해 Web → Core API →
-AI 규칙 fallback 및 공공데이터 adapter 전체 경로를 재현합니다.
+단위·계약 테스트는 가짜 Agent와 HTTP mock을 사용하며 실제 OpenAI 네트워크를 호출하지 않습니다.
+Compose smoke는 더미 OpenAI 키로 AI Service 시작·중지·복구와 필수 AI 장애 전파를 확인하고, 빈
+검색어로 공공데이터 스텁 adapter 경로를 별도로 검증합니다. 더미 키를 실제 OpenAI로 보내지는 않습니다.

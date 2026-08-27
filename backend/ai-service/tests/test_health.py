@@ -1,8 +1,26 @@
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.agents.search_intent.models import ExtractedSearchIntent
+from app.config import Settings
+from app.main import create_app
 
-client = TestClient(app)
+
+class NeverCalledAgent:
+    async def analyze(self, query: str) -> ExtractedSearchIntent:
+        raise AssertionError("health tests must not invoke the agent")
+
+
+client = TestClient(
+    create_app(
+        settings=Settings(
+            openai_api_key="test-key",
+            openai_model="test-model",
+            llm_model_timeout_seconds=2.0,
+            llm_run_timeout_seconds=2.5,
+        ),
+        search_intent_agent=NeverCalledAgent(),
+    )
+)
 
 
 def test_returns_typed_health_response() -> None:

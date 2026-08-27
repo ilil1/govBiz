@@ -5,7 +5,6 @@ from fastapi.testclient import TestClient
 import app.bootstrap as bootstrap_module
 import app.main as main_module
 from app.agents.search_intent.models import (
-    AnalysisMode,
     ExtractedSearchIntent,
     SearchIntentRequest,
 )
@@ -15,7 +14,6 @@ from app.config import Settings
 
 
 OPENAI_SETTINGS = Settings(
-    llm_provider="openai",
     openai_api_key="private-key",
     openai_model="test-model",
     llm_model_timeout_seconds=1.25,
@@ -29,6 +27,11 @@ class FakeOpenAIClient:
 
     async def close(self) -> None:
         self.closed = True
+
+
+class NeverCalledAgent:
+    async def analyze(self, query: str) -> ExtractedSearchIntent:
+        raise AssertionError("health and lifespan tests must not invoke the agent")
 
 
 @pytest.mark.anyio
@@ -83,7 +86,6 @@ async def test_builds_and_wires_agent_in_the_composition_root(
         SearchIntentRequest(query="서울 AI 반도체", acceptingOnly=True)
     )
 
-    assert response.analysis_mode is AnalysisMode.LLM
     assert response.keywords == ["반도체"]
     model.assert_complete()
 
@@ -93,7 +95,7 @@ def test_application_lifespan_closes_container_owned_client(
 ) -> None:
     client = FakeOpenAIClient()
     container = ApplicationContainer(
-        search_intent_service=SearchIntentAnalysisService(),
+        search_intent_service=SearchIntentAnalysisService(NeverCalledAgent()),
         openai_client=client,  # type: ignore[arg-type]
     )
 

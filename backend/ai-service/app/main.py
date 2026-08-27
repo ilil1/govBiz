@@ -38,6 +38,3 @@ def create_app(
     application.include_router(health_router)
     application.include_router(search_intents_router)
     return application
-
-
-app = create_app()

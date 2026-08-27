@@ -3,6 +3,7 @@ package ai.govbiz.core.controller;
 import java.net.URI;
 import java.util.List;
 
+import ai.govbiz.core.client.ai.AiServiceClientException;
 import ai.govbiz.core.service.AiServiceHealthException;
 import ai.govbiz.core.service.SupportProgramSearchException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,6 +44,25 @@ public class ApiExceptionHandler {
     @ExceptionHandler(AiServiceHealthException.class)
     public ResponseEntity<ProblemDetail> handleAiServiceHealthException(
             AiServiceHealthException exception,
+            HttpServletRequest request
+    ) {
+        ProblemDefinition definition = definitionFor(exception.failure());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                definition.status(),
+                definition.detail());
+        problem.setType(definition.type());
+        problem.setTitle(definition.title());
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("code", definition.code());
+
+        return ResponseEntity.status(definition.status())
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
+    @ExceptionHandler(AiServiceClientException.class)
+    public ResponseEntity<ProblemDetail> handleAiServiceClientException(
+            AiServiceClientException exception,
             HttpServletRequest request
     ) {
         ProblemDefinition definition = definitionFor(exception.failure());
@@ -136,6 +156,35 @@ public class ApiExceptionHandler {
     }
 
     private static ProblemDefinition definitionFor(AiServiceHealthException.Failure failure) {
+        return switch (failure) {
+            case UPSTREAM_ERROR -> new ProblemDefinition(
+                    HttpStatus.BAD_GATEWAY,
+                    URI.create("urn:govbiz:problem:ai-service-upstream-error"),
+                    "AI Service Upstream Error",
+                    "AI Service returned an unexpected HTTP status.",
+                    "AI_SERVICE_UPSTREAM_ERROR");
+            case INVALID_RESPONSE -> new ProblemDefinition(
+                    HttpStatus.BAD_GATEWAY,
+                    URI.create("urn:govbiz:problem:ai-service-invalid-response"),
+                    "AI Service Invalid Response",
+                    "AI Service returned an invalid response.",
+                    "AI_SERVICE_INVALID_RESPONSE");
+            case UNAVAILABLE -> new ProblemDefinition(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    URI.create("urn:govbiz:problem:ai-service-unavailable"),
+                    "AI Service Unavailable",
+                    "AI Service is currently unavailable.",
+                    "AI_SERVICE_UNAVAILABLE");
+            case TIMEOUT -> new ProblemDefinition(
+                    HttpStatus.GATEWAY_TIMEOUT,
+                    URI.create("urn:govbiz:problem:ai-service-timeout"),
+                    "AI Service Gateway Timeout",
+                    "AI Service did not respond within the configured timeout.",
+                    "AI_SERVICE_TIMEOUT");
+        };
+    }
+
+    private static ProblemDefinition definitionFor(AiServiceClientException.Failure failure) {
         return switch (failure) {
             case UPSTREAM_ERROR -> new ProblemDefinition(
                     HttpStatus.BAD_GATEWAY,

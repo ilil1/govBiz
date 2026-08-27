@@ -73,7 +73,7 @@ Controller → Service → Domain
 ```
 
 - **Controller**는 HTTP 요청·응답 DTO 변환과 Bean Validation을 담당합니다.
-- **Service**는 use case, 검색 의도 검증, fallback과 상태 전이를 담당합니다.
+- **Service**는 use case, 검색 의도 검증, 오류 경계와 상태 전이를 담당합니다.
 - **Domain**은 프레임워크에 의존하지 않는 record·enum·불변식을 둡니다.
 - **client/bizinfo**는 공공데이터포털 전송 계약과 인증키를 소유합니다. Service가 외부 공고를
   GovBiz 모델로 변환하고 검색·정렬·캐시 정책을 적용합니다.
@@ -94,36 +94,33 @@ Content-Type: application/json
 {"query":"서울 AI 창업지원 찾아줘","acceptingOnly":true}
 ```
 
-AI Service는 OpenAI가 설정되어 있으면 [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/)의
-단일 typed agent를 실행해 키워드, 지역, 분야와 지원대상 표현을 제한된 JSON schema로 받습니다.
+AI Service는 필수 [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/)의 단일 typed
+agent를 실행해 키워드, 지역, 분야와 지원대상 표현을 제한된 JSON schema로 받습니다.
 공고 내용·자격·금액·접수상태를 생성하거나 공공데이터 원문을 대체하지 않습니다.
 
 ```text
 AI Service
-  ├→ Agent + Runner 성공 + schema 검증 성공 → analysisMode=LLM
-  └→ agent 비활성·키 누락·timeout·인증·rate limit·refusal·검증 실패
-       → analysisMode=RULE_BASED_FALLBACK (HTTP 200)
+  ├→ Agent + Runner 성공 + schema 검증 성공 → 구조화 검색 의도
+  └→ 키 누락은 시작 실패, 실행·검증 실패는 안전한 HTTP 503
 
 Core API
-  ├→ 로컬 parser를 기준으로 항상 실행
-  ├→ 내부 응답의 query/acceptingOnly echo, 허용값과 길이 검증 성공 → 분석 결과 병합
-  └→ AI HTTP 오류·timeout·JSON 오류·echo 불일치·허용되지 않은 값
-       → 로컬 parser 결과만 사용
+  ├→ 원문 토큰을 보존하고 유효한 AI 분석 결과를 병합
+  └→ AI HTTP 오류·timeout·JSON 오류·echo 불일치·허용되지 않은 값 → 공개 오류
 ```
 
-AI Service가 유효하지 않은 요청을 받은 경우만 422를 반환합니다. 그 밖의 LLM 실패는 검색 가능한
-규칙 응답으로 흡수되고, Core API에도 두 번째 fallback이 있으므로 AI Service나 OpenAI 장애가 공개
-검색 오류로 전파되지 않습니다. 공개 응답은 계속 `{query, programs}` 계약을 유지합니다.
+AI Service가 유효하지 않은 요청을 받으면 422를 반환합니다. LLM 실패를 제한적인 규칙 의미 분석으로
+숨기지 않으므로 AI Service나 OpenAI 장애는 공개 검색 오류로 전파됩니다. 성공 응답은 계속
+`{query, programs}` 계약을 유지합니다.
 
 현재는 한 번의 짧고 구조화된 추출만 필요하므로 agent 하나를 `max_turns=1`로 실행합니다. tool,
 handoff, session이나 manager agent는 실제 역할이 없어 추가하지 않습니다. 검색 의도 기능의 Agent,
-prompt, model, port, fallback과 서비스 흐름은 `agents/search_intent` 수직 슬라이스에 모으고, OpenAI
+prompt, model, port와 서비스 흐름은 `agents/search_intent` 수직 슬라이스에 모으고, OpenAI
 client 소유권과 DI는 root `bootstrap.py`에 둡니다. 실제 사업 조회 도구나 서로 다른 전문가로 실행권을
 넘기는 요구가 생길 때 `agents/<agent_name>` 모듈과 tool 또는 handoff 도입을 다시 평가합니다.
 
 모델 HTTP 호출과 전체 Runner 실행은 별도 timeout으로 제한합니다. 전체 run 제한을 모델 호출
-제한보다 길고 Core API의 AI Service 읽기 제한보다 짧게 두어, 모델 오류를 규칙 fallback으로 바꿀
-시간을 확보합니다.
+제한보다 길고 Core API의 AI Service 읽기 제한보다 짧게 두어, Core가 timeout을 명확한 공개 오류로
+변환할 시간을 확보합니다.
 
 ## Docker Compose 개발 흐름
 

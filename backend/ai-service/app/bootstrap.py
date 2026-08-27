@@ -31,8 +31,7 @@ def build_application_container(
     openai_client: AsyncOpenAI | None = None
     agent = search_intent_agent
 
-    if agent is None and settings.openai_enabled:
-        assert settings.openai_api_key is not None
+    if agent is None:
         openai_client = AsyncOpenAI(
             api_key=settings.openai_api_key,
             timeout=settings.llm_model_timeout_seconds,
