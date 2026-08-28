@@ -19,7 +19,7 @@ docker compose --env-file .env --file infrastructure/compose.yaml up --build
 
 ### 네이티브 개발
 
-Java Core API를 별도 터미널에서 먼저 실행합니다.
+Kotlin Core API를 별도 터미널에서 먼저 실행합니다.
 
 ```bash
 cd backend/core-api

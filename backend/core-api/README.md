@@ -33,7 +33,7 @@ client/ai/       # FastAPI 내부 HTTP Client
 config/          # CORS, HTTP Client, Clock, JSON 설정
 ```
 
-Java 기본 패키지는 `ai.govbiz.core`이고 Gradle 프로젝트명은 `govbiz-core-api`입니다.
+Kotlin 기본 패키지는 `ai.govbiz.core`이고 Gradle 프로젝트명은 `govbiz-core-api`입니다.
 
 외부 HTTP 호출은 영속성 Repository가 아니므로 소스별 `client`에 둡니다. Bizinfo client는 인증키와
 공공데이터포털 전송 계약만 소유하고, Service가 HTML 제거, 공식 원문 URL 검증, 신청기간·접수상태
@@ -41,7 +41,7 @@ Java 기본 패키지는 `ai.govbiz.core`이고 Gradle 프로젝트명은 `govbi
 
 ## 실행
 
-Java 21이 필요합니다.
+JDK 21이 필요합니다.
 
 ```bash
 ./gradlew bootRun
