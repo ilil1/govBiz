@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.schemas.health import HealthResponse, ServiceName
+from app.schemas.health import HealthResponse
 
 router = APIRouter(prefix="/internal/v1", tags=["internal"])
 
@@ -12,7 +12,4 @@ router = APIRouter(prefix="/internal/v1", tags=["internal"])
 )
 def health() -> HealthResponse:
     """Core API가 AI Service의 실행 상태를 확인할 때 사용한다."""
-    return HealthResponse(
-        status="up",
-        service=ServiceName.GOVBIZ_AI_SERVICE,
-    )
+    return HealthResponse()
