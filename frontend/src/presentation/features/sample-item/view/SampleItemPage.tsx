@@ -24,7 +24,7 @@ export function SampleItemPage({ onBackToChat, onOpenReduxVersion }: SampleItemP
   return (
     <main className="sample-shell">
       <button className="sample-back-button" type="button" onClick={onBackToChat}>
-        <span aria-hidden="true">←</span> 지원사업 채팅으로 돌아가기
+        <span>←</span> 지원사업 채팅으로 돌아가기
       </button>
 
       <SampleItemVersionSwitch
@@ -33,7 +33,7 @@ export function SampleItemPage({ onBackToChat, onOpenReduxVersion }: SampleItemP
         onOpenReduxVersion={onOpenReduxVersion}
       />
 
-      <section className="sample-hero" aria-label="GovBiz 구조 예제 소개">
+      <section className="sample-hero">
         <div>
           <p className="eyebrow">React Hook Architecture Example</p>
           <h1>재사용 가능한 수직 슬라이스</h1>
@@ -60,10 +60,9 @@ export function SampleItemPage({ onBackToChat, onOpenReduxVersion }: SampleItemP
           <input
             id="sample-name"
             placeholder="예: 첫 번째 예제"
-            aria-invalid={Boolean(errors.name)}
             {...registerField('name')}
           />
-          {errors.name ? <small role="alert">{errors.name.message}</small> : null}
+          {errors.name ? <small>{errors.name.message}</small> : null}
         </label>
 
         <label className="form-field" htmlFor="sample-category">
@@ -81,10 +80,9 @@ export function SampleItemPage({ onBackToChat, onOpenReduxVersion }: SampleItemP
             id="sample-note"
             rows={4}
             placeholder="예제 기능의 목적이나 다음 처리 단계를 적어 보세요."
-            aria-invalid={Boolean(errors.note)}
             {...registerField('note')}
           />
-          {errors.note ? <small role="alert">{errors.note.message}</small> : null}
+          {errors.note ? <small>{errors.note.message}</small> : null}
         </label>
 
         <div className="form-action">
@@ -98,7 +96,7 @@ export function SampleItemPage({ onBackToChat, onOpenReduxVersion }: SampleItemP
         </div>
 
         {preparation ? (
-          <output className="sample-result" aria-live="polite">
+          <output className="sample-result">
             <strong className="sample-result-title">✓ Core API 요청 성공</strong>
             <span>
               <strong>{preparation.item.name}</strong> 입력을 서버가 정상적으로 받았습니다.
@@ -110,7 +108,7 @@ export function SampleItemPage({ onBackToChat, onOpenReduxVersion }: SampleItemP
           </output>
         ) : null}
 
-        {preparationError ? <p className="sample-error" role="alert">{preparationError}</p> : null}
+        {preparationError ? <p className="sample-error">{preparationError}</p> : null}
       </form>
     </main>
   )

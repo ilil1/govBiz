@@ -38,7 +38,7 @@ export function ReduxSampleItemPage({
   return (
     <main className="sample-shell">
       <button className="sample-back-button" type="button" onClick={onBackToChat}>
-        <span aria-hidden="true">←</span> 지원사업 채팅으로 돌아가기
+        <span>←</span> 지원사업 채팅으로 돌아가기
       </button>
 
       <SampleItemVersionSwitch
@@ -47,7 +47,7 @@ export function ReduxSampleItemPage({
         onOpenReduxVersion={() => undefined}
       />
 
-      <section className="sample-hero" aria-label="GovBiz Redux 구조 예제 소개">
+      <section className="sample-hero">
         <div>
           <p className="eyebrow">Redux Toolkit Architecture Example</p>
           <h1>Redux 기반 수직 슬라이스</h1>
@@ -79,10 +79,9 @@ export function ReduxSampleItemPage({
             id="redux-sample-name"
             value={values.name}
             placeholder="예: Redux 예제"
-            aria-invalid={Boolean(errors.name)}
             onChange={(event) => updateName(event.target.value)}
           />
-          {errors.name ? <small role="alert">{errors.name}</small> : null}
+          {errors.name ? <small>{errors.name}</small> : null}
         </label>
 
         <label className="form-field" htmlFor="redux-sample-category">
@@ -105,10 +104,9 @@ export function ReduxSampleItemPage({
             rows={4}
             value={values.note}
             placeholder="Redux Store에 유지할 메모를 적어 보세요."
-            aria-invalid={Boolean(errors.note)}
             onChange={(event) => updateNote(event.target.value)}
           />
-          {errors.note ? <small role="alert">{errors.note}</small> : null}
+          {errors.note ? <small>{errors.note}</small> : null}
         </label>
 
         <div className="form-action">
@@ -122,7 +120,7 @@ export function ReduxSampleItemPage({
         </div>
 
         {preparation ? (
-          <output className="sample-result" aria-live="polite">
+          <output className="sample-result">
             <strong className="sample-result-title">✓ Redux Store에 요청 성공 저장</strong>
             <span>
               <strong>{preparation.item.name}</strong> 입력을 서버가 정상적으로 받았습니다.
@@ -134,7 +132,7 @@ export function ReduxSampleItemPage({
           </output>
         ) : null}
 
-        {preparationError ? <p className="sample-error" role="alert">{preparationError}</p> : null}
+        {preparationError ? <p className="sample-error">{preparationError}</p> : null}
       </form>
     </main>
   )

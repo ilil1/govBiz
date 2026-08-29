@@ -19,12 +19,12 @@ describe('useSampleItemViewModel', () => {
     )
     render(<TestHarness useCase={createPrepareSampleItemUseCase(prepareSampleItem)} />)
 
-    fireEvent.change(screen.getByLabelText('이름'), { target: { value: '예제' } })
-    fireEvent.change(screen.getByLabelText('메모'), { target: { value: '  설명  ' } })
+    fireEvent.change(screen.getByTestId('name-input'), { target: { value: '예제' } })
+    fireEvent.change(screen.getByTestId('note-input'), { target: { value: '  설명  ' } })
     await waitFor(() => expect(submitButton().disabled).toBe(false))
 
-    fireEvent.submit(screen.getByRole('form'))
-    fireEvent.submit(screen.getByRole('form'))
+    fireEvent.submit(screen.getByTestId('sample-form'))
+    fireEvent.submit(screen.getByTestId('sample-form'))
     await waitFor(() => expect(prepareSampleItem).toHaveBeenCalledOnce())
     expect(prepareSampleItem.mock.calls[0][0]).toEqual({
       category: null,
@@ -51,12 +51,12 @@ describe('useSampleItemViewModel', () => {
     })
     render(<TestHarness useCase={createPrepareSampleItemUseCase(prepareSampleItem)} />)
 
-    fireEvent.change(screen.getByLabelText('이름'), { target: { value: '이전 값' } })
+    fireEvent.change(screen.getByTestId('name-input'), { target: { value: '이전 값' } })
     await waitFor(() => expect(submitButton().disabled).toBe(false))
-    fireEvent.submit(screen.getByRole('form'))
+    fireEvent.submit(screen.getByTestId('sample-form'))
     await waitFor(() => expect(prepareSampleItem).toHaveBeenCalledOnce())
 
-    fireEvent.change(screen.getByLabelText('이름'), { target: { value: '새 값' } })
+    fireEvent.change(screen.getByTestId('name-input'), { target: { value: '새 값' } })
     expect(requestSignal?.aborted).toBe(true)
     expect(screen.getByTestId('status').textContent).toBe('idle')
 
@@ -65,7 +65,7 @@ describe('useSampleItemViewModel', () => {
       await pending.promise
     })
     expect(screen.queryByTestId('preparation')).toBeNull()
-    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.queryByTestId('preparation-error')).toBeNull()
   })
 
   it('shows a safe error, resets it on input change, and aborts on unmount', async () => {
@@ -77,18 +77,18 @@ describe('useSampleItemViewModel', () => {
       <TestHarness useCase={createPrepareSampleItemUseCase(prepareSampleItem)} />,
     )
 
-    fireEvent.change(screen.getByLabelText('이름'), { target: { value: '오류 예제' } })
+    fireEvent.change(screen.getByTestId('name-input'), { target: { value: '오류 예제' } })
     await waitFor(() => expect(submitButton().disabled).toBe(false))
-    fireEvent.submit(screen.getByRole('form'))
+    fireEvent.submit(screen.getByTestId('sample-form'))
     await waitFor(() => {
-      expect(screen.getByRole('alert').textContent).toContain('Core API에 예제 요청을 전달하지 못했습니다.')
+      expect(screen.getByTestId('preparation-error').textContent).toContain('Core API에 예제 요청을 전달하지 못했습니다.')
     })
-    expect(screen.getByRole('alert').textContent).not.toContain('private server detail')
+    expect(screen.getByTestId('preparation-error').textContent).not.toContain('private server detail')
 
-    fireEvent.change(screen.getByLabelText('이름'), { target: { value: '재시도' } })
-    expect(screen.queryByRole('alert')).toBeNull()
+    fireEvent.change(screen.getByTestId('name-input'), { target: { value: '재시도' } })
+    expect(screen.queryByTestId('preparation-error')).toBeNull()
     await waitFor(() => expect(submitButton().disabled).toBe(false))
-    fireEvent.submit(screen.getByRole('form'))
+    fireEvent.submit(screen.getByTestId('sample-form'))
     await waitFor(() => expect(prepareSampleItem).toHaveBeenCalledTimes(2))
     const latestSignal = prepareSampleItem.mock.calls[1][1] as AbortSignal
 
@@ -105,15 +105,15 @@ describe('useSampleItemViewModel', () => {
       .mockImplementationOnce((_item: SampleItem, _signal?: AbortSignal) => retryPending.promise)
     render(<TestHarness useCase={createPrepareSampleItemUseCase(prepareSampleItem)} />)
 
-    fireEvent.change(screen.getByLabelText('이름'), { target: { value: '같은 입력' } })
+    fireEvent.change(screen.getByTestId('name-input'), { target: { value: '같은 입력' } })
     await waitFor(() => expect(submitButton().disabled).toBe(false))
-    fireEvent.submit(screen.getByRole('form'))
+    fireEvent.submit(screen.getByTestId('sample-form'))
 
-    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('다시 요청'))
+    await waitFor(() => expect(screen.getByTestId('preparation-error').textContent).toContain('다시 요청'))
     expect(submitButton().disabled).toBe(false)
     expect(submitButton().textContent).toBe('다시 요청')
 
-    fireEvent.submit(screen.getByRole('form'))
+    fireEvent.submit(screen.getByTestId('sample-form'))
 
     await waitFor(() => expect(prepareSampleItem).toHaveBeenCalledTimes(2))
     expect(screen.getByTestId('status').textContent).toBe('pending')
@@ -128,7 +128,7 @@ describe('useSampleItemViewModel', () => {
 
     expect(screen.getByTestId('preparation').textContent).toBe('같은 입력')
     expect(screen.getByTestId('action-message').textContent).toBe('Core API 요청이 성공했습니다.')
-    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.queryByTestId('preparation-error')).toBeNull()
     expect(submitButton().textContent).toBe('다시 확인')
   })
 })
@@ -145,9 +145,9 @@ function TestHarness({
   }
 
   return (
-    <form aria-label="sample form" onSubmit={submit}>
-      <input aria-label="이름" {...viewModel.registerField('name')} />
-      <textarea aria-label="메모" {...viewModel.registerField('note')} />
+    <form data-testid="sample-form" onSubmit={submit}>
+      <input data-testid="name-input" {...viewModel.registerField('name')} />
+      <textarea data-testid="note-input" {...viewModel.registerField('note')} />
       <button type="submit" disabled={!viewModel.isReady}>
         {viewModel.submitButtonLabel === '준비 상태 확인'
           ? '요청'
@@ -158,7 +158,9 @@ function TestHarness({
       {viewModel.preparation ? (
         <output data-testid="preparation">{viewModel.preparation.item.name}</output>
       ) : null}
-      {viewModel.preparationError ? <p role="alert">{viewModel.preparationError}</p> : null}
+      {viewModel.preparationError ? (
+        <p data-testid="preparation-error">{viewModel.preparationError}</p>
+      ) : null}
     </form>
   )
 }

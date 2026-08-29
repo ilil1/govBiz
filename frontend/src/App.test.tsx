@@ -41,10 +41,10 @@ describe('App navigation', () => {
     )
 
     expect(screen.getByRole('heading', { name: 'GovBiz에게 물어보세요' })).toBeTruthy()
-    const chatInput = screen.getByRole('textbox', { name: '지원사업 검색 메시지' })
+    const chatInput = screen.getByPlaceholderText('예: 서울에서 AI 창업지원 사업을 찾아줘')
     fireEvent.change(chatInput, { target: { value: '서울 AI 지원사업' } })
 
-    fireEvent.click(screen.getByRole('button', { name: '상태관리 비교 예제' }))
+    fireEvent.click(screen.getByRole('button', { name: /상태관리 비교 예제/ }))
 
     expect(screen.getByRole('heading', { name: '재사용 가능한 수직 슬라이스' })).toBeTruthy()
 
@@ -94,11 +94,11 @@ describe('App navigation', () => {
     expect((screen.getByRole('button', { name: '준비 상태 확인' }) as HTMLButtonElement).disabled)
       .toBe(true)
 
-    fireEvent.click(screen.getByRole('button', { name: '지원사업 채팅으로 돌아가기' }))
+    fireEvent.click(screen.getByRole('button', { name: /지원사업 채팅으로 돌아가기/ }))
 
     expect(screen.getByRole('heading', { name: 'GovBiz에게 물어보세요' })).toBeTruthy()
     expect(
-      (screen.getByRole('textbox', { name: '지원사업 검색 메시지' }) as HTMLTextAreaElement)
+      (screen.getByPlaceholderText('예: 서울에서 AI 창업지원 사업을 찾아줘') as HTMLTextAreaElement)
         .value,
     ).toBe('서울 AI 지원사업')
   })

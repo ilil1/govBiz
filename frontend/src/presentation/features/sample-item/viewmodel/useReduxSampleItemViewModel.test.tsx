@@ -20,13 +20,13 @@ describe('useReduxSampleItemViewModel', () => {
     const store = createAppStore()
     const view = renderHarness(store, { execute })
 
-    fireEvent.change(screen.getByLabelText('이름'), { target: { value: '  Redux 예제  ' } })
-    fireEvent.change(screen.getByLabelText('카테고리'), { target: { value: 'BASIC' } })
-    fireEvent.change(screen.getByLabelText('메모'), { target: { value: '  설명  ' } })
+    fireEvent.change(screen.getByTestId('name-input'), { target: { value: '  Redux 예제  ' } })
+    fireEvent.change(screen.getByTestId('category-input'), { target: { value: 'BASIC' } })
+    fireEvent.change(screen.getByTestId('note-input'), { target: { value: '  설명  ' } })
     await waitFor(() => expect(submitButton().disabled).toBe(false))
 
-    fireEvent.submit(screen.getByRole('form'))
-    fireEvent.submit(screen.getByRole('form'))
+    fireEvent.submit(screen.getByTestId('sample-form'))
+    fireEvent.submit(screen.getByTestId('sample-form'))
     await waitFor(() => expect(execute).toHaveBeenCalledOnce())
     expect(execute.mock.calls[0][0]).toEqual({
       category: 'BASIC',
@@ -44,7 +44,7 @@ describe('useReduxSampleItemViewModel', () => {
 
     view.unmount()
     renderHarness(store, { execute })
-    expect((screen.getByLabelText('이름') as HTMLInputElement).value).toBe('  Redux 예제  ')
+    expect((screen.getByTestId('name-input') as HTMLInputElement).value).toBe('  Redux 예제  ')
     expect(screen.getByTestId('preparation').textContent).toBe('Redux 예제')
   })
 
@@ -58,11 +58,11 @@ describe('useReduxSampleItemViewModel', () => {
     const store = createAppStore()
     renderHarness(store, { execute })
 
-    fireEvent.change(screen.getByLabelText('이름'), { target: { value: '이전 입력' } })
-    fireEvent.submit(screen.getByRole('form'))
+    fireEvent.change(screen.getByTestId('name-input'), { target: { value: '이전 입력' } })
+    fireEvent.submit(screen.getByTestId('sample-form'))
     await waitFor(() => expect(execute).toHaveBeenCalledOnce())
 
-    fireEvent.change(screen.getByLabelText('이름'), { target: { value: '새 입력' } })
+    fireEvent.change(screen.getByTestId('name-input'), { target: { value: '새 입력' } })
     expect(signal?.aborted).toBe(true)
     expect(store.getState().sampleItemRedux.status).toBe('idle')
 
@@ -83,9 +83,9 @@ describe('useReduxSampleItemViewModel', () => {
     const store = createAppStore()
     renderHarness(store, { execute })
 
-    fireEvent.change(screen.getByLabelText('이름'), { target: { value: '초기화할 입력' } })
-    fireEvent.change(screen.getByLabelText('메모'), { target: { value: '초기화할 메모' } })
-    fireEvent.submit(screen.getByRole('form'))
+    fireEvent.change(screen.getByTestId('name-input'), { target: { value: '초기화할 입력' } })
+    fireEvent.change(screen.getByTestId('note-input'), { target: { value: '초기화할 메모' } })
+    fireEvent.submit(screen.getByTestId('sample-form'))
     await waitFor(() => expect(execute).toHaveBeenCalledOnce())
 
     fireEvent.click(screen.getByRole('button', { name: 'Redux 상태 초기화' }))
@@ -114,12 +114,12 @@ describe('useReduxSampleItemViewModel', () => {
     const store = createAppStore()
     const view = renderHarness(store, { execute })
 
-    fireEvent.change(screen.getByLabelText('이름'), { target: { value: '같은 입력' } })
-    fireEvent.submit(screen.getByRole('form'))
-    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('다시 요청'))
-    expect(screen.getByRole('alert').textContent).not.toContain('private detail')
+    fireEvent.change(screen.getByTestId('name-input'), { target: { value: '같은 입력' } })
+    fireEvent.submit(screen.getByTestId('sample-form'))
+    await waitFor(() => expect(screen.getByTestId('preparation-error').textContent).toContain('다시 요청'))
+    expect(screen.getByTestId('preparation-error').textContent).not.toContain('private detail')
 
-    fireEvent.submit(screen.getByRole('form'))
+    fireEvent.submit(screen.getByTestId('sample-form'))
     await waitFor(() => expect(execute).toHaveBeenCalledTimes(2))
     expect(execute.mock.calls[1][0]).toEqual(execute.mock.calls[0][0])
     expect(execute.mock.calls[1][1]).not.toBe(execute.mock.calls[0][1])
@@ -145,14 +145,14 @@ function TestHarness({ useCase }: { useCase: Pick<PrepareSampleItemUseCase, 'exe
   }
 
   return (
-    <form aria-label="Redux sample form" onSubmit={submit}>
+    <form data-testid="sample-form" onSubmit={submit}>
       <input
-        aria-label="이름"
+        data-testid="name-input"
         value={viewModel.values.name}
         onChange={(event) => viewModel.updateName(event.target.value)}
       />
       <select
-        aria-label="카테고리"
+        data-testid="category-input"
         value={viewModel.values.category}
         onChange={(event) => viewModel.updateCategory(event.target.value)}
       >
@@ -161,7 +161,7 @@ function TestHarness({ useCase }: { useCase: Pick<PrepareSampleItemUseCase, 'exe
         <option value="EXTENDED">Extended</option>
       </select>
       <textarea
-        aria-label="메모"
+        data-testid="note-input"
         value={viewModel.values.note}
         onChange={(event) => viewModel.updateNote(event.target.value)}
       />
@@ -170,7 +170,9 @@ function TestHarness({ useCase }: { useCase: Pick<PrepareSampleItemUseCase, 'exe
       {viewModel.preparation ? (
         <output data-testid="preparation">{viewModel.preparation.item.name}</output>
       ) : null}
-      {viewModel.preparationError ? <p role="alert">{viewModel.preparationError}</p> : null}
+      {viewModel.preparationError ? (
+        <p data-testid="preparation-error">{viewModel.preparationError}</p>
+      ) : null}
     </form>
   )
 }

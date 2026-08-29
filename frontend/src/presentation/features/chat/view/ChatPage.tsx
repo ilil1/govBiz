@@ -51,14 +51,13 @@ export function ChatPage({ onOpenSampleItem }: ChatPageProps) {
     <main className="chat-app">
       <button
         className="sidebar-backdrop"
-        aria-label="메뉴 닫기"
         data-visible={isSidebarOpen}
         onClick={() => setIsSidebarOpen(false)}
       />
 
       <aside className={`chat-sidebar${isSidebarOpen ? ' is-open' : ''}`}>
         <div className="brand-lockup">
-          <span className="brand-mark" aria-hidden="true">G</span>
+          <span className="brand-mark">G</span>
           <div>
             <strong>GovBiz</strong>
             <span>지원사업 탐색 도우미</span>
@@ -67,10 +66,10 @@ export function ChatPage({ onOpenSampleItem }: ChatPageProps) {
 
         <div className="sidebar-actions">
           <button className="new-chat-button" type="button" onClick={handleStartNewConversation}>
-            <span aria-hidden="true">＋</span> 새 대화 시작
+            <span>＋</span> 새 대화 시작
           </button>
           <button className="sample-page-button" type="button" onClick={onOpenSampleItem}>
-            <span aria-hidden="true">▦</span> 상태관리 비교 예제
+            <span>▦</span> 상태관리 비교 예제
           </button>
         </div>
 
@@ -92,9 +91,9 @@ export function ChatPage({ onOpenSampleItem }: ChatPageProps) {
         <p className="sidebar-note">검색 결과는 기업마당 공식 공고와 원문 링크를 기반으로 합니다.</p>
       </aside>
 
-      <section className="chat-workspace" aria-label="GovBiz 지원사업 검색 채팅">
+      <section className="chat-workspace">
         <header className="chat-header">
-          <button className="menu-button" aria-label="메뉴 열기" onClick={() => setIsSidebarOpen(true)}>☰</button>
+          <button className="menu-button" onClick={() => setIsSidebarOpen(true)}>☰</button>
           <div>
             <p className="header-eyebrow">지원사업 검색</p>
             <h1>GovBiz에게 물어보세요</h1>
@@ -105,18 +104,18 @@ export function ChatPage({ onOpenSampleItem }: ChatPageProps) {
         <div className="message-timeline" ref={timelineRef}>
           {messages.map((message) => (
             <article key={message.id} className={`message-row ${message.role}`}>
-              {message.role === 'assistant' ? <span className="assistant-avatar" aria-hidden="true">G</span> : null}
+              {message.role === 'assistant' ? <span className="assistant-avatar">G</span> : null}
               <div className="message-content">
                 <div className="message-bubble">{message.text}</div>
                 {message.id === messages[0]?.id ? (
-                  <div className="suggestion-list" aria-label="추천 질문">
+                  <div className="suggestion-list">
                     {supportProgramChatSuggestions.map((suggestion) => (
                       <button key={suggestion} onClick={() => handleSelectSuggestion(suggestion)}>{suggestion}</button>
                     ))}
                   </div>
                 ) : null}
                 {message.programs?.length ? (
-                  <div className="program-list" aria-label="지원사업 검색 결과">
+                  <div className="program-list">
                     {message.programs.map((program) => <ProgramCard key={program.id} program={program} />)}
                   </div>
                 ) : null}
@@ -125,17 +124,15 @@ export function ChatPage({ onOpenSampleItem }: ChatPageProps) {
           ))}
           {isSearching ? (
             <div className="message-row assistant">
-              <span className="assistant-avatar" aria-hidden="true">G</span>
-              <div className="message-bubble typing" aria-live="polite">공고를 찾아보고 있어요…</div>
+              <span className="assistant-avatar">G</span>
+              <div className="message-bubble typing">공고를 찾아보고 있어요…</div>
             </div>
           ) : null}
         </div>
 
         <form className="chat-composer" onSubmit={handleSubmit}>
-          {searchError ? <p className="chat-error" role="alert">{searchError}</p> : null}
-          <label className="sr-only" htmlFor="chat-input">지원사업 검색 메시지</label>
+          {searchError ? <p className="chat-error">{searchError}</p> : null}
           <textarea
-            id="chat-input"
             value={draft}
             onChange={(event) => updateDraft(event.target.value)}
             onKeyDown={(event) => {
@@ -147,7 +144,7 @@ export function ChatPage({ onOpenSampleItem }: ChatPageProps) {
             placeholder="예: 서울에서 AI 창업지원 사업을 찾아줘"
             rows={1}
           />
-          <button type="submit" aria-label="메시지 보내기" disabled={!isReadyToSubmit}>↑</button>
+          <button type="submit" disabled={!isReadyToSubmit}>↑</button>
           <small>Enter로 전송 · Shift+Enter로 줄바꿈</small>
         </form>
       </section>
