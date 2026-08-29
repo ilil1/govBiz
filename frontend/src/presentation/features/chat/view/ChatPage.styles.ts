@@ -2,6 +2,8 @@ function classes(...groups: string[]) {
   return groups.join(' ')
 }
 
+// 색상이나 CSS 속성이 아니라 ChatPage에서 맡는 UI 역할을 이름으로 사용합니다.
+// open/closed, user/assistant처럼 화면 상태가 달라지는 경우에는 base 스타일과 variant를 분리합니다.
 export const chatPageStyles = {
   page: 'grid min-h-screen grid-cols-[278px_minmax(0,1fr)] bg-app-canvas text-app-ink max-chat:block',
   backdrop: 'hidden',

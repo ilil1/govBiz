@@ -9,6 +9,8 @@ const formControl = classes(
 )
 const fieldError = 'text-[0.85rem] font-semibold text-[#bc314d]'
 
+// Hook 화면과 Redux 화면에서 같은 역할을 하는 요소는 하나의 이름과 스타일을 공유합니다.
+// 두 화면은 상태 관리 방식만 비교해야 하므로 시각 스타일의 우연한 차이를 만들지 않습니다.
 export const sampleItemStyles = {
   page: 'mx-auto w-[calc(100%_-_2rem)] max-w-[960px] py-16 max-sample:py-8',
   backButton: classes(

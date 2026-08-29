@@ -58,6 +58,30 @@ View 옆의 `*.styles.ts`에서 `sidebar`, `messageBubble`, `formControl`처럼 
 묶으므로 TSX에서는 화면 구조와 상태 분기를 먼저 읽을 수 있습니다. 별도의 CSS-in-JS 런타임이나
 클래스 병합 라이브러리는 사용하지 않습니다.
 
+### Tailwind 스타일 이름 규칙
+
+스타일 이름은 현재 CSS 구현이 아니라 화면에서 맡는 역할을 설명합니다. 예를 들어 보라색이라는 이유로
+`purpleBox`라고 부르지 않고, 사용자 메시지를 나타내므로 `userMessageBubble`이라고 부릅니다. 나중에
+메시지 색이나 모서리 모양이 바뀌더라도 요소의 역할은 그대로이기 때문입니다.
+
+| 이름 | 이렇게 지은 이유 |
+|---|---|
+| `chatPageStyles` | 다른 화면의 스타일과 섞이지 않도록 채팅 기능의 namespace임을 표시합니다. |
+| `sidebar`, `header`, `composer` | CSS 속성보다 채팅 화면에서 담당하는 영역을 바로 알 수 있습니다. |
+| `messageBubble` | 사용자·AI 말풍선이 공유하는 기본 모양입니다. |
+| `userMessageBubble`, `assistantMessageBubble` | 같은 말풍선이지만 메시지 작성자에 따라 달라지는 variant입니다. |
+| `sidebarOpen`, `sidebarClosed` | 모바일 사이드바의 상태 차이를 이름으로 드러냅니다. |
+| `sampleItemStyles` | Hook·Redux 예제가 같은 시각 규칙을 공유한다는 뜻입니다. |
+| `formControl`, `fieldError`, `submitButton` | 입력창·검증 오류·제출처럼 폼 안에서 맡는 역할을 나타냅니다. |
+| `activeVersionButton`, `comparisonActiveCell` | 현재 선택한 상태관리 버전이 강조되는 이유를 설명합니다. |
+| `coreApiStatusStyles` | Core API 연결 상태를 표시하는 작은 공통 UI의 namespace입니다. |
+| `loadingDot`, `healthyDot`, `errorDot` | 점의 색상 이름이 아니라 어떤 연결 상태를 뜻하는지 보여 줍니다. |
+
+`index.css`의 토큰도 같은 원칙을 사용합니다. `brand-primary`는 GovBiz의 주 동작 색상,
+`brand-accent`는 로고와 AI 표시의 강조 색상, `sample-primary`는 상태관리 예제의 주 동작 색상입니다.
+`max-chat`과 `max-sample`은 각각 채팅 화면과 SampleItem 화면이 모바일 배치로 전환되는 기준입니다.
+모든 값을 토큰으로 만들지는 않고 여러 요소에서 의미 있게 반복되는 값만 이름을 붙입니다.
+
 `ChatPage`는 `useSupportProgramChatViewModel`이 반환한 상태와 행동만 사용합니다. ViewModel은 typed
 Redux hook으로 selector를 읽고, `appContainer.resolve('searchSupportProgramsUseCase')`로 검색 UseCase를
 직접 조회합니다. `submitMessage` 안의 Thunk는 그 UseCase를 실행하고 Redux 상태 전이를 제어합니다.

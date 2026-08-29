@@ -1,3 +1,5 @@
+// 연결 상태의 공통 모양(root, dot)과 상태별 색상(loading, healthy, error)을 구분합니다.
+// 상태 판단은 컴포넌트가 맡고, 이 파일은 각 상태가 어떻게 보이는지만 관리합니다.
 export const coreApiStatusStyles = {
   root: 'flex items-start gap-[10px] border-t border-[rgba(27,48,37,0.22)] pt-[13px]',
   dot: 'mt-1 size-[9px] shrink-0 rounded-full',
