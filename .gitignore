@@ -21,8 +21,9 @@ coverage/
 *.tsbuildinfo
 .vite/
 
-# Java and Gradle
+# Kotlin/JVM and Gradle
 .gradle/
+.kotlin/
 build/
 out/
 *.class

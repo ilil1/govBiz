@@ -16,6 +16,7 @@ import org.springframework.web.HttpMediaTypeNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.method.annotation.HandlerMethodValidationException
 
 @RestControllerAdvice
 class ApiExceptionHandler {
@@ -24,52 +25,22 @@ class ApiExceptionHandler {
     fun handleSupportProgramSearchException(
         exception: SupportProgramSearchException,
         request: HttpServletRequest,
-    ): ResponseEntity<ProblemDetail> {
-        val definition = supportProgramDefinitionFor(exception.failure)
-        val problem = ProblemDetail.forStatusAndDetail(definition.status, definition.detail)
-        problem.type = definition.type
-        problem.title = definition.title
-        problem.instance = URI.create(request.requestURI)
-        problem.setProperty("code", definition.code)
-
-        return ResponseEntity.status(definition.status)
-            .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-            .body(problem)
-    }
+    ): ResponseEntity<ProblemDetail> =
+        problemResponse(supportProgramDefinitionFor(exception.failure), request)
 
     @ExceptionHandler(AiServiceHealthException::class)
     fun handleAiServiceHealthException(
         exception: AiServiceHealthException,
         request: HttpServletRequest,
-    ): ResponseEntity<ProblemDetail> {
-        val definition = definitionFor(exception.failure)
-        val problem = ProblemDetail.forStatusAndDetail(definition.status, definition.detail)
-        problem.type = definition.type
-        problem.title = definition.title
-        problem.instance = URI.create(request.requestURI)
-        problem.setProperty("code", definition.code)
-
-        return ResponseEntity.status(definition.status)
-            .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-            .body(problem)
-    }
+    ): ResponseEntity<ProblemDetail> =
+        problemResponse(definitionFor(exception.failure), request)
 
     @ExceptionHandler(AiServiceClientException::class)
     fun handleAiServiceClientException(
         exception: AiServiceClientException,
         request: HttpServletRequest,
-    ): ResponseEntity<ProblemDetail> {
-        val definition = definitionFor(exception.failure)
-        val problem = ProblemDetail.forStatusAndDetail(definition.status, definition.detail)
-        problem.type = definition.type
-        problem.title = definition.title
-        problem.instance = URI.create(request.requestURI)
-        problem.setProperty("code", definition.code)
-
-        return ResponseEntity.status(definition.status)
-            .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-            .body(problem)
-    }
+    ): ResponseEntity<ProblemDetail> =
+        problemResponse(definitionFor(exception.failure), request)
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleMethodArgumentNotValidException(
@@ -91,9 +62,35 @@ class ApiExceptionHandler {
         )
     }
 
+    @ExceptionHandler(HandlerMethodValidationException::class)
+    fun handleHandlerMethodValidationException(
+        exception: HandlerMethodValidationException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ProblemDetail> {
+        val errors = java.util.List.copyOf(
+            exception.parameterValidationResults
+                .map { result ->
+                    ValidationError(
+                        result.methodParameter.parameterName ?: "request",
+                        "INVALID_VALUE",
+                    )
+                }
+                .distinct(),
+        )
+
+        return validationProblem(
+            HttpStatus.BAD_REQUEST,
+            URI.create("urn:govbiz:problem:request-validation-failed"),
+            "Request Validation Failed",
+            "One or more request fields are invalid.",
+            "REQUEST_VALIDATION_FAILED",
+            errors,
+            request,
+        )
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException::class)
     fun handleHttpMessageNotReadableException(
-        exception: HttpMessageNotReadableException,
         request: HttpServletRequest,
     ): ResponseEntity<ProblemDetail> =
         validationProblem(
@@ -108,7 +105,6 @@ class ApiExceptionHandler {
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException::class)
     fun handleHttpMediaTypeNotSupportedException(
-        exception: HttpMediaTypeNotSupportedException,
         request: HttpServletRequest,
     ): ResponseEntity<ProblemDetail> =
         validationProblem(
@@ -130,52 +126,31 @@ class ApiExceptionHandler {
         errors: List<ValidationError>,
         request: HttpServletRequest,
     ): ResponseEntity<ProblemDetail> {
-        val problem = ProblemDetail.forStatusAndDetail(status, detail)
-        problem.type = type
-        problem.title = title
-        problem.instance = URI.create(request.requestURI)
-        problem.setProperty("code", code)
-        problem.setProperty("errors", errors)
+        val definition = ProblemDefinition(status, type, title, detail, code)
+        return problemResponse(definition, request, errors)
+    }
 
-        return ResponseEntity.status(status)
+    private fun problemResponse(
+        definition: ProblemDefinition,
+        request: HttpServletRequest,
+        errors: List<ValidationError>? = null,
+    ): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(definition.status, definition.detail)
+        problem.type = definition.type
+        problem.title = definition.title
+        problem.instance = URI.create(request.requestURI)
+        problem.setProperty("code", definition.code)
+        if (errors != null) {
+            problem.setProperty("errors", errors)
+        }
+
+        return ResponseEntity.status(definition.status)
             .contentType(MediaType.APPLICATION_PROBLEM_JSON)
             .body(problem)
     }
 
     private fun toValidationError(fieldError: FieldError): ValidationError =
         ValidationError(fieldError.field, "INVALID_VALUE")
-
-    private fun definitionFor(failure: AiServiceHealthException.Failure): ProblemDefinition =
-        when (failure) {
-            AiServiceHealthException.Failure.UPSTREAM_ERROR -> ProblemDefinition(
-                HttpStatus.BAD_GATEWAY,
-                URI.create("urn:govbiz:problem:ai-service-upstream-error"),
-                "AI Service Upstream Error",
-                "AI Service returned an unexpected HTTP status.",
-                "AI_SERVICE_UPSTREAM_ERROR",
-            )
-            AiServiceHealthException.Failure.INVALID_RESPONSE -> ProblemDefinition(
-                HttpStatus.BAD_GATEWAY,
-                URI.create("urn:govbiz:problem:ai-service-invalid-response"),
-                "AI Service Invalid Response",
-                "AI Service returned an invalid response.",
-                "AI_SERVICE_INVALID_RESPONSE",
-            )
-            AiServiceHealthException.Failure.UNAVAILABLE -> ProblemDefinition(
-                HttpStatus.SERVICE_UNAVAILABLE,
-                URI.create("urn:govbiz:problem:ai-service-unavailable"),
-                "AI Service Unavailable",
-                "AI Service is currently unavailable.",
-                "AI_SERVICE_UNAVAILABLE",
-            )
-            AiServiceHealthException.Failure.TIMEOUT -> ProblemDefinition(
-                HttpStatus.GATEWAY_TIMEOUT,
-                URI.create("urn:govbiz:problem:ai-service-timeout"),
-                "AI Service Gateway Timeout",
-                "AI Service did not respond within the configured timeout.",
-                "AI_SERVICE_TIMEOUT",
-            )
-        }
 
     private fun definitionFor(failure: AiServiceClientException.Failure): ProblemDefinition =
         when (failure) {
@@ -251,7 +226,7 @@ class ApiExceptionHandler {
         }
 
     private data class ProblemDefinition(
-        val status: HttpStatus,
+        val status: HttpStatusCode,
         val type: URI,
         val title: String,
         val detail: String,

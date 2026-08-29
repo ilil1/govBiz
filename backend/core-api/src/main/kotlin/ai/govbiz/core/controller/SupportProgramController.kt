@@ -2,6 +2,7 @@ package ai.govbiz.core.controller
 
 import ai.govbiz.core.dto.support.SupportProgramSearchResponse
 import ai.govbiz.core.service.SupportProgramSearchService
+import jakarta.validation.constraints.Size
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -15,7 +16,7 @@ class SupportProgramController(
 
     @GetMapping("/search")
     fun search(
-        @RequestParam query: String,
+        @RequestParam @Size(max = 500) query: String,
         @RequestParam(defaultValue = "true") acceptingOnly: Boolean,
     ): SupportProgramSearchResponse =
         SupportProgramSearchResponse.from(searchService.search(query, acceptingOnly))

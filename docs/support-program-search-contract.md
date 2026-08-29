@@ -21,7 +21,7 @@ Accept: application/json
 
 | Query parameter | 필수 | 설명 |
 |---|---|---|
-| `query` | 예 | 사용자가 입력한 검색 문장 또는 키워드 |
+| `query` | 예 | 사용자가 입력한 검색 문장 또는 키워드. 최대 500자이며 빈 문자열이면 자연어 분석을 건너뛰고 현재 공고 목록을 조회합니다. |
 | `acceptingOnly` | 아니요 | `true`이면 현재 접수 중인 공고만 반환. 기본값은 `true` |
 
 응답은 관련도와 공고 갱신시각을 기준으로 정렬한 최대 5개 공고를 포함합니다.
@@ -107,6 +107,7 @@ AI Service의 설정 누락·장애·시간 초과·잘못된 응답은 Core API
 
 | 상황 | HTTP | `code` |
 |---|---:|---|
+| `query`가 500자를 초과함 | 400 | `REQUEST_VALIDATION_FAILED` |
 | 인증키 미설정 | 503 | `SUPPORT_PROGRAM_SOURCE_NOT_CONFIGURED` |
 | 외부 API 실패 응답 | 502 | `SUPPORT_PROGRAM_SOURCE_ERROR` |
 | 잘못된 외부 응답 | 502 | `SUPPORT_PROGRAM_INVALID_RESPONSE` |

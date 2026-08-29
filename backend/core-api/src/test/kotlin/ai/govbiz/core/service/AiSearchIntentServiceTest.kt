@@ -56,7 +56,7 @@ class AiSearchIntentServiceTest {
 
     @ParameterizedTest
     @MethodSource("invalidPayloads")
-    fun rejectsResponsesThatViolateTheInternalContract(payload: AiSearchIntentPayload?) {
+    fun rejectsResponsesThatViolateTheInternalContract(payload: AiSearchIntentPayload) {
         Mockito.doReturn(payload).`when`(client).analyzeSearchIntent(QUERY, true)
 
         val exception = assertThrows(AiServiceClientException::class.java) {
@@ -93,10 +93,9 @@ class AiSearchIntentServiceTest {
         const val QUERY = "서울 AI 스타트업 지원사업"
 
         @JvmStatic
-        fun invalidPayloads(): Stream<AiSearchIntentPayload?> {
+        fun invalidPayloads(): Stream<AiSearchIntentPayload> {
             val valid = validPayload()
-            return Stream.of<AiSearchIntentPayload?>(
-                null,
+            return Stream.of(
                 AiSearchIntentPayload(
                     "다른 질문",
                     valid.keywords,

@@ -1,5 +1,6 @@
 package ai.govbiz.core.config
 
+import ai.govbiz.core.text.trimLikeJava
 import java.net.URI
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -24,9 +25,9 @@ class BizInfoClientProperties(
         ?: throw NullPointerException("app.bizinfo.read-timeout must be configured")
 
     init {
-        validateBaseUrl(this.baseUrl)
-        validatePositive(this.connectTimeout, "app.bizinfo.connect-timeout")
-        validatePositive(this.readTimeout, "app.bizinfo.read-timeout")
+        validateHttpBaseUrl(this.baseUrl, "app.bizinfo.base-url")
+        validatePositiveDuration(this.connectTimeout, "app.bizinfo.connect-timeout")
+        validatePositiveDuration(this.readTimeout, "app.bizinfo.read-timeout")
     }
 
     /**
@@ -46,37 +47,5 @@ class BizInfoClientProperties(
 
     companion object {
         private val PERCENT_ESCAPE: Pattern = Pattern.compile("%[0-9a-fA-F]{2}")
-
-        private fun validateBaseUrl(baseUrl: URI) {
-            val scheme = baseUrl.scheme
-            val supportedScheme =
-                "http".equals(scheme, ignoreCase = true) ||
-                    "https".equals(scheme, ignoreCase = true)
-            if (!baseUrl.isAbsolute || !supportedScheme || baseUrl.host == null) {
-                throw IllegalArgumentException(
-                    "app.bizinfo.base-url must be an absolute HTTP(S) URI with a host",
-                )
-            }
-
-            val path = baseUrl.path
-            if (
-                (path != null && path.isNotEmpty() && path != "/") ||
-                baseUrl.query != null ||
-                baseUrl.fragment != null ||
-                baseUrl.userInfo != null
-            ) {
-                throw IllegalArgumentException(
-                    "app.bizinfo.base-url must contain only scheme, host, and optional port",
-                )
-            }
-        }
-
-        private fun validatePositive(duration: Duration, propertyName: String) {
-            if (duration.isZero || duration.isNegative) {
-                throw IllegalArgumentException("$propertyName must be greater than zero")
-            }
-        }
-
-        private fun String.trimLikeJava(): String = trim { it <= ' ' }
     }
 }

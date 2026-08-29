@@ -15,8 +15,8 @@ class AiServiceHealthService(
             throw AiServiceHealthException.fromClient(exception)
         }
 
-        val status = payload?.status
-        val service = payload?.service
+        val status = payload.status
+        val service = payload.service
         if (status != EXPECTED_STATUS || service != EXPECTED_SERVICE) {
             throw AiServiceHealthException.invalidContract()
         }

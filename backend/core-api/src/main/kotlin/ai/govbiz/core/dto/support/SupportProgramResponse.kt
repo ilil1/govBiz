@@ -21,7 +21,6 @@ data class SupportProgramResponse(
     val matchedReasons: List<String>,
 ) {
     companion object {
-        @JvmStatic
         fun from(program: SupportProgram): SupportProgramResponse =
             SupportProgramResponse(
                 id = program.id,

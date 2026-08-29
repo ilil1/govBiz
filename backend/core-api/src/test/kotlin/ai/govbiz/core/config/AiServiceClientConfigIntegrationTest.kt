@@ -69,7 +69,7 @@ class AiServiceClientConfigIntegrationTest {
         }
         server.start()
 
-        val response = requireNotNull(createClient(Duration.ofSeconds(1)).getHealth())
+        val response = createClient(Duration.ofSeconds(1)).getHealth()
 
         assertAll(
             { assertEquals("up", response.status) },

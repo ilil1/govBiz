@@ -3,6 +3,8 @@ package ai.govbiz.core.service
 import ai.govbiz.core.client.ai.AiSearchIntentPayload
 import ai.govbiz.core.client.ai.AiServiceClient
 import ai.govbiz.core.client.ai.AiServiceClientException
+import ai.govbiz.core.text.isBlankLikeJava
+import ai.govbiz.core.text.trimLikeJava
 import org.springframework.stereotype.Service
 import java.util.LinkedHashSet
 
@@ -24,12 +26,11 @@ class AiSearchIntentService(
     }
 
     private fun validate(
-        payload: AiSearchIntentPayload?,
+        payload: AiSearchIntentPayload,
         expectedQuery: String,
         expectedAcceptingOnly: Boolean,
     ): AnalyzedSearchIntent? {
-        if (payload == null ||
-            payload.originalQuery != expectedQuery ||
+        if (payload.originalQuery != expectedQuery ||
             payload.acceptingOnly == null ||
             payload.acceptingOnly != expectedAcceptingOnly ||
             payload.clarificationNeeded == null
@@ -100,10 +101,5 @@ class AiSearchIntentService(
             "AI", "창업", "기술", "수출", "경영", "금융", "인력", "내수",
             "제조", "콘텐츠", "소상공인",
         )
-
-        fun String.trimLikeJava(): String = trim { it <= ' ' }
-
-        fun String.isBlankLikeJava(): Boolean =
-            codePoints().allMatch(Character::isWhitespace)
     }
 }

@@ -5,7 +5,6 @@ data class HealthResponse(
     val service: String,
 ) {
     companion object {
-        @JvmStatic
         fun up(service: String): HealthResponse = HealthResponse("up", service)
     }
 }

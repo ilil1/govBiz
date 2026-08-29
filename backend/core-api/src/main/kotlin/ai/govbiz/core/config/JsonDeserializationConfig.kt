@@ -9,7 +9,7 @@ import tools.jackson.databind.json.JsonMapper
 import tools.jackson.databind.type.LogicalType
 
 /** 공개 JSON 요청에서 값의 타입을 조용히 바꾸지 않도록 Jackson coercion을 제한합니다. */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 class JsonDeserializationConfig {
 
     @Bean

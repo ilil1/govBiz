@@ -1,9 +1,9 @@
 package ai.govbiz.core.client.bizinfo
 
+import ai.govbiz.core.client.hasTimeoutCause
 import ai.govbiz.core.config.BizInfoClientProperties
-import java.net.SocketTimeoutException
-import java.net.http.HttpTimeoutException
-import java.util.concurrent.TimeoutException
+import ai.govbiz.core.text.isBlankLikeJava
+import ai.govbiz.core.text.trimLikeJava
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
@@ -15,7 +15,7 @@ import tools.jackson.databind.JsonNode
 
 @Component
 class BizInfoClient(
-    @Qualifier("bizInfoRestClient") private val restClient: RestClient,
+    @param:Qualifier("bizInfoRestClient") private val restClient: RestClient,
     private val properties: BizInfoClientProperties,
 ) {
 
@@ -80,10 +80,8 @@ class BizInfoClient(
                     null,
                 )
             return decodePage(body)
-        } catch (exception: BizInfoClientException) {
-            throw exception
         } catch (exception: ResourceAccessException) {
-            if (hasTimeoutCause(exception)) {
+            if (exception.hasTimeoutCause()) {
                 throw BizInfoClientException.timeout(exception)
             }
             throw BizInfoClientException.unavailable(exception)
@@ -174,7 +172,6 @@ class BizInfoClient(
             text(node, "trgetNm"),
             text(node, "hashtags"),
             text(node, "reqstMthPapersCn"),
-            text(node, "rceptEngnHmpgUrl"),
         )
     }
 
@@ -196,26 +193,6 @@ class BizInfoClient(
 
     private fun ceilDiv(value: Int, divisor: Int): Int =
         if (value == 0) 0 else ((value - 1) / divisor) + 1
-
-    private fun String.trimLikeJava(): String = trim { it <= ' ' }
-
-    private fun String.isBlankLikeJava(): Boolean =
-        codePoints().allMatch(Character::isWhitespace)
-
-    private fun hasTimeoutCause(throwable: Throwable): Boolean {
-        var current: Throwable? = throwable
-        while (current != null) {
-            if (
-                current is HttpTimeoutException ||
-                current is SocketTimeoutException ||
-                current is TimeoutException
-            ) {
-                return true
-            }
-            current = current.cause
-        }
-        return false
-    }
 
     private data class Page(
         val items: List<BizInfoProgramPayload>,

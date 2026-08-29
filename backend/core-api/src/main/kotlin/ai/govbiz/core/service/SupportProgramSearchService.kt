@@ -5,6 +5,9 @@ import ai.govbiz.core.client.bizinfo.BizInfoClientException
 import ai.govbiz.core.client.bizinfo.BizInfoProgramPayload
 import ai.govbiz.core.domain.support.SupportProgram
 import ai.govbiz.core.domain.support.SupportProgramStatus
+import ai.govbiz.core.text.isBlankLikeJava
+import ai.govbiz.core.text.isNullOrBlankLikeJava
+import ai.govbiz.core.text.trimLikeJava
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.util.HtmlUtils
@@ -235,21 +238,7 @@ class SupportProgramSearchService(
         }
         if (reasons.isEmpty()) reasons += "기업마당 공식 공고"
 
-        return SupportProgram(
-            id = program.id,
-            title = program.title,
-            organization = program.organization,
-            summary = program.summary,
-            categories = program.categories,
-            regions = program.regions,
-            targetDescription = program.targetDescription,
-            supportAmount = program.supportAmount,
-            applicationPeriod = program.applicationPeriod,
-            applicationStartDate = program.applicationStartDate,
-            applicationEndDate = program.applicationEndDate,
-            status = program.status,
-            sourceName = program.sourceName,
-            sourceUrl = program.sourceUrl,
+        return program.copy(
             matchedReasons = java.util.List.copyOf(reasons),
         )
     }
@@ -612,13 +601,5 @@ class SupportProgramSearchService(
                 .lowercase(Locale.ROOT)
             return WHITESPACE.matcher(normalized).replaceAll(" ").trimLikeJava()
         }
-
-        fun String.trimLikeJava(): String = trim { it <= ' ' }
-
-        fun String.isBlankLikeJava(): Boolean =
-            codePoints().allMatch(Character::isWhitespace)
-
-        fun String?.isNullOrBlankLikeJava(): Boolean =
-            this == null || isBlankLikeJava()
     }
 }

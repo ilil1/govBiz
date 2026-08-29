@@ -14,10 +14,7 @@ class BizInfoClientException private constructor(
         TIMEOUT,
     }
 
-    fun failure(): Failure = failure
-
     companion object {
-        @JvmStatic
         fun notConfigured(): BizInfoClientException =
             BizInfoClientException(
                 Failure.NOT_CONFIGURED,
@@ -25,15 +22,12 @@ class BizInfoClientException private constructor(
                 null,
             )
 
-        @JvmStatic
         fun upstreamError(message: String, cause: Throwable?): BizInfoClientException =
             BizInfoClientException(Failure.UPSTREAM_ERROR, message, cause)
 
-        @JvmStatic
         fun invalidResponse(message: String, cause: Throwable?): BizInfoClientException =
             BizInfoClientException(Failure.INVALID_RESPONSE, message, cause)
 
-        @JvmStatic
         fun unavailable(cause: Throwable?): BizInfoClientException =
             BizInfoClientException(
                 Failure.UNAVAILABLE,
@@ -41,7 +35,6 @@ class BizInfoClientException private constructor(
                 cause,
             )
 
-        @JvmStatic
         fun timeout(cause: Throwable?): BizInfoClientException =
             BizInfoClientException(
                 Failure.TIMEOUT,

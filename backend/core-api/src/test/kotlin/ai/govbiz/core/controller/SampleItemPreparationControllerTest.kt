@@ -1,10 +1,13 @@
 package ai.govbiz.core.controller
 
 import ai.govbiz.core.config.JsonDeserializationConfig
-import ai.govbiz.core.config.WebCorsConfig
 import ai.govbiz.core.service.SampleItemPreparationService
+import java.util.stream.Stream
 import org.hamcrest.Matchers.nullValue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.context.annotation.Import
@@ -18,9 +21,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @WebMvcTest(SampleItemPreparationController::class)
 @Import(
     SampleItemPreparationService::class,
-    ApiExceptionHandler::class,
     JsonDeserializationConfig::class,
-    WebCorsConfig::class,
 )
 class SampleItemPreparationControllerTest {
 
@@ -96,7 +97,66 @@ class SampleItemPreparationControllerTest {
             .andExpect(jsonPath("$.code").value("REQUEST_VALIDATION_FAILED"))
     }
 
+    @ParameterizedTest
+    @MethodSource("invalidItemRequests")
+    fun rejectsNullOrOversizedItemFieldsWithStableProblemDetail(
+        body: String,
+        expectedField: String,
+    ) {
+        mockMvc.perform(
+            post(PATH)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body),
+        )
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.type").value("urn:govbiz:problem:request-validation-failed"))
+            .andExpect(jsonPath("$.status").value(400))
+            .andExpect(jsonPath("$.code").value("REQUEST_VALIDATION_FAILED"))
+            .andExpect(jsonPath("$.errors[0].field").value(expectedField))
+    }
+
+    @Test
+    fun rejectsUnsupportedMediaTypeWithStableProblemDetail() {
+        mockMvc.perform(
+            post(PATH)
+                .contentType(MediaType.TEXT_PLAIN)
+                .content("not-json"),
+        )
+            .andExpect(status().isUnsupportedMediaType())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.type").value("urn:govbiz:problem:unsupported-media-type"))
+            .andExpect(jsonPath("$.status").value(415))
+            .andExpect(jsonPath("$.title").value("Unsupported Media Type"))
+            .andExpect(jsonPath("$.detail").value("This endpoint accepts application/json requests."))
+            .andExpect(jsonPath("$.code").value("UNSUPPORTED_MEDIA_TYPE"))
+            .andExpect(jsonPath("$.instance").value(PATH))
+            .andExpect(jsonPath("$.errors").isArray())
+            .andExpect(jsonPath("$.errors").isEmpty())
+    }
+
     private companion object {
         const val PATH = "/api/v1/sample-items/prepare"
+
+        @JvmStatic
+        fun invalidItemRequests(): Stream<Arguments> =
+            Stream.of(
+                Arguments.of("{ \"item\": null }", "item"),
+                Arguments.of(
+                    "{ \"item\": { \"name\": \"${"a".repeat(101)}\" } }",
+                    "item.name",
+                ),
+                Arguments.of(
+                    """
+                    {
+                      "item": {
+                        "name": "Example",
+                        "note": "${"a".repeat(501)}"
+                      }
+                    }
+                    """.trimIndent(),
+                    "item.note",
+                ),
+            )
     }
 }

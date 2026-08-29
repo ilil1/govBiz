@@ -14,5 +14,4 @@ data class BizInfoProgramPayload(
     val target: String?,
     val hashtags: String?,
     val applicationMethod: String?,
-    val applicationUrl: String?,
 )

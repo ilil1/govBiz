@@ -15,8 +15,6 @@ class SupportProgramSearchException private constructor(
         TIMEOUT,
     }
 
-    fun failure(): Failure = failure
-
     companion object {
         internal fun fromClient(exception: BizInfoClientException): SupportProgramSearchException {
             val failure = when (exception.failure) {

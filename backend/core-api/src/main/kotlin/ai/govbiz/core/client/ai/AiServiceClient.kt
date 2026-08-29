@@ -1,8 +1,6 @@
 package ai.govbiz.core.client.ai
 
-import java.net.SocketTimeoutException
-import java.net.http.HttpTimeoutException
-import java.util.concurrent.TimeoutException
+import ai.govbiz.core.client.hasTimeoutCause
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -14,10 +12,10 @@ import org.springframework.web.client.RestClientResponseException
 
 @Component
 class AiServiceClient(
-    @Qualifier("aiServiceRestClient") private val restClient: RestClient,
+    @param:Qualifier("aiServiceRestClient") private val restClient: RestClient,
 ) {
 
-    fun getHealth(): AiServiceHealthPayload? {
+    fun getHealth(): AiServiceHealthPayload {
         try {
             val response = restClient.get()
                 .uri(HEALTH_PATH)
@@ -46,7 +44,7 @@ class AiServiceClient(
                     null,
                 )
         } catch (exception: ResourceAccessException) {
-            if (hasTimeoutCause(exception)) {
+            if (exception.hasTimeoutCause()) {
                 throw AiServiceClientException.timeout(exception)
             }
             throw AiServiceClientException.unavailable(exception)
@@ -63,7 +61,7 @@ class AiServiceClient(
         }
     }
 
-    fun analyzeSearchIntent(query: String, acceptingOnly: Boolean): AiSearchIntentPayload? {
+    fun analyzeSearchIntent(query: String, acceptingOnly: Boolean): AiSearchIntentPayload {
         try {
             val response = restClient.post()
                 .uri(SEARCH_INTENT_PATH)
@@ -103,7 +101,7 @@ class AiServiceClient(
                     null,
                 )
         } catch (exception: ResourceAccessException) {
-            if (hasTimeoutCause(exception)) {
+            if (exception.hasTimeoutCause()) {
                 throw AiServiceClientException.timeout(exception)
             }
             throw AiServiceClientException.unavailable(exception)
@@ -118,21 +116,6 @@ class AiServiceClient(
                 exception,
             )
         }
-    }
-
-    private fun hasTimeoutCause(throwable: Throwable): Boolean {
-        var current: Throwable? = throwable
-        while (current != null) {
-            if (
-                current is HttpTimeoutException ||
-                current is SocketTimeoutException ||
-                current is TimeoutException
-            ) {
-                return true
-            }
-            current = current.cause
-        }
-        return false
     }
 
     companion object {

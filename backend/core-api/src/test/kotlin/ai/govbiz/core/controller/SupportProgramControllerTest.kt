@@ -10,17 +10,21 @@ import ai.govbiz.core.service.SupportProgramSearchService
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
+import java.util.stream.Stream
 import org.hamcrest.Matchers.containsString
 import org.hamcrest.Matchers.not
 import org.hamcrest.Matchers.nullValue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.Mockito
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.ResultActions
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -80,41 +84,65 @@ class SupportProgramControllerTest {
             )
     }
 
-    @Test
-    fun hidesConfigurationAndUpstreamDetailsBehindAStableProblem() {
+    @ParameterizedTest
+    @MethodSource("supportProgramProblemCases")
+    fun mapsEverySupportProgramFailureToAStableProblem(problemCase: ProblemCase) {
         Mockito.doReturn(emptyAnalyzedIntent())
             .`when`(aiSearchIntentService)
             .analyze("서울", true)
-        Mockito.doThrow(BizInfoClientException.notConfigured()).`when`(client).fetchAll()
+        Mockito.doThrow(problemCase.exception).`when`(client).fetchAll()
 
-        mockMvc.perform(get(PATH).queryParam("query", "서울"))
-            .andExpect(status().isServiceUnavailable())
-            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
-            .andExpect(jsonPath("$.code").value("SUPPORT_PROGRAM_SOURCE_NOT_CONFIGURED"))
-            .andExpect(jsonPath("$.instance").value(PATH))
-            .andExpect(content().string(not(containsString("service key"))))
+        assertProblem(
+            mockMvc.perform(get(PATH).queryParam("query", "서울")),
+            problemCase,
+        )
     }
 
-    @Test
-    fun returnsUnavailableWhenRequiredAiIntentAnalysisIsUnavailable() {
-        Mockito.doThrow(
-            AiServiceClientException.unavailable(RuntimeException("private endpoint")),
-        )
+    @ParameterizedTest
+    @MethodSource("aiServiceProblemCases")
+    fun mapsEveryDirectAiClientFailureToAStableProblem(problemCase: ProblemCase) {
+        Mockito.doThrow(problemCase.exception)
             .`when`(aiSearchIntentService)
             .analyze("서울", true)
 
-        mockMvc.perform(get(PATH).queryParam("query", "서울"))
-            .andExpect(status().isServiceUnavailable())
-            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
-            .andExpect(jsonPath("$.code").value("AI_SERVICE_UNAVAILABLE"))
-            .andExpect(jsonPath("$.instance").value(PATH))
-            .andExpect(content().string(not(containsString("private endpoint"))))
+        assertProblem(
+            mockMvc.perform(get(PATH).queryParam("query", "서울")),
+            problemCase,
+        )
     }
 
     @Test
     fun requiresASearchQueryParameter() {
         mockMvc.perform(get(PATH))
             .andExpect(status().isBadRequest())
+    }
+
+    @Test
+    fun rejectsAQueryLongerThanThePublicContractLimit() {
+        mockMvc.perform(get(PATH).queryParam("query", "가".repeat(501)))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.type").value("urn:govbiz:problem:request-validation-failed"))
+            .andExpect(jsonPath("$.status").value(400))
+            .andExpect(jsonPath("$.title").value("Request Validation Failed"))
+            .andExpect(jsonPath("$.detail").value("One or more request fields are invalid."))
+            .andExpect(jsonPath("$.code").value("REQUEST_VALIDATION_FAILED"))
+            .andExpect(jsonPath("$.instance").value(PATH))
+            .andExpect(jsonPath("$.errors[0].field").value("query"))
+            .andExpect(jsonPath("$.errors[0].code").value("INVALID_VALUE"))
+    }
+
+    private fun assertProblem(result: ResultActions, problemCase: ProblemCase) {
+        result
+            .andExpect(status().`is`(problemCase.status))
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.type").value(problemCase.type))
+            .andExpect(jsonPath("$.status").value(problemCase.status))
+            .andExpect(jsonPath("$.title").value(problemCase.title))
+            .andExpect(jsonPath("$.detail").value(problemCase.detail))
+            .andExpect(jsonPath("$.code").value(problemCase.code))
+            .andExpect(jsonPath("$.instance").value(PATH))
+            .andExpect(content().string(not(containsString(PRIVATE_DETAIL))))
     }
 
     private fun emptyAnalyzedIntent() =
@@ -142,10 +170,113 @@ class SupportProgramControllerTest {
             "중소기업",
             "AI,서울",
             "온라인",
-            null,
         )
 
     private companion object {
         const val PATH = "/api/v1/support-programs/search"
+        const val PRIVATE_DETAIL = "private upstream detail"
+
+        @JvmStatic
+        fun aiServiceProblemCases(): Stream<ProblemCase> =
+            Stream.of(
+                ProblemCase(
+                    AiServiceClientException.upstreamError(
+                        PRIVATE_DETAIL,
+                        IllegalStateException(PRIVATE_DETAIL),
+                    ),
+                    502,
+                    "urn:govbiz:problem:ai-service-upstream-error",
+                    "AI Service Upstream Error",
+                    "AI Service returned an unexpected HTTP status.",
+                    "AI_SERVICE_UPSTREAM_ERROR",
+                ),
+                ProblemCase(
+                    AiServiceClientException.invalidResponse(
+                        PRIVATE_DETAIL,
+                        IllegalArgumentException(PRIVATE_DETAIL),
+                    ),
+                    502,
+                    "urn:govbiz:problem:ai-service-invalid-response",
+                    "AI Service Invalid Response",
+                    "AI Service returned an invalid response.",
+                    "AI_SERVICE_INVALID_RESPONSE",
+                ),
+                ProblemCase(
+                    AiServiceClientException.unavailable(IllegalStateException(PRIVATE_DETAIL)),
+                    503,
+                    "urn:govbiz:problem:ai-service-unavailable",
+                    "AI Service Unavailable",
+                    "AI Service is currently unavailable.",
+                    "AI_SERVICE_UNAVAILABLE",
+                ),
+                ProblemCase(
+                    AiServiceClientException.timeout(IllegalStateException(PRIVATE_DETAIL)),
+                    504,
+                    "urn:govbiz:problem:ai-service-timeout",
+                    "AI Service Gateway Timeout",
+                    "AI Service did not respond within the configured timeout.",
+                    "AI_SERVICE_TIMEOUT",
+                ),
+            )
+
+        @JvmStatic
+        fun supportProgramProblemCases(): Stream<ProblemCase> =
+            Stream.of(
+                ProblemCase(
+                    BizInfoClientException.notConfigured(),
+                    503,
+                    "urn:govbiz:problem:support-program-source-not-configured",
+                    "Support Program Search Unavailable",
+                    "The support program data source is not configured.",
+                    "SUPPORT_PROGRAM_SOURCE_NOT_CONFIGURED",
+                ),
+                ProblemCase(
+                    BizInfoClientException.upstreamError(
+                        PRIVATE_DETAIL,
+                        IllegalStateException(PRIVATE_DETAIL),
+                    ),
+                    502,
+                    "urn:govbiz:problem:support-program-source-error",
+                    "Support Program Source Error",
+                    "The support program data source returned an unexpected response.",
+                    "SUPPORT_PROGRAM_SOURCE_ERROR",
+                ),
+                ProblemCase(
+                    BizInfoClientException.invalidResponse(
+                        PRIVATE_DETAIL,
+                        IllegalArgumentException(PRIVATE_DETAIL),
+                    ),
+                    502,
+                    "urn:govbiz:problem:support-program-invalid-response",
+                    "Support Program Invalid Response",
+                    "The support program data source returned an invalid response.",
+                    "SUPPORT_PROGRAM_INVALID_RESPONSE",
+                ),
+                ProblemCase(
+                    BizInfoClientException.unavailable(IllegalStateException(PRIVATE_DETAIL)),
+                    503,
+                    "urn:govbiz:problem:support-program-source-unavailable",
+                    "Support Program Source Unavailable",
+                    "The support program data source is currently unavailable.",
+                    "SUPPORT_PROGRAM_SOURCE_UNAVAILABLE",
+                ),
+                ProblemCase(
+                    BizInfoClientException.timeout(IllegalStateException(PRIVATE_DETAIL)),
+                    504,
+                    "urn:govbiz:problem:support-program-source-timeout",
+                    "Support Program Source Timeout",
+                    "The support program data source did not respond in time.",
+                    "SUPPORT_PROGRAM_SOURCE_TIMEOUT",
+                ),
+            )
     }
+
+    data class ProblemCase(
+        val exception: RuntimeException,
+        val status: Int,
+        val type: String,
+        val title: String,
+        val detail: String,
+        val code: String,
+    )
 }

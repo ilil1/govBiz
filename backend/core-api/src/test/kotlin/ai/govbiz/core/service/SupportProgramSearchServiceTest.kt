@@ -303,7 +303,6 @@ class SupportProgramSearchServiceTest {
             target,
             hashtags,
             "온라인 신청",
-            null,
         )
 
     private companion object {

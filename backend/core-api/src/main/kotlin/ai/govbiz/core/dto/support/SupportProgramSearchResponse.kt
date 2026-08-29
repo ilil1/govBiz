@@ -7,7 +7,6 @@ data class SupportProgramSearchResponse(
     val programs: List<SupportProgramResponse>,
 ) {
     companion object {
-        @JvmStatic
         fun from(result: SupportProgramSearchResult): SupportProgramSearchResponse =
             SupportProgramSearchResponse(
                 query = result.query,

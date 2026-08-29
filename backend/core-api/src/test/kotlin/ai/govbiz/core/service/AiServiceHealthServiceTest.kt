@@ -53,25 +53,14 @@ class AiServiceHealthServiceTest {
             service.getHealth()
         }
 
-        assertEquals(AiServiceHealthException.Failure.INVALID_RESPONSE, exception.failure)
-    }
-
-    @Test
-    fun rejectsNullPayloadAsInvalidResponse() {
-        Mockito.doReturn(null).`when`(client).getHealth()
-
-        val exception = assertThrows(AiServiceHealthException::class.java) {
-            service.getHealth()
-        }
-
-        assertEquals(AiServiceHealthException.Failure.INVALID_RESPONSE, exception.failure)
+        assertEquals(AiServiceClientException.Failure.INVALID_RESPONSE, exception.failure)
     }
 
     @ParameterizedTest
     @MethodSource("clientFailures")
     fun preservesClientFailureCategory(
         clientException: AiServiceClientException,
-        expectedFailure: AiServiceHealthException.Failure,
+        expectedFailure: AiServiceClientException.Failure,
     ) {
         Mockito.doThrow(clientException).`when`(client).getHealth()
 
@@ -101,22 +90,22 @@ class AiServiceHealthServiceTest {
                         "unexpected status",
                         IllegalStateException("test"),
                     ),
-                    AiServiceHealthException.Failure.UPSTREAM_ERROR,
+                    AiServiceClientException.Failure.UPSTREAM_ERROR,
                 ),
                 Arguments.of(
                     AiServiceClientException.invalidResponse(
                         "invalid response",
                         IllegalArgumentException("test"),
                     ),
-                    AiServiceHealthException.Failure.INVALID_RESPONSE,
+                    AiServiceClientException.Failure.INVALID_RESPONSE,
                 ),
                 Arguments.of(
                     AiServiceClientException.unavailable(ConnectException("test")),
-                    AiServiceHealthException.Failure.UNAVAILABLE,
+                    AiServiceClientException.Failure.UNAVAILABLE,
                 ),
                 Arguments.of(
                     AiServiceClientException.timeout(SocketTimeoutException("test")),
-                    AiServiceHealthException.Failure.TIMEOUT,
+                    AiServiceClientException.Failure.TIMEOUT,
                 ),
             )
     }

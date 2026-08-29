@@ -50,7 +50,7 @@ class AiServiceClientTest {
             .andExpect(header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE))
             .andRespond(withSuccess(VALID_RESPONSE, MediaType.APPLICATION_JSON))
 
-        val response = requireNotNull(client.getHealth())
+        val response = client.getHealth()
 
         assertEquals("up", response.status)
         assertEquals("govbiz-ai-service", response.service)
@@ -167,11 +167,9 @@ class AiServiceClientTest {
             )
             .andRespond(withSuccess(VALID_INTENT_RESPONSE, MediaType.APPLICATION_JSON))
 
-        val response = requireNotNull(
-            client.analyzeSearchIntent(
-                "서울 AI 스타트업 지원사업",
-                true,
-            ),
+        val response = client.analyzeSearchIntent(
+            "서울 AI 스타트업 지원사업",
+            true,
         )
 
         assertEquals("서울 AI 스타트업 지원사업", response.originalQuery)

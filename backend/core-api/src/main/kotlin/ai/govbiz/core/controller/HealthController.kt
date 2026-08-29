@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/v1/health")
 class HealthController(
-    @Value("\${spring.application.name}") private val serviceName: String,
+    @param:Value("\${spring.application.name}") private val serviceName: String,
 ) {
 
     @GetMapping
