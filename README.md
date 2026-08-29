@@ -83,7 +83,7 @@ Repository, UseCase와 외부 서비스 역할별 모듈로 분리해 관리합�
 - FastAPI 내부 Health API와 Core API의 upstream 오류 변환
 - OpenAI Agents SDK의 필수 typed agent를 사용하는 검색 의도 분석
 - 공공데이터포털 응답을 GovBiz 공고 모델로 변환하는 외부 API adapter
-- Vite 프록시를 사용하는 Docker Compose 개발 환경
+- Tailwind CSS 유틸리티와 Vite 프록시를 사용하는 Docker Compose 개발 환경
 - 실제 키 없이 로컬 공공데이터 스텁을 사용하는 결정적 Compose smoke 검증
 
 ## SampleItem 예제

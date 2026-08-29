@@ -1,10 +1,9 @@
 import type { FormEvent } from 'react'
 
-import './SampleItemPage.css'
-
 import { CoreApiConnectionStatus } from '../../../shared/core-api-status/CoreApiConnectionStatus'
 import { useReduxSampleItemViewModel } from '../viewmodel/useReduxSampleItemViewModel'
 import { SampleItemComparisonSummary, SampleItemVersionSwitch } from './SampleItemComparison'
+import { sampleItemStyles } from './SampleItem.styles'
 
 type ReduxSampleItemPageProps = {
   onBackToChat: () => void
@@ -36,8 +35,12 @@ export function ReduxSampleItemPage({
   }
 
   return (
-    <main className="sample-shell">
-      <button className="sample-back-button" type="button" onClick={onBackToChat}>
+    <main className={sampleItemStyles.page}>
+      <button
+        className={sampleItemStyles.backButton}
+        type="button"
+        onClick={onBackToChat}
+      >
         <span>←</span> 지원사업 채팅으로 돌아가기
       </button>
 
@@ -47,11 +50,13 @@ export function ReduxSampleItemPage({
         onOpenReduxVersion={() => undefined}
       />
 
-      <section className="sample-hero">
+      <section className={sampleItemStyles.hero}>
         <div>
-          <p className="eyebrow">Redux Toolkit Architecture Example</p>
-          <h1>Redux 기반 수직 슬라이스</h1>
-          <p>
+          <p className={sampleItemStyles.eyebrow}>Redux Toolkit Architecture Example</p>
+          <h1 className={sampleItemStyles.heroTitle}>
+            Redux 기반 수직 슬라이스
+          </h1>
+          <p className={sampleItemStyles.heroDescription}>
             폼 값과 요청 결과를 Redux Store에 저장하고, ViewModel이 같은 UseCase·Repository·HTTP
             계약을 실행합니다. 화면을 나갔다 돌아와도 완료 상태가 유지됩니다.
           </p>
@@ -61,33 +66,51 @@ export function ReduxSampleItemPage({
 
       <SampleItemComparisonSummary activeVersion="redux" />
 
-      <form className="sample-form" onSubmit={handleSubmit}>
-        <div className="form-heading sample-form-heading-with-action">
+      <form
+        className={sampleItemStyles.form}
+        onSubmit={handleSubmit}
+      >
+        <div className={sampleItemStyles.formHeader}>
           <div>
-            <p className="eyebrow">Redux sample feature</p>
-            <h2>Sample item 준비</h2>
-            <p>입력·요청 상태·결과는 <code>state.sampleItemRedux</code>가 소유합니다.</p>
+            <p className={sampleItemStyles.formEyebrow}>
+              Redux sample feature
+            </p>
+            <h2 className={sampleItemStyles.formTitle}>
+              Sample item 준비
+            </h2>
+            <p className={sampleItemStyles.formDescription}>
+              입력·요청 상태·결과는 <code>state.sampleItemRedux</code>가 소유합니다.
+            </p>
           </div>
-          <button className="sample-reset-button" type="button" onClick={reset}>
+          <button
+            className={sampleItemStyles.resetButton}
+            type="button"
+            onClick={reset}
+          >
             Redux 상태 초기화
           </button>
         </div>
 
-        <label className="form-field" htmlFor="redux-sample-name">
+        <label className={sampleItemStyles.field} htmlFor="redux-sample-name">
           <span>이름</span>
           <input
             id="redux-sample-name"
+            className={sampleItemStyles.formControl}
             value={values.name}
             placeholder="예: Redux 예제"
             onChange={(event) => updateName(event.target.value)}
           />
-          {errors.name ? <small>{errors.name}</small> : null}
+          {errors.name ? <small className={sampleItemStyles.fieldError}>{errors.name}</small> : null}
         </label>
 
-        <label className="form-field" htmlFor="redux-sample-category">
-          <span>카테고리 <em>선택</em></span>
+        <label className={sampleItemStyles.field} htmlFor="redux-sample-category">
+          <span>
+            카테고리{' '}
+            <em className={sampleItemStyles.optionalLabel}>선택</em>
+          </span>
           <select
             id="redux-sample-category"
+            className={sampleItemStyles.formControl}
             value={values.category}
             onChange={(event) => updateCategory(event.target.value)}
           >
@@ -97,42 +120,54 @@ export function ReduxSampleItemPage({
           </select>
         </label>
 
-        <label className="form-field" htmlFor="redux-sample-note">
-          <span>메모 <em>선택</em></span>
+        <label className={sampleItemStyles.field} htmlFor="redux-sample-note">
+          <span>
+            메모{' '}
+            <em className={sampleItemStyles.optionalLabel}>선택</em>
+          </span>
           <textarea
             id="redux-sample-note"
+            className={sampleItemStyles.textareaControl}
             rows={4}
             value={values.note}
             placeholder="Redux Store에 유지할 메모를 적어 보세요."
             onChange={(event) => updateNote(event.target.value)}
           />
-          {errors.note ? <small>{errors.note}</small> : null}
+          {errors.note ? <small className={sampleItemStyles.fieldError}>{errors.note}</small> : null}
         </label>
 
-        <div className="form-action">
+        <div className={sampleItemStyles.formActions}>
           <div>
             <strong>{actionMessage}</strong>
-            <p>AbortController는 직렬화할 수 없으므로 Redux가 아니라 ViewModel ref가 관리합니다.</p>
+            <p className={sampleItemStyles.actionDescription}>
+              AbortController는 직렬화할 수 없으므로 Redux가 아니라 ViewModel ref가 관리합니다.
+            </p>
           </div>
-          <button type="submit" disabled={!isReady}>
+          <button
+            type="submit"
+            className={sampleItemStyles.submitButton}
+            disabled={!isReady}
+          >
             {submitButtonLabel}
           </button>
         </div>
 
         {preparation ? (
-          <output className="sample-result">
-            <strong className="sample-result-title">✓ Redux Store에 요청 성공 저장</strong>
+          <output className={sampleItemStyles.result}>
+            <strong className={sampleItemStyles.resultTitle}>✓ Redux Store에 요청 성공 저장</strong>
             <span>
               <strong>{preparation.item.name}</strong> 입력을 서버가 정상적으로 받았습니다.
             </span>
-            <small>
+            <small className={sampleItemStyles.resultDetail}>
               phase: {preparation.phase} · processing.status: {preparation.processing.status}
               {' '}— 이 결과는 다른 화면으로 이동해도 Store에 남습니다.
             </small>
           </output>
         ) : null}
 
-        {preparationError ? <p className="sample-error">{preparationError}</p> : null}
+        {preparationError ? (
+          <p className={sampleItemStyles.preparationError}>{preparationError}</p>
+        ) : null}
       </form>
     </main>
   )

@@ -1,3 +1,9 @@
+import {
+  sampleComparisonCellClassName,
+  sampleItemStyles,
+  sampleVersionButtonClassName,
+} from './SampleItem.styles'
+
 type SampleItemVersion = 'hook' | 'redux'
 
 type SampleItemVersionSwitchProps = {
@@ -12,17 +18,17 @@ export function SampleItemVersionSwitch({
   onOpenReduxVersion,
 }: SampleItemVersionSwitchProps) {
   return (
-    <nav className="sample-version-switch">
+    <nav className={sampleItemStyles.versionSwitch}>
       <button
         type="button"
-        data-active={activeVersion === 'hook'}
+        className={sampleVersionButtonClassName(activeVersion === 'hook')}
         onClick={onOpenHookVersion}
       >
         React Hook 버전
       </button>
       <button
         type="button"
-        data-active={activeVersion === 'redux'}
+        className={sampleVersionButtonClassName(activeVersion === 'redux')}
         onClick={onOpenReduxVersion}
       >
         Redux Toolkit 버전
@@ -33,16 +39,30 @@ export function SampleItemVersionSwitch({
 
 export function SampleItemComparisonSummary({ activeVersion }: { activeVersion: SampleItemVersion }) {
   return (
-    <section className="sample-comparison">
+    <section className={sampleItemStyles.comparison}>
       <div>
-        <p className="eyebrow">같은 기능, 다른 상태 관리</p>
-        <h2>두 버전에서 직접 확인할 차이</h2>
+        <p className={sampleItemStyles.eyebrow}>
+          같은 기능, 다른 상태 관리
+        </p>
+        <h2 className={sampleItemStyles.comparisonTitle}>
+          두 버전에서 직접 확인할 차이
+        </h2>
       </div>
-      <div className="sample-comparison-table">
-        <div className="comparison-row comparison-header">
-          <strong>항목</strong>
-          <strong data-active={activeVersion === 'hook'}>React Hook</strong>
-          <strong data-active={activeVersion === 'redux'}>Redux Toolkit</strong>
+      <div className={sampleItemStyles.comparisonTable}>
+        <div className={sampleItemStyles.comparisonRow}>
+          <strong className={sampleComparisonCellClassName(false, 'header')}>
+            항목
+          </strong>
+          <strong
+            className={sampleComparisonCellClassName(activeVersion === 'hook', 'header')}
+          >
+            React Hook
+          </strong>
+          <strong
+            className={sampleComparisonCellClassName(activeVersion === 'redux', 'header')}
+          >
+            Redux Toolkit
+          </strong>
         </div>
         <ComparisonRow label="상태 위치" hook="화면 Hook" redux="전역 Store slice" activeVersion={activeVersion} />
         <ComparisonRow label="화면 이동" hook="입력·결과 초기화" redux="입력·결과 유지" activeVersion={activeVersion} />
@@ -65,10 +85,18 @@ function ComparisonRow({
   redux: string
 }) {
   return (
-    <div className="comparison-row">
-      <span>{label}</span>
-      <span data-active={activeVersion === 'hook'}>{hook}</span>
-      <span data-active={activeVersion === 'redux'}>{redux}</span>
+    <div className={sampleItemStyles.comparisonRow}>
+      <span className={sampleComparisonCellClassName(false, 'body')}>{label}</span>
+      <span
+        className={sampleComparisonCellClassName(activeVersion === 'hook', 'body')}
+      >
+        {hook}
+      </span>
+      <span
+        className={sampleComparisonCellClassName(activeVersion === 'redux', 'body')}
+      >
+        {redux}
+      </span>
     </div>
   )
 }

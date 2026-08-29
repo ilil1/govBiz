@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 // Docker Compose에서는 브라우저가 /api를 Vite 개발 서버로 보내고,
 // Vite가 Compose 내부 DNS 이름(core-api)으로 프록시한다.
@@ -9,7 +10,7 @@ export default defineConfig(({ mode }) => {
   const usePolling = env.CHOKIDAR_USEPOLLING === 'true'
 
   return {
-    plugins: [react()],
+    plugins: [react(), tailwindcss()],
     server: {
       host: '0.0.0.0',
       port: 5173,

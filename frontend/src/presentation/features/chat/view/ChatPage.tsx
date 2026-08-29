@@ -5,7 +5,13 @@ import {
   supportProgramChatSuggestions,
   useSupportProgramChatViewModel,
 } from '../viewmodel/useSupportProgramChatViewModel'
-import './ChatPage.css'
+import {
+  chatBackdropClassName,
+  chatMessageBubbleClassName,
+  chatMessageRowClassName,
+  chatPageStyles,
+  chatSidebarClassName,
+} from './ChatPage.styles'
 
 type ChatPageProps = {
   onOpenSampleItem: () => void
@@ -48,91 +54,175 @@ export function ChatPage({ onOpenSampleItem }: ChatPageProps) {
   }
 
   return (
-    <main className="chat-app">
+    <main className={chatPageStyles.page}>
       <button
-        className="sidebar-backdrop"
-        data-visible={isSidebarOpen}
+        type="button"
+        className={chatBackdropClassName(isSidebarOpen)}
         onClick={() => setIsSidebarOpen(false)}
       />
 
-      <aside className={`chat-sidebar${isSidebarOpen ? ' is-open' : ''}`}>
-        <div className="brand-lockup">
-          <span className="brand-mark">G</span>
+      <aside
+        className={chatSidebarClassName(isSidebarOpen)}
+      >
+        <div className={chatPageStyles.brand}>
+          <span className={chatPageStyles.brandMark}>
+            G
+          </span>
           <div>
-            <strong>GovBiz</strong>
-            <span>지원사업 탐색 도우미</span>
+            <strong className={chatPageStyles.brandTitle}>GovBiz</strong>
+            <span className={chatPageStyles.brandSubtitle}>
+              지원사업 탐색 도우미
+            </span>
           </div>
         </div>
 
-        <div className="sidebar-actions">
-          <button className="new-chat-button" type="button" onClick={handleStartNewConversation}>
-            <span>＋</span> 새 대화 시작
+        <div className={chatPageStyles.sidebarActions}>
+          <button
+            className={chatPageStyles.newConversationButton}
+            type="button"
+            onClick={handleStartNewConversation}
+          >
+            <span className={chatPageStyles.newConversationIcon}>＋</span>
+            새 대화 시작
           </button>
-          <button className="sample-page-button" type="button" onClick={onOpenSampleItem}>
-            <span>▦</span> 상태관리 비교 예제
+          <button
+            className={chatPageStyles.sampleButton}
+            type="button"
+            onClick={onOpenSampleItem}
+          >
+            <span className={chatPageStyles.sampleButtonIcon}>▦</span>
+            상태관리 비교 예제
           </button>
         </div>
 
-        <div className="sidebar-section">
-          <p className="sidebar-label">인기 질문</p>
+        <div className={chatPageStyles.popularQuestions}>
+          <p className={chatPageStyles.sidebarSectionTitle}>
+            인기 질문
+          </p>
           {supportProgramChatSuggestions.map((suggestion) => (
-            <button key={suggestion} className="sidebar-prompt" onClick={() => handleSelectSuggestion(suggestion)}>
+            <button
+              key={suggestion}
+              type="button"
+              className={chatPageStyles.popularQuestionButton}
+              onClick={() => handleSelectSuggestion(suggestion)}
+            >
               {suggestion}
             </button>
           ))}
         </div>
 
-        <div className="sidebar-section sidebar-stats">
-          <p className="sidebar-label">공고 데이터</p>
-          <div><strong>공식</strong><span>기업마당</span></div>
-          <div><strong>{conversationCount}</strong><span>이번 대화 검색</span></div>
+        <div className={chatPageStyles.dataSummary}>
+          <p className={chatPageStyles.dataSummaryTitle}>
+            공고 데이터
+          </p>
+          <div className={chatPageStyles.dataSummaryCard}>
+            <strong className={chatPageStyles.dataSummaryValue}>공식</strong>
+            <span className={chatPageStyles.dataSummaryLabel}>기업마당</span>
+          </div>
+          <div className={chatPageStyles.dataSummaryCard}>
+            <strong className={chatPageStyles.dataSummaryValue}>{conversationCount}</strong>
+            <span className={chatPageStyles.dataSummaryLabel}>
+              이번 대화 검색
+            </span>
+          </div>
         </div>
 
-        <p className="sidebar-note">검색 결과는 기업마당 공식 공고와 원문 링크를 기반으로 합니다.</p>
+        <p className={chatPageStyles.sidebarFooter}>
+          검색 결과는 기업마당 공식 공고와 원문 링크를 기반으로 합니다.
+        </p>
       </aside>
 
-      <section className="chat-workspace">
-        <header className="chat-header">
-          <button className="menu-button" onClick={() => setIsSidebarOpen(true)}>☰</button>
+      <section className={chatPageStyles.workspace}>
+        <header className={chatPageStyles.header}>
+          <button
+            type="button"
+            className={chatPageStyles.menuButton}
+            onClick={() => setIsSidebarOpen(true)}
+          >
+            ☰
+          </button>
           <div>
-            <p className="header-eyebrow">지원사업 검색</p>
-            <h1>GovBiz에게 물어보세요</h1>
+            <p className={chatPageStyles.headerEyebrow}>
+              지원사업 검색
+            </p>
+            <h1 className={chatPageStyles.headerTitle}>
+              GovBiz에게 물어보세요
+            </h1>
           </div>
-          <span className="data-status">기업마당 공식 데이터</span>
+          <span className={chatPageStyles.sourceBadge}>
+            기업마당 공식 데이터
+          </span>
         </header>
 
-        <div className="message-timeline" ref={timelineRef}>
-          {messages.map((message) => (
-            <article key={message.id} className={`message-row ${message.role}`}>
-              {message.role === 'assistant' ? <span className="assistant-avatar">G</span> : null}
-              <div className="message-content">
-                <div className="message-bubble">{message.text}</div>
-                {message.id === messages[0]?.id ? (
-                  <div className="suggestion-list">
-                    {supportProgramChatSuggestions.map((suggestion) => (
-                      <button key={suggestion} onClick={() => handleSelectSuggestion(suggestion)}>{suggestion}</button>
-                    ))}
-                  </div>
+        <div
+          className={chatPageStyles.timeline}
+          ref={timelineRef}
+        >
+          {messages.map((message) => {
+            const isUser = message.role === 'user'
+
+            return (
+              <article
+                key={message.id}
+                className={chatMessageRowClassName(isUser)}
+              >
+                {!isUser ? (
+                  <span className={chatPageStyles.assistantAvatar}>
+                    G
+                  </span>
                 ) : null}
-                {message.programs?.length ? (
-                  <div className="program-list">
-                    {message.programs.map((program) => <ProgramCard key={program.id} program={program} />)}
+                <div className={chatPageStyles.messageContent}>
+                  <div className={chatMessageBubbleClassName(isUser)}>
+                    {message.text}
                   </div>
-                ) : null}
-              </div>
-            </article>
-          ))}
+                  {message.id === messages[0]?.id ? (
+                    <div className={chatPageStyles.suggestedQuestions}>
+                      {supportProgramChatSuggestions.map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          className={chatPageStyles.suggestedQuestionButton}
+                          onClick={() => handleSelectSuggestion(suggestion)}
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                  {message.programs?.length ? (
+                    <div className={chatPageStyles.programList}>
+                      {message.programs.map((program) => (
+                        <ProgramCard key={program.id} program={program} />
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </article>
+            )
+          })}
           {isSearching ? (
-            <div className="message-row assistant">
-              <span className="assistant-avatar">G</span>
-              <div className="message-bubble typing">공고를 찾아보고 있어요…</div>
+            <div className={chatPageStyles.messageRow}>
+              <span className={chatPageStyles.assistantAvatar}>
+                G
+              </span>
+              <div className={chatPageStyles.searchingBubble}>
+                공고를 찾아보고 있어요…
+              </div>
             </div>
           ) : null}
         </div>
 
-        <form className="chat-composer" onSubmit={handleSubmit}>
-          {searchError ? <p className="chat-error">{searchError}</p> : null}
+        <form
+          className={chatPageStyles.composer}
+          onSubmit={handleSubmit}
+        >
+          {searchError ? (
+            <p className={chatPageStyles.searchError}>
+              {searchError}
+            </p>
+          ) : null}
           <textarea
+            className={chatPageStyles.composerInput}
             value={draft}
             onChange={(event) => updateDraft(event.target.value)}
             onKeyDown={(event) => {
@@ -144,8 +234,16 @@ export function ChatPage({ onOpenSampleItem }: ChatPageProps) {
             placeholder="예: 서울에서 AI 창업지원 사업을 찾아줘"
             rows={1}
           />
-          <button type="submit" disabled={!isReadyToSubmit}>↑</button>
-          <small>Enter로 전송 · Shift+Enter로 줄바꿈</small>
+          <button
+            type="submit"
+            className={chatPageStyles.submitButton}
+            disabled={!isReadyToSubmit}
+          >
+            ↑
+          </button>
+          <small className={chatPageStyles.composerHint}>
+            Enter로 전송 · Shift+Enter로 줄바꿈
+          </small>
         </form>
       </section>
     </main>
@@ -154,24 +252,47 @@ export function ChatPage({ onOpenSampleItem }: ChatPageProps) {
 
 function ProgramCard({ program }: { program: SupportProgram }) {
   return (
-    <article className="program-card">
-      <div className="program-card-topline">
-        <span className="program-badge">관련 공고</span>
-        <span className="program-deadline">{formatApplicationDeadline(program)}</span>
+    <article className={chatPageStyles.programCard}>
+      <div className={chatPageStyles.programCardHeader}>
+        <span className={chatPageStyles.programTag}>
+          관련 공고
+        </span>
+        <span className={chatPageStyles.programDeadline}>
+          {formatApplicationDeadline(program)}
+        </span>
       </div>
-      <h2>{program.title}</h2>
-      <p className="program-organization">{program.organization}</p>
-      <p className="program-summary">{program.summary}</p>
-      <div className="program-meta">
+      <h2 className={chatPageStyles.programTitle}>
+        {program.title}
+      </h2>
+      <p className={chatPageStyles.programOrganization}>{program.organization}</p>
+      <p className={chatPageStyles.programSummary}>{program.summary}</p>
+      <div className={chatPageStyles.programDetails}>
         <span>{program.supportAmount}</span>
         <span>{program.targetDescription}</span>
       </div>
-      <div className="program-reasons">
-        {program.matchedReasons.map((reason) => <span key={reason}>✓ {reason}</span>)}
+      <div className={chatPageStyles.matchedReasons}>
+        {program.matchedReasons.map((reason) => (
+          <span key={reason} className={chatPageStyles.matchedReason}>
+            ✓ {reason}
+          </span>
+        ))}
       </div>
-      <div className="program-actions">
-        <button type="button" onClick={() => window.alert('상세 화면은 다음 단계에서 연결됩니다.')}>상세 조건 보기</button>
-        <a href={program.sourceUrl} target="_blank" rel="noreferrer">원문 보기 ↗</a>
+      <div className={chatPageStyles.programActions}>
+        <button
+          type="button"
+          className={chatPageStyles.programDetailsButton}
+          onClick={() => window.alert('상세 화면은 다음 단계에서 연결됩니다.')}
+        >
+          상세 조건 보기
+        </button>
+        <a
+          href={program.sourceUrl}
+          target="_blank"
+          rel="noreferrer"
+          className={chatPageStyles.programSourceLink}
+        >
+          원문 보기 ↗
+        </a>
       </div>
     </article>
   )

@@ -1,6 +1,6 @@
 # GovBiz Web
 
-React, TypeScript, Vite 기반의 지원사업 검색 채팅입니다. Redux Toolkit이 대화 상태를 관리하고,
+React, TypeScript, Vite, Tailwind CSS 기반의 지원사업 검색 채팅입니다. Redux Toolkit이 대화 상태를 관리하고,
 각 ViewModel Hook은 GetIt과 비슷한 전역 Awilix Service Locator에서 필요한 UseCase나 외부 API 기능을
 직접 조회합니다. 서버 요청의 로딩·성공·실패 상태도 각 ViewModel Hook이 명시적으로 관리합니다.
 
@@ -42,14 +42,21 @@ pnpm dev
 
 ```text
 src/
+├── index.css                            # Tailwind CSS 진입점과 공통 base 스타일
 ├── app/                                # Redux Store와 앱 단위 Awilix Service Locator
 │   └── di/                             # Repository·UseCase·외부 서비스 역할별 Awilix 등록
-├── presentation/features/chat/         # View, 인라인 Thunk ViewModel, Redux slice·selector
-├── presentation/features/sample-item/  # React Hook·Redux 비교 View, ViewModel, slice
+├── presentation/features/chat/         # View, Tailwind 스타일 맵, 인라인 Thunk ViewModel, slice
+├── presentation/features/sample-item/  # 비교 View, 공통 Tailwind 스타일 맵, ViewModel, slice
 ├── presentation/shared/                # Core API 연결 상태 UI
 ├── domain/                             # Entity, Repository port, UseCase
 └── data/                               # Fetch API·Zod DTO·HTTP Repository와 테스트 fixture
 ```
+
+스타일은 `@tailwindcss/vite`로 빌드하며 `src/index.css`가 Tailwind CSS를 불러옵니다. 반복 색상과
+화면별 breakpoint 같은 디자인 토큰은 `index.css`의 `@theme`에서 관리합니다. 긴 유틸리티 조합은
+View 옆의 `*.styles.ts`에서 `sidebar`, `messageBubble`, `formControl`처럼 의미 있는 이름으로
+묶으므로 TSX에서는 화면 구조와 상태 분기를 먼저 읽을 수 있습니다. 별도의 CSS-in-JS 런타임이나
+클래스 병합 라이브러리는 사용하지 않습니다.
 
 `ChatPage`는 `useSupportProgramChatViewModel`이 반환한 상태와 행동만 사용합니다. ViewModel은 typed
 Redux hook으로 selector를 읽고, `appContainer.resolve('searchSupportProgramsUseCase')`로 검색 UseCase를
