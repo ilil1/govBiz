@@ -1,3 +1,5 @@
+import { Link } from 'react-router'
+
 import {
   sampleComparisonCellClassName,
   sampleItemStyles,
@@ -8,31 +10,23 @@ type SampleItemVersion = 'hook' | 'redux'
 
 type SampleItemVersionSwitchProps = {
   activeVersion: SampleItemVersion
-  onOpenHookVersion: () => void
-  onOpenReduxVersion: () => void
 }
 
-export function SampleItemVersionSwitch({
-  activeVersion,
-  onOpenHookVersion,
-  onOpenReduxVersion,
-}: SampleItemVersionSwitchProps) {
+export function SampleItemVersionSwitch({ activeVersion }: SampleItemVersionSwitchProps) {
   return (
     <nav className={sampleItemStyles.versionSwitch}>
-      <button
-        type="button"
+      <Link
         className={sampleVersionButtonClassName(activeVersion === 'hook')}
-        onClick={onOpenHookVersion}
+        to="/examples/sample-item/hook"
       >
         React Hook 버전
-      </button>
-      <button
-        type="button"
+      </Link>
+      <Link
         className={sampleVersionButtonClassName(activeVersion === 'redux')}
-        onClick={onOpenReduxVersion}
+        to="/examples/sample-item/redux"
       >
         Redux Toolkit 버전
-      </button>
+      </Link>
     </nav>
   )
 }

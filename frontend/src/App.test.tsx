@@ -2,6 +2,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Provider } from 'react-redux'
+import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import App from './App'
@@ -37,17 +38,13 @@ describe('App navigation', () => {
 
     expect(Object.keys(appStore.getState())).toEqual(['chat', 'sampleItem'])
 
-    render(
-      <Provider store={appStore}>
-        <App />
-      </Provider>,
-    )
+    renderApp(appStore)
 
     expect(screen.getByRole('heading', { name: 'GovBiz에게 물어보세요' })).toBeTruthy()
     const chatInput = screen.getByPlaceholderText('예: 서울에서 AI 창업지원 사업을 찾아줘')
     fireEvent.change(chatInput, { target: { value: '서울 AI 지원사업' } })
 
-    fireEvent.click(screen.getByRole('button', { name: /상태관리 비교 예제/ }))
+    fireEvent.click(screen.getByRole('link', { name: /상태관리 비교 예제/ }))
 
     expect(screen.getByRole('heading', { name: '재사용 가능한 수직 슬라이스' })).toBeTruthy()
 
@@ -55,17 +52,17 @@ describe('App navigation', () => {
       target: { value: 'Hook에서만 유지되는 입력' },
     })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Redux Toolkit 버전' }))
+    fireEvent.click(screen.getByRole('link', { name: 'Redux Toolkit 버전' }))
     expect(screen.getByRole('heading', { name: 'Redux 기반 수직 슬라이스' })).toBeTruthy()
     fireEvent.change(screen.getByRole('textbox', { name: '이름' }), {
       target: { value: 'Redux에 유지되는 입력' },
     })
 
-    fireEvent.click(screen.getByRole('button', { name: 'React Hook 버전' }))
+    fireEvent.click(screen.getByRole('link', { name: 'React Hook 버전' }))
     expect(screen.getByRole('heading', { name: '재사용 가능한 수직 슬라이스' })).toBeTruthy()
     expect((screen.getByRole('textbox', { name: '이름' }) as HTMLInputElement).value).toBe('')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Redux Toolkit 버전' }))
+    fireEvent.click(screen.getByRole('link', { name: 'Redux Toolkit 버전' }))
     expect((screen.getByRole('textbox', { name: '이름' }) as HTMLInputElement).value).toBe(
       'Redux에 유지되는 입력',
     )
@@ -87,8 +84,8 @@ describe('App navigation', () => {
       },
     })
 
-    fireEvent.click(screen.getByRole('button', { name: 'React Hook 버전' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Redux Toolkit 버전' }))
+    fireEvent.click(screen.getByRole('link', { name: 'React Hook 버전' }))
+    fireEvent.click(screen.getByRole('link', { name: 'Redux Toolkit 버전' }))
     expect(screen.getByText('✓ Redux Store에 요청 성공 저장')).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Redux 상태 초기화' }))
@@ -97,7 +94,7 @@ describe('App navigation', () => {
     expect((screen.getByRole('button', { name: '준비 상태 확인' }) as HTMLButtonElement).disabled)
       .toBe(true)
 
-    fireEvent.click(screen.getByRole('button', { name: /지원사업 채팅으로 돌아가기/ }))
+    fireEvent.click(screen.getByRole('link', { name: /지원사업 채팅으로 돌아가기/ }))
 
     expect(screen.getByRole('heading', { name: 'GovBiz에게 물어보세요' })).toBeTruthy()
     expect(
@@ -105,4 +102,23 @@ describe('App navigation', () => {
         .value,
     ).toBe('서울 AI 지원사업')
   })
+
+  it.each([
+    ['/examples/sample-item/hook', '재사용 가능한 수직 슬라이스'],
+    ['/examples/sample-item/redux', 'Redux 기반 수직 슬라이스'],
+  ])('%s URL로 직접 진입한다', (path, heading) => {
+    renderApp(createAppStore(), path)
+
+    expect(screen.getByRole('heading', { name: heading })).toBeTruthy()
+  })
 })
+
+function renderApp(appStore: ReturnType<typeof createAppStore>, initialEntry = '/') {
+  return render(
+    <Provider store={appStore}>
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <App />
+      </MemoryRouter>
+    </Provider>,
+  )
+}

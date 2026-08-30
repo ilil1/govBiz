@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router'
 
 import type { SupportProgram } from '../../../../domain/entities/SupportProgram'
 import {
@@ -13,11 +14,7 @@ import {
   chatSidebarClassName,
 } from './ChatPage.styles'
 
-type ChatPageProps = {
-  onOpenSampleItem: () => void
-}
-
-export function ChatPage({ onOpenSampleItem }: ChatPageProps) {
+export function ChatPage() {
   const {
     conversationCount,
     draft,
@@ -85,14 +82,13 @@ export function ChatPage({ onOpenSampleItem }: ChatPageProps) {
             <span className={chatPageStyles.newConversationIcon}>＋</span>
             새 대화 시작
           </button>
-          <button
+          <Link
             className={chatPageStyles.sampleButton}
-            type="button"
-            onClick={onOpenSampleItem}
+            to="/examples/sample-item/hook"
           >
             <span className={chatPageStyles.sampleButtonIcon}>▦</span>
             상태관리 비교 예제
-          </button>
+          </Link>
         </div>
 
         <div className={chatPageStyles.popularQuestions}>

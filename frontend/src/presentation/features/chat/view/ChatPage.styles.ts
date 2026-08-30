@@ -30,7 +30,7 @@ export const chatPageStyles = {
   ),
   newConversationIcon: 'mr-[0.45rem] text-[1.2rem] align-[-0.05em]',
   sampleButton: classes(
-    'cursor-pointer rounded-[0.85rem] border px-4 py-[0.78rem] text-left font-bold',
+    'cursor-pointer rounded-[0.85rem] border px-4 py-[0.78rem] text-left font-bold no-underline',
     'border-[rgb(200_208_235_/_18%)] bg-[rgb(113_128_197_/_12%)] text-[#d9dff4]',
     'hover:bg-[rgb(113_128_197_/_28%)] hover:text-white',
   ),

@@ -16,7 +16,7 @@ export const sampleItemStyles = {
   backButton: classes(
     'mb-6 inline-flex cursor-pointer items-center gap-[0.45rem] rounded-[0.7rem]',
     'border border-[#d8e0f3] bg-white px-[0.85rem] py-[0.65rem]',
-    'text-[0.85rem] font-bold text-[#43527a] hover:border-[#3664d8] hover:text-sample-primary',
+    'text-[0.85rem] font-bold text-[#43527a] no-underline hover:border-[#3664d8] hover:text-sample-primary',
   ),
   hero:
     'mb-8 grid grid-cols-[minmax(0,1fr)_minmax(280px,360px)] items-end gap-8 max-sample:grid-cols-1',
@@ -59,7 +59,7 @@ export const sampleItemStyles = {
   versionSwitch:
     'mb-8 inline-flex gap-[0.35rem] rounded-[0.85rem] border border-sample-border bg-[#f5f7fd] p-[0.35rem]',
   versionButton:
-    'cursor-pointer rounded-[0.6rem] border-0 px-[0.9rem] py-[0.65rem] text-[0.86rem] font-extrabold',
+    'inline-flex cursor-pointer items-center rounded-[0.6rem] border-0 px-[0.9rem] py-[0.65rem] text-[0.86rem] font-extrabold no-underline',
   activeVersionButton:
     'bg-sample-primary text-white shadow-[0_4px_12px_rgb(40_87_208_/_20%)]',
   inactiveVersionButton: 'bg-transparent text-[#5b6681]',

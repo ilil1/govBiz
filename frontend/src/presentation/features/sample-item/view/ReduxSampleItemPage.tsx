@@ -1,19 +1,12 @@
 import type { FormEvent } from 'react'
+import { Link } from 'react-router'
 
 import { CoreApiConnectionStatus } from '../../../shared/core-api-status/CoreApiConnectionStatus'
 import { useReduxSampleItemViewModel } from '../viewmodel/useReduxSampleItemViewModel'
 import { SampleItemComparisonSummary, SampleItemVersionSwitch } from './SampleItemComparison'
 import { sampleItemStyles } from './SampleItem.styles'
 
-type ReduxSampleItemPageProps = {
-  onBackToChat: () => void
-  onOpenHookVersion: () => void
-}
-
-export function ReduxSampleItemPage({
-  onBackToChat,
-  onOpenHookVersion,
-}: ReduxSampleItemPageProps) {
+export function ReduxSampleItemPage() {
   const {
     actionMessage,
     errors,
@@ -36,19 +29,14 @@ export function ReduxSampleItemPage({
 
   return (
     <main className={sampleItemStyles.page}>
-      <button
+      <Link
         className={sampleItemStyles.backButton}
-        type="button"
-        onClick={onBackToChat}
+        to="/"
       >
         <span>←</span> 지원사업 채팅으로 돌아가기
-      </button>
+      </Link>
 
-      <SampleItemVersionSwitch
-        activeVersion="redux"
-        onOpenHookVersion={onOpenHookVersion}
-        onOpenReduxVersion={() => undefined}
-      />
+      <SampleItemVersionSwitch activeVersion="redux" />
 
       <section className={sampleItemStyles.hero}>
         <div>

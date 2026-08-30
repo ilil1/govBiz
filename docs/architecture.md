@@ -48,6 +48,8 @@ View
   실행 순서를 한곳에 보여 줍니다.
 - **Redux Toolkit**은 대화 메시지·검색 조건과 Redux SampleItem처럼 여러 화면에서 유지할 클라이언트
   상태를 관리합니다.
+- **React Router**는 `/`, `/examples/sample-item/hook`, `/examples/sample-item/redux` URL을 각각의
+  화면과 연결하고 브라우저 뒤로 가기와 직접 진입을 지원합니다.
 - **React Hook state**는 Health와 Hook SampleItem처럼 한 화면에서 끝나는 요청의 로딩·성공·실패
   상태를 관리합니다.
 - **Awilix Composition Root**는 `app/di`의 역할별 등록 모듈을 하나의 객체 graph로 조립하고 앱 단위

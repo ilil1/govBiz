@@ -20,6 +20,14 @@ React Web
 
 브라우저에서 `/`로 진입하면 바로 GovBiz 채팅 화면이 열립니다.
 
+상태관리 비교 예제는 React Router URL로 직접 열 수 있습니다.
+
+```text
+/                           → 지원사업 채팅
+/examples/sample-item/hook  → React Hook 예제
+/examples/sample-item/redux → Redux Toolkit 예제
+```
+
 ```text
 사용자 메시지
   → ChatPage

@@ -1,8 +1,9 @@
 # GovBiz Web
 
-React, TypeScript, Vite, Tailwind CSS 기반의 지원사업 검색 채팅입니다. Redux Toolkit이 대화 상태를 관리하고,
-각 ViewModel Hook은 GetIt과 비슷한 전역 Awilix Service Locator에서 필요한 UseCase나 외부 API 기능을
-직접 조회합니다. 서버 요청의 로딩·성공·실패 상태도 각 ViewModel Hook이 명시적으로 관리합니다.
+React, TypeScript, Vite, Tailwind CSS 기반의 지원사업 검색 채팅입니다. React Router가 URL과 화면을
+연결하고 Redux Toolkit이 대화 상태를 관리합니다. 각 ViewModel Hook은 GetIt과 비슷한 전역 Awilix
+Service Locator에서 필요한 UseCase나 외부 API 기능을 직접 조회합니다. 서버 요청의 로딩·성공·실패
+상태도 각 ViewModel Hook이 명시적으로 관리합니다.
 
 ## 실행
 
@@ -42,6 +43,7 @@ pnpm dev
 
 ```text
 src/
+├── App.tsx                              # URL과 화면을 연결하는 Routes
 ├── index.css                            # Tailwind CSS 진입점과 공통 base 스타일
 ├── app/                                # 기능 Slice를 모은 Redux Store와 Awilix Service Locator
 │   └── di/                             # Repository·UseCase·외부 서비스 역할별 Awilix 등록
@@ -150,23 +152,27 @@ plain Fake UseCase를 전달하거나 새 테스트 컨테이너를 만듭니다
 
 ```text
 Provider store={appStore}
-└─ App
-   ├─ ChatPage → useSupportProgramChatViewModel
-   └─ ReduxSampleItemPage → useReduxSampleItemViewModel
+└─ BrowserRouter
+   └─ App Routes
+      ├─ / → ChatPage → useSupportProgramChatViewModel
+      └─ /examples/sample-item/redux → ReduxSampleItemPage → useReduxSampleItemViewModel
 ```
 
-현재 `App`은 ChatPage를 첫 화면으로 렌더링하고, 상태관리 비교 화면에서 React Hook 또는 Redux
-SampleItemPage로 전환합니다. `appStore`에는 `chat`과 `sampleItem` Slice가 있으며, 각 기능은 자기
-Slice의 action과 selector만 사용합니다. `appStore`가 애플리케이션 실행 중 한 번만 생성되므로 Redux
-화면이 잠시 unmount되어도 SampleItem 입력과 완료 결과는 유지됩니다.
+현재 `App`은 `/`를 ChatPage, `/examples/sample-item/hook`을 React Hook 예제,
+`/examples/sample-item/redux`를 Redux 예제에 연결합니다. `appStore`에는 `chat`과 `sampleItem` Slice가
+있으며, 각 기능은 자기 Slice의 action과 selector만 사용합니다. `appStore`가 애플리케이션 실행 중 한
+번만 생성되므로 URL을 이동해 Redux 화면이 잠시 unmount되어도 SampleItem 입력과 완료 결과는
+유지됩니다.
 
-`main.tsx`에는 Redux Store Provider만 남습니다.
+`main.tsx`는 Redux Store Provider와 브라우저 History를 사용하는 `BrowserRouter`를 한 번 제공합니다.
 
 ```tsx
 const appStore = createAppStore()
 
 <Provider store={appStore}>
-  <App />
+  <BrowserRouter>
+    <App />
+  </BrowserRouter>
 </Provider>
 ```
 
@@ -268,9 +274,9 @@ appContainer 모듈 로드
 └─ Health: fetchCoreApiHealth 함수 직접 실행
 ```
 
-Redux Provider 없이 `ChatPage`를 렌더링하면 React Redux Context를 찾을 수 없습니다. UseCase 조회에는
-React Provider가 필요하지 않습니다. Hook을 React 컴포넌트 렌더링 밖에서 직접 호출하는 것은 여전히
-허용되지 않습니다.
+Redux Provider 없이 `ChatPage`를 렌더링하면 React Redux Context를 찾을 수 없고, Router 없이 `Link`를
+렌더링하면 Router Context를 찾을 수 없습니다. UseCase 조회에는 두 Provider가 필요하지 않습니다.
+Hook을 React 컴포넌트 렌더링 밖에서 직접 호출하는 것은 여전히 허용되지 않습니다.
 
 ## Awilix DI 컨테이너 이해하기
 
