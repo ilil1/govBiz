@@ -1,10 +1,8 @@
 package ai.govbiz.core.sampleitem.controller
 
 import ai.govbiz.core.sampleitem.domain.SampleItem
-import ai.govbiz.core.sampleitem.domain.SampleItemPreparation
 import ai.govbiz.core.sampleitem.dto.SampleItemPreparationRequest
 import ai.govbiz.core.sampleitem.dto.SampleItemPreparationResponse
-import ai.govbiz.core.sampleitem.dto.SampleItemRequest
 import ai.govbiz.core.sampleitem.service.SampleItemPreparationService
 import jakarta.validation.Valid
 import org.springframework.http.MediaType
@@ -28,20 +26,15 @@ class SampleItemPreparationController(
     fun prepare(
         @Valid @RequestBody request: SampleItemPreparationRequest,
     ): SampleItemPreparationResponse {
-        val item = requireNotNull(request.item)
-        val preparation = preparationService.prepare(toSampleItem(item))
-        return toResponse(preparation)
-    }
-
-    private fun toSampleItem(request: SampleItemRequest): SampleItem =
-        SampleItem(request.name, request.category, request.note)
-
-    private fun toResponse(preparation: SampleItemPreparation): SampleItemPreparationResponse {
+        val requestedItem = requireNotNull(request.item)
+        val preparation = preparationService.prepare(
+            SampleItem(requestedItem.name, requestedItem.category, requestedItem.note),
+        )
         val item = preparation.item
         return SampleItemPreparationResponse(
-            preparation.phase,
-            SampleItemPreparationResponse.Item(item.name, item.category, item.note),
-            SampleItemPreparationResponse.Processing(preparation.processingStatus),
+            phase = preparation.phase,
+            item = SampleItemPreparationResponse.Item(item.name, item.category, item.note),
+            processing = SampleItemPreparationResponse.Processing(preparation.processingStatus),
         )
     }
 }
