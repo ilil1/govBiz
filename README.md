@@ -87,7 +87,7 @@ Repository, UseCase와 외부 서비스 역할별 모듈로 분리해 관리합�
 
 - React의 View → ViewModel → UseCase → Repository → HTTP DTO 흐름
 - Awilix 컨테이너를 이용한 decorator 없는 Frontend 의존성 주입
-- Spring Boot의 Controller → Service → Domain 흐름
+- Spring Boot의 기능별 controller → service → domain 레이어 구조
 - Zod와 Bean Validation을 이용한 요청·응답 계약 검증
 - FastAPI 내부 Health API와 Core API의 upstream 오류 변환
 - OpenAI Agents SDK의 필수 typed agent를 사용하는 공고 후보 점수화

@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 
-from app.agents.support_program_ranking.agent import SupportProgramRecommendationAgent
-from app.agents.support_program_ranking.models import (
+from app.support_program_ranking.agent import SupportProgramRecommendationAgent
+from app.support_program_ranking.models import (
     SupportProgramRankingOutput,
     SupportProgramRankingRequest,
 )

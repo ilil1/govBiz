@@ -70,21 +70,22 @@ Health 조회처럼 업무 도메인이 아닌 연결 상태는 UseCase·Reposit
 ## Core API
 
 ```text
-Controller → Service → Domain
-                    ├→ client/bizinfo → 공공데이터포털
-                    └→ client/ai → FastAPI → OpenAI
+supportprogram/controller
+→ supportprogram/service
+→ supportprogram/domain
+   ├→ supportprogram/client/bizinfo → 공공데이터포털
+   └→ supportprogram/client/ai → aiservice/client → FastAPI → OpenAI
 ```
 
-- **Controller**는 HTTP 요청·응답 DTO 변환과 Bean Validation을 담당합니다.
-- **Service**는 검색 조정, 기업마당 정규화, AI 점수 요청과 응답 검증을 분리해 담당합니다.
-- **Domain**은 프레임워크에 의존하지 않는 record·enum·불변식을 둡니다.
-- **client/bizinfo**는 공공데이터포털 전송 계약과 인증키를 소유합니다. Catalog가 외부 공고를
-  GovBiz 모델로 변환합니다.
-- **client/ai**는 FastAPI의 Health와 후보 점수화 내부 HTTP 계약을 소비합니다.
-- **config**는 외부 서비스 주소와 HTTP Client 설정을 조립합니다.
+- **supportprogram/controller**는 HTTP 요청을 받고 응답 DTO로 변환합니다.
+- **supportprogram/service**는 검색 흐름, 공고 정규화와 AI 점수화 결과 검증을 담당합니다.
+- **supportprogram/domain**은 프레임워크에 의존하지 않는 지원사업 모델과 상태를 둡니다.
+- **supportprogram/dto**는 브라우저에 반환하는 지원사업 응답 형식을 둡니다.
+- **supportprogram/client/bizinfo**는 기업마당 HTTP 요청·응답 계약과 연결 설정을 담당합니다.
+- **supportprogram/client/ai**는 AI 점수화 내부 요청·응답 계약을 담당합니다.
+- **aiservice/controller·service·dto·client·config**는 AI Service Health와 공통 FastAPI 연결을 기능 안에서 관리합니다.
 
-외부 HTTP 호출은 영속성 Repository와 다른 책임이므로 `client`에 둡니다. 데이터베이스를 도입할 때
-그때 필요한 Repository를 추가합니다.
+각 기능은 자기 `controller`, `service`, `domain`, `dto`, `client`, `config`를 소유합니다. 여러 기능에서 실제로 함께 쓰는 JSON·CORS·RestClient 설정, 전역 예외 처리와 timeout 판별만 `_common/config`, `_common/exception`, `_common/http`에 둡니다. `_common`의 밑줄은 IDE에서 공통 코드를 기능보다 위에 표시하기 위한 프로젝트 규칙입니다. 데이터베이스를 도입할 때도 해당 기능 아래에 필요한 저장 계층을 추가합니다.
 
 ## LLM 추천 점수화와 장애 격리
 
@@ -118,9 +119,9 @@ AI Service가 유효하지 않은 요청을 받으면 422를 반환합니다. LL
 
 현재는 한 번의 구조화된 후보 점수화만 필요하므로 agent 하나를 `max_turns=1`로 실행합니다. tool,
 handoff, session이나 manager agent는 실제 역할이 없어 추가하지 않습니다. 추천 기능의 Agent,
-prompt, model과 서비스 흐름은 `agents/support_program_ranking` 수직 슬라이스에 모으고, OpenAI
+prompt, model과 서비스 흐름은 `support_program_ranking` 수직 기능 디렉터리에 모으고, OpenAI
 client 소유권과 DI는 root `bootstrap.py`에 둡니다. 실제 사업 조회 도구나 서로 다른 전문가로 실행권을
-넘기는 요구가 생길 때 `agents/<agent_name>` 모듈과 tool 또는 handoff 도입을 다시 평가합니다.
+넘기는 요구가 생길 때 `<feature_name>` 모듈과 tool 또는 handoff 도입을 다시 평가합니다.
 
 모델 HTTP 호출과 전체 Runner 실행은 별도 timeout으로 제한합니다. 전체 run 제한을 모델 호출
 제한보다 길고 Core API의 AI Service 읽기 제한보다 짧게 두어, Core가 timeout을 명확한 공개 오류로

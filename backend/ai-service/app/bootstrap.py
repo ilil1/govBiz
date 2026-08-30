@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from agents import OpenAIResponsesModel
 from openai import AsyncOpenAI
 
-from app.agents.support_program_ranking.agent import SupportProgramRecommendationAgent
-from app.agents.support_program_ranking.service import SupportProgramRankingService
+from app.support_program_ranking.agent import SupportProgramRecommendationAgent
+from app.support_program_ranking.service import SupportProgramRankingService
 from app.config import Settings
 
 

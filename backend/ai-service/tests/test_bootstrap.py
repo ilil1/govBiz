@@ -4,15 +4,15 @@ from fastapi.testclient import TestClient
 
 import app.bootstrap as bootstrap_module
 import app.main as main_module
-from app.agents.support_program_ranking.agent import SupportProgramRecommendationAgent
-from app.agents.support_program_ranking.models import (
+from app.support_program_ranking.agent import SupportProgramRecommendationAgent
+from app.support_program_ranking.models import (
     SCORING_VERSION,
     ScoredSupportProgram,
     SupportProgramCandidate,
     SupportProgramRankingOutput,
     SupportProgramRankingRequest,
 )
-from app.agents.support_program_ranking.service import SupportProgramRankingService
+from app.support_program_ranking.service import SupportProgramRankingService
 from app.bootstrap import ApplicationContainer, build_application_container
 from app.config import Settings
 

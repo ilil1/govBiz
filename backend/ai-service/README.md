@@ -41,7 +41,7 @@ POST /internal/v1/support-program-rankings/rank
 | 신청 시점과 접수 상태 적합성 | 10 |
 | 원하는 지원 유형 적합성 | 10 |
 
-평가 기준은 [prompt.py](app/agents/support_program_ranking/prompt.py)에 한 번만 정의합니다. Kotlin에
+평가 기준은 [prompt.py](app/support_program_ranking/prompt.py)에 한 번만 정의합니다. Kotlin에
 지역·카테고리 단어 사전이나 `지역 +12` 같은 점수표를 복제하지 않습니다.
 
 ## 수직 호출 흐름
@@ -49,7 +49,7 @@ POST /internal/v1/support-program-rankings/rank
 ```text
 Core API
 → POST /internal/v1/support-program-rankings/rank
-→ api/support_program_rankings.py
+→ support_program_ranking/router.py
    → SupportProgramRankingRequest로 요청 검증
 → SupportProgramRankingService.rank()
 → SupportProgramRecommendationAgent.rank()
@@ -73,19 +73,19 @@ app/
 ├── main.py                         # FastAPI, router, lifespan
 ├── config.py                       # 모델과 timeout 환경설정
 ├── bootstrap.py                    # OpenAI client/model/agent/service 조립
-├── api/
-│   ├── health.py
-│   └── support_program_rankings.py # 내부 HTTP 경계
-└── agents/
-    ├── errors.py                   # 안전한 공통 Agent 실패
-    └── support_program_ranking/
-        ├── models.py               # 요청·출력·응답 Pydantic 계약
-        ├── prompt.py               # 버전된 100점 평가 기준
-        ├── agent.py                # Runner와 OpenAI 실행
-        └── service.py              # 후보 ID 검증·정렬·상위 선택
+├── health/                         # 공통 Health 수직 기능
+│   ├── router.py                   # 내부 Health HTTP 경계
+│   └── models.py                   # Health 응답 계약
+└── support_program_ranking/        # 지원사업 점수화 수직 기능
+    ├── router.py                   # 내부 HTTP 경계
+    ├── models.py                   # 요청·출력·응답 Pydantic 계약
+    ├── prompt.py                   # 버전된 100점 평가 기준
+    ├── agent.py                    # Runner와 OpenAI 실행
+    ├── service.py                  # 후보 ID 검증·정렬·상위 선택
+    └── errors.py                   # 안전한 기능 실패
 ```
 
-의존성 방향은 `api → service → agent → Agents SDK`입니다. `bootstrap.py`만 구체 OpenAI client와
+의존성 방향은 `router → service → agent → Agents SDK`입니다. `bootstrap.py`만 구체 OpenAI client와
 model을 생성하고, 요청마다 Agent를 새로 만들지 않습니다.
 
 ## 실패 흐름

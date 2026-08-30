@@ -3,9 +3,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api.health import router as health_router
-from app.api.support_program_rankings import router as support_program_rankings_router
-from app.agents.support_program_ranking.agent import SupportProgramRecommendationAgent
+from app.health.router import router as health_router
+from app.support_program_ranking.router import router as support_program_rankings_router
+from app.support_program_ranking.agent import SupportProgramRecommendationAgent
 from app.bootstrap import build_application_container
 from app.config import Settings
 
