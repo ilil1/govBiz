@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Provider } from 'react-redux'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -139,7 +139,7 @@ describe('useReduxSampleItemViewModel', () => {
 function TestHarness({ useCase }: { useCase: Pick<PrepareSampleItemUseCase, 'execute'> }) {
   const viewModel = useReduxSampleItemViewModel(useCase)
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     void viewModel.prepare()
   }
