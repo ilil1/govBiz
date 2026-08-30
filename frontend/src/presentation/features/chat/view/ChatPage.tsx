@@ -251,7 +251,9 @@ function ProgramCard({ program }: { program: SupportProgram }) {
     <article className={chatPageStyles.programCard}>
       <div className={chatPageStyles.programCardHeader}>
         <span className={chatPageStyles.programTag}>
-          관련 공고
+          {program.recommendationScore === null
+            ? '최신 공고'
+            : `AI 추천 ${program.recommendationScore}점`}
         </span>
         <span className={chatPageStyles.programDeadline}>
           {formatApplicationDeadline(program)}

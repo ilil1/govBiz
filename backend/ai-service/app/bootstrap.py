@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from agents import OpenAIResponsesModel
 from openai import AsyncOpenAI
 
-from app.agents.search_intent.agent import SearchIntentAgent
-from app.agents.search_intent.service import SearchIntentAnalysisService
+from app.agents.support_program_ranking.agent import SupportProgramRecommendationAgent
+from app.agents.support_program_ranking.service import SupportProgramRankingService
 from app.config import Settings
 
 
@@ -12,7 +12,7 @@ from app.config import Settings
 class ApplicationContainer:
     """애플리케이션 객체 그래프와 그 객체가 소유한 자원."""
 
-    search_intent_service: SearchIntentAnalysisService
+    support_program_ranking_service: SupportProgramRankingService
     openai_client: AsyncOpenAI | None = None
 
     async def close(self) -> None:
@@ -23,12 +23,12 @@ class ApplicationContainer:
 def build_application_container(
     settings: Settings,
     *,
-    search_intent_agent: SearchIntentAgent | None = None,
+    support_program_recommendation_agent: SupportProgramRecommendationAgent | None = None,
 ) -> ApplicationContainer:
     """환경설정과 선택적 테스트 대역을 실제 애플리케이션 객체로 조립한다."""
 
     openai_client: AsyncOpenAI | None = None
-    agent = search_intent_agent
+    agent = support_program_recommendation_agent
 
     if agent is None:
         openai_client = AsyncOpenAI(
@@ -40,13 +40,13 @@ def build_application_container(
             model=settings.openai_model,
             openai_client=openai_client,
         )
-        agent = SearchIntentAgent(
+        agent = SupportProgramRecommendationAgent(
             model=model,
             model_timeout_seconds=settings.llm_model_timeout_seconds,
             run_timeout_seconds=settings.llm_run_timeout_seconds,
         )
 
     return ApplicationContainer(
-        search_intent_service=SearchIntentAnalysisService(agent),
+        support_program_ranking_service=SupportProgramRankingService(agent),
         openai_client=openai_client,
     )

@@ -3,13 +3,13 @@ from os import environ
 
 
 DEFAULT_OPENAI_MODEL = "gpt-5.6-luna"
-DEFAULT_LLM_MODEL_TIMEOUT_SECONDS = 2.0
-DEFAULT_LLM_RUN_TIMEOUT_SECONDS = 2.5
+DEFAULT_LLM_MODEL_TIMEOUT_SECONDS = 8.0
+DEFAULT_LLM_RUN_TIMEOUT_SECONDS = 10.0
 
 
 @dataclass(frozen=True, slots=True)
 class Settings:
-    """환경변수에서 읽는 검색 의도 agent 설정."""
+    """환경변수에서 읽는 지원사업 추천 점수화 agent 설정."""
 
     openai_api_key: str
     openai_model: str

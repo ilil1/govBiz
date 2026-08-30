@@ -17,4 +17,5 @@ data class SupportProgram(
     val sourceName: String,
     val sourceUrl: String,
     val matchedReasons: List<String>,
+    val recommendationScore: Int? = null,
 )

@@ -150,8 +150,8 @@ class AiServiceClientTest {
     }
 
     @Test
-    fun sendsExactSearchIntentRequestAndDecodesTheStructuredResponse() {
-        server.expect(requestTo(SEARCH_INTENT_URL))
+    fun sendsExactRankingRequestAndDecodesTheStructuredScores() {
+        server.expect(requestTo(RANKING_URL))
             .andExpect(method(HttpMethod.POST))
             .andExpect(header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE))
             .andExpect(header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
@@ -159,61 +159,70 @@ class AiServiceClientTest {
                 content().json(
                     """
                     {
-                      "query":"서울 AI 스타트업 지원사업",
-                      "acceptingOnly":true
+                      "originalQuery":"서울 AI 스타트업 지원사업",
+                      "scoringVersion":"govbiz-support-program-ranking-v1",
+                      "resultLimit":1,
+                      "candidates":[{
+                        "id":"program-1",
+                        "title":"서울 AI 사업화 지원",
+                        "organization":"서울경제진흥원",
+                        "summary":"AI 창업기업 사업화 지원",
+                        "categories":["AI","창업"],
+                        "regions":["서울"],
+                        "targetDescription":"서울 창업기업",
+                        "applicationPeriod":"상시 접수",
+                        "status":"OPEN"
+                      }]
                     }
                     """.trimIndent(),
                 ),
             )
-            .andRespond(withSuccess(VALID_INTENT_RESPONSE, MediaType.APPLICATION_JSON))
+            .andRespond(withSuccess(VALID_RANKING_RESPONSE, MediaType.APPLICATION_JSON))
 
-        val response = client.analyzeSearchIntent(
-            "서울 AI 스타트업 지원사업",
-            true,
-        )
+        val response = client.rankSupportPrograms(rankingRequest())
 
         assertEquals("서울 AI 스타트업 지원사업", response.originalQuery)
-        assertEquals(listOf("서울"), response.regions)
-        assertEquals(listOf("AI", "창업"), response.categories)
+        assertEquals(95, response.rankings?.single()?.totalScore)
+        assertEquals("program-1", response.rankings?.single()?.programId)
     }
 
     @Test
-    fun mapsSearchIntentNoContentToInvalidResponse() {
-        server.expect(requestTo(SEARCH_INTENT_URL)).andRespond(withNoContent())
+    fun mapsRankingNoContentToInvalidResponse() {
+        server.expect(requestTo(RANKING_URL)).andRespond(withNoContent())
 
-        assertIntentFailure(AiServiceClientException.Failure.INVALID_RESPONSE)
+        assertRankingFailure(AiServiceClientException.Failure.INVALID_RESPONSE)
     }
 
     @Test
-    fun mapsMalformedSearchIntentJsonToInvalidResponse() {
-        server.expect(requestTo(SEARCH_INTENT_URL))
-            .andRespond(withSuccess("{\"keywords\":", MediaType.APPLICATION_JSON))
+    fun mapsMalformedRankingJsonToInvalidResponse() {
+        server.expect(requestTo(RANKING_URL))
+            .andRespond(withSuccess("{\"rankings\":", MediaType.APPLICATION_JSON))
 
-        assertIntentFailure(AiServiceClientException.Failure.INVALID_RESPONSE)
+        assertRankingFailure(AiServiceClientException.Failure.INVALID_RESPONSE)
     }
 
     @Test
-    fun mapsSearchIntentUnavailableStatusToUnavailable() {
-        server.expect(requestTo(SEARCH_INTENT_URL))
+    fun mapsRankingUnavailableStatusToUnavailable() {
+        server.expect(requestTo(RANKING_URL))
             .andRespond(
                 withStatus(HttpStatus.SERVICE_UNAVAILABLE)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body("{\"detail\":\"unavailable\"}"),
             )
 
-        assertIntentFailure(AiServiceClientException.Failure.UNAVAILABLE)
+        assertRankingFailure(AiServiceClientException.Failure.UNAVAILABLE)
     }
 
     @Test
-    fun mapsSearchIntentGatewayTimeoutStatusToTimeout() {
-        server.expect(requestTo(SEARCH_INTENT_URL))
+    fun mapsRankingGatewayTimeoutStatusToTimeout() {
+        server.expect(requestTo(RANKING_URL))
             .andRespond(
                 withStatus(HttpStatus.GATEWAY_TIMEOUT)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body("{\"detail\":\"timeout\"}"),
             )
 
-        assertIntentFailure(AiServiceClientException.Failure.TIMEOUT)
+        assertRankingFailure(AiServiceClientException.Failure.TIMEOUT)
     }
 
     private fun expectResponse(response: ResponseCreator) {
@@ -227,32 +236,55 @@ class AiServiceClientTest {
         assertEquals(expectedFailure, exception.failure)
     }
 
-    private fun assertIntentFailure(expectedFailure: AiServiceClientException.Failure) {
+    private fun assertRankingFailure(expectedFailure: AiServiceClientException.Failure) {
         val exception = assertThrows(AiServiceClientException::class.java) {
-            client.analyzeSearchIntent("서울 AI", true)
+            client.rankSupportPrograms(rankingRequest())
         }
         assertEquals(expectedFailure, exception.failure)
     }
 
+    private fun rankingRequest() = AiSupportProgramRankingRequest(
+        originalQuery = "서울 AI 스타트업 지원사업",
+        scoringVersion = "govbiz-support-program-ranking-v1",
+        resultLimit = 1,
+        candidates = listOf(
+            AiSupportProgramCandidateRequest(
+                id = "program-1",
+                title = "서울 AI 사업화 지원",
+                organization = "서울경제진흥원",
+                summary = "AI 창업기업 사업화 지원",
+                categories = listOf("AI", "창업"),
+                regions = listOf("서울"),
+                targetDescription = "서울 창업기업",
+                applicationPeriod = "상시 접수",
+                status = "OPEN",
+            ),
+        ),
+    )
+
     private companion object {
         const val BASE_URL = "http://ai-service.test:8000"
         const val HEALTH_URL = "$BASE_URL/internal/v1/health"
-        const val SEARCH_INTENT_URL = "$BASE_URL/internal/v1/search-intents/analyze"
+        const val RANKING_URL = "$BASE_URL/internal/v1/support-program-rankings/rank"
         val VALID_RESPONSE =
             """
             {"status":"up","service":"govbiz-ai-service"}
             """.trimIndent()
-        val VALID_INTENT_RESPONSE =
+        val VALID_RANKING_RESPONSE =
             """
             {
               "originalQuery":"서울 AI 스타트업 지원사업",
-              "keywords":["스타트업"],
-              "regions":["서울"],
-              "categories":["AI","창업"],
-              "targetTerms":["창업기업"],
-              "acceptingOnly":true,
-              "clarificationNeeded":false,
-              "clarificationQuestion":null
+              "scoringVersion":"govbiz-support-program-ranking-v1",
+              "rankings":[{
+                "programId":"program-1",
+                "semanticRelevance":38,
+                "targetFit":24,
+                "regionFit":15,
+                "applicationStatusFit":10,
+                "supportTypeFit":8,
+                "totalScore":95,
+                "recommendationReasons":["서울 AI 창업기업 사업화 지원"]
+              }]
             }
             """.trimIndent()
     }

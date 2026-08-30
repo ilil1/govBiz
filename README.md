@@ -37,10 +37,11 @@ React Web
               → SearchSupportProgramsUseCase.execute
                   → SupportProgramRepository
                       → GET /api/v1/support-programs/search
-                          → POST /internal/v1/search-intents/analyze
-                              → 필수 OpenAI typed agent
-                          → Core API가 검증된 AI 검색 의도를 그대로 사용
-                          → 공공데이터포털 기업마당 공고 조회·변환·검색·정렬
+                          → 공공데이터포털 기업마당 공고 조회·검증
+                          → 접수 상태 필터와 최신 후보 최대 20개 선정
+                          → POST /internal/v1/support-program-rankings/rank
+                              → OpenAI typed agent가 버전된 기준으로 후보별 점수화
+                          → Core가 ID·점수 합계·순서를 검증하고 상위 5개 반환
               → Redux Toolkit chat slice
                   → 지원사업 카드·마감일·추천 이유 표시
 ```
@@ -53,12 +54,12 @@ React Web
 
 Frontend는 HTTP 응답을 Zod로 검증하고, 화면 이탈이나 새 대화 시작 시 진행 중인 검색을 취소합니다.
 공고의 공식 원문 주소와 신청기간 원문을 함께 제공하며, 날짜를 확실히 해석하지 못한 경우 접수 상태를
-추정하지 않습니다. 공개 계약은 [지원사업 검색 HTTP 계약](docs/support-program-search-contract.md)에
+추정하지 않습니다. 공개 계약은 [지원사업 검색·추천 HTTP 계약](docs/support-program-search-contract.md)에
 정리되어 있습니다.
 
-LLM은 검색어·지역·분야·지원대상 표현을 구조화하는 필수 분석기입니다. OpenAI 설정 누락은 AI Service
+LLM은 공식 공고 후보를 고정된 100점 평가 기준으로 점수화하는 필수 추천기입니다. OpenAI 설정 누락은 AI Service
 시작 실패로 드러나고, 인증·rate limit·timeout·refusal·응답 검증 실패는 안전한 502·503·504로
-반환합니다. 제한적인 규칙 분석으로 자연어를 이해한 것처럼 성공시키지 않습니다.
+반환합니다. Kotlin 단어 사전이나 고정 점수표로 자연어를 이해한 것처럼 성공시키지 않습니다.
 
 ### 채팅 상태 관리
 
@@ -89,7 +90,7 @@ Repository, UseCase와 외부 서비스 역할별 모듈로 분리해 관리합�
 - Spring Boot의 Controller → Service → Domain 흐름
 - Zod와 Bean Validation을 이용한 요청·응답 계약 검증
 - FastAPI 내부 Health API와 Core API의 upstream 오류 변환
-- OpenAI Agents SDK의 필수 typed agent를 사용하는 검색 의도 분석
+- OpenAI Agents SDK의 필수 typed agent를 사용하는 공고 후보 점수화
 - 공공데이터포털 응답을 GovBiz 공고 모델로 변환하는 외부 API adapter
 - Tailwind CSS 유틸리티와 Vite 프록시를 사용하는 Docker Compose 개발 환경
 - 실제 키 없이 로컬 공공데이터 스텁을 사용하는 결정적 Compose smoke 검증

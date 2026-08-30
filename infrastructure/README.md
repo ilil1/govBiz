@@ -20,7 +20,7 @@ Browser (127.0.0.1:5173)
 | web 컨테이너 | `http://core-api:8080` | Compose 내부 DNS |
 | Core API 컨테이너 | `http://ai-service:8000` | Compose 내부 DNS |
 | Core API 컨테이너 | `https://apis.data.go.kr` | 실제 기업마당 공고 upstream |
-| AI Service 컨테이너 | `https://api.openai.com` | 설정된 경우 검색 의도 typed agent |
+| AI Service 컨테이너 | `https://api.openai.com` | 공고 후보 점수화 typed agent |
 | Host 터미널 | `http://127.0.0.1:8080` | Host에 공개된 Core API 포트 |
 
 `core-api`와 `ai-service`는 컨테이너 네트워크 안에서만 해석되는 이름입니다. 브라우저 JavaScript가
@@ -44,15 +44,15 @@ OPENAI_API_KEY=발급받은_OpenAI_API_키
 | `BIZINFO_API_READ_TIMEOUT` | `10s` | 외부 API 응답 제한시간 |
 | `OPENAI_API_KEY` | 없음(필수) | AI Service만 사용하는 OpenAI 인증키 |
 | `OPENAI_MODEL` | [`gpt-5.6-luna`](https://developers.openai.com/api/docs/models/gpt-5.6-luna) | Agent의 Structured Output 모델 |
-| `LLM_MODEL_TIMEOUT_SECONDS` | `2.0` | OpenAI 모델 호출 한 번의 제한시간(초) |
-| `LLM_RUN_TIMEOUT_SECONDS` | `2.5` | parsing을 포함한 전체 agent run 제한시간(초) |
-| `AI_SERVICE_READ_TIMEOUT` | `3s` | Core API의 AI Service 읽기 제한시간 |
+| `LLM_MODEL_TIMEOUT_SECONDS` | `8.0` | OpenAI 모델 호출 한 번의 제한시간(초) |
+| `LLM_RUN_TIMEOUT_SECONDS` | `10.0` | 후보 점수 검증을 포함한 전체 agent run 제한시간(초) |
+| `AI_SERVICE_READ_TIMEOUT` | `12s` | Core API의 AI Service 읽기 제한시간 |
 | `APP_CORS_ALLOWED_ORIGIN` | `http://127.0.0.1:5173` | Compose에서 Core API가 허용할 브라우저 origin |
 
-OpenAI는 자연어 검색 의도 분석의 필수 의존성입니다. 키가 없으면 Compose 설정과 AI Service 시작이
-실패하고, 실행 중 OpenAI 분석이 실패하면 Core API가 안전한 502·503·504로 전달합니다. 제한적인 규칙
-의미 분석으로 성공을 가장하지 않습니다. Core API의 AI Service 읽기 제한시간 기본값은 `3s`로 agent
-run 제한시간 `2.5s`보다 길게 유지합니다.
+OpenAI는 공식 공고 후보 점수화의 필수 의존성입니다. 키가 없으면 Compose 설정과 AI Service 시작이
+실패하고, 실행 중 OpenAI 평가가 실패하면 Core API가 안전한 502·503·504로 전달합니다. Kotlin의
+단어 사전이나 고정 가중치로 성공을 가장하지 않습니다. Core API 읽기 제한시간 `12s`는 전체 agent
+run 제한시간 `10s`보다 길게 유지합니다.
 
 저장소 루트에서 실행합니다.
 
@@ -68,7 +68,7 @@ docker compose --env-file .env --file infrastructure/compose.yaml up --build
 | `http://127.0.0.1:5173/api/v1/sample-items/prepare` | Vite 프록시를 거친 SampleItem 준비 API |
 | `http://127.0.0.1:5173/api/v1/health/ai-service` | Core API를 거친 AI Service Health |
 
-`POST http://ai-service:8000/internal/v1/search-intents/analyze`는 Compose 네트워크 내부에서 Core API만
+`POST http://ai-service:8000/internal/v1/support-program-rankings/rank`는 Compose 네트워크 내부에서 Core API만
 호출합니다. Host나 브라우저에 포트를 공개하지 않습니다.
 
 중지와 정리:

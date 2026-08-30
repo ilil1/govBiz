@@ -17,6 +17,7 @@ export const supportPrograms: SupportProgram[] = [
     sourceName: 'GovBiz 샘플 데이터',
     sourceUrl: 'https://www.bizinfo.go.kr/programs/seoul-ai-business',
     matchedReasons: ['AI·기술 분야', '서울 지역', '현재 접수 중'],
+    recommendationScore: 94,
   },
   {
     id: 'fixture-national-startup',
@@ -33,6 +34,7 @@ export const supportPrograms: SupportProgram[] = [
     sourceName: 'GovBiz 샘플 데이터',
     sourceUrl: 'https://www.bizinfo.go.kr/programs/national-startup',
     matchedReasons: ['창업 분야', '전국 사업', '현재 접수 중'],
+    recommendationScore: 90,
   },
   {
     id: 'fixture-gyeonggi-manufacturing',
@@ -49,6 +51,7 @@ export const supportPrograms: SupportProgram[] = [
     sourceName: 'GovBiz 샘플 데이터',
     sourceUrl: 'https://www.bizinfo.go.kr/programs/gyeonggi-smart-factory',
     matchedReasons: ['제조·기술 분야', '경기 지역', '현재 접수 중'],
+    recommendationScore: 88,
   },
   {
     id: 'fixture-export-voucher',
@@ -65,6 +68,7 @@ export const supportPrograms: SupportProgram[] = [
     sourceName: 'GovBiz 샘플 데이터',
     sourceUrl: 'https://www.bizinfo.go.kr/programs/export-voucher',
     matchedReasons: ['수출·해외진출 분야', '전국 사업', '현재 접수 중'],
+    recommendationScore: 86,
   },
   {
     id: 'fixture-content-innovation',
@@ -81,6 +85,7 @@ export const supportPrograms: SupportProgram[] = [
     sourceName: 'GovBiz 샘플 데이터',
     sourceUrl: 'https://www.bizinfo.go.kr/programs/content-innovation',
     matchedReasons: ['콘텐츠·창업 분야', '전국 사업', '현재 접수 중'],
+    recommendationScore: 84,
   },
   {
     id: 'fixture-closed-daejeon',
@@ -97,5 +102,6 @@ export const supportPrograms: SupportProgram[] = [
     sourceName: 'GovBiz 샘플 데이터',
     sourceUrl: 'https://www.bizinfo.go.kr/programs/daejeon-accelerating',
     matchedReasons: ['기술·창업 분야', '대전 지역'],
+    recommendationScore: 72,
   },
 ]

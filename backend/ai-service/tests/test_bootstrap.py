@@ -4,12 +4,15 @@ from fastapi.testclient import TestClient
 
 import app.bootstrap as bootstrap_module
 import app.main as main_module
-from app.agents.search_intent.agent import SearchIntentAgent
-from app.agents.search_intent.models import (
-    ExtractedSearchIntent,
-    SearchIntentRequest,
+from app.agents.support_program_ranking.agent import SupportProgramRecommendationAgent
+from app.agents.support_program_ranking.models import (
+    SCORING_VERSION,
+    ScoredSupportProgram,
+    SupportProgramCandidate,
+    SupportProgramRankingOutput,
+    SupportProgramRankingRequest,
 )
-from app.agents.search_intent.service import SearchIntentAnalysisService
+from app.agents.support_program_ranking.service import SupportProgramRankingService
 from app.bootstrap import ApplicationContainer, build_application_container
 from app.config import Settings
 
@@ -30,11 +33,14 @@ class FakeOpenAIClient:
         self.closed = True
 
 
-class NeverCalledAgent(SearchIntentAgent):
+class NeverCalledAgent(SupportProgramRecommendationAgent):
     def __init__(self) -> None:
         pass
 
-    async def analyze(self, query: str) -> ExtractedSearchIntent:
+    async def rank(
+        self,
+        request: SupportProgramRankingRequest,
+    ) -> SupportProgramRankingOutput:
         raise AssertionError("health and lifespan tests must not invoke the agent")
 
 
@@ -45,16 +51,22 @@ async def test_builds_and_wires_agent_in_the_composition_root(
     captured_client_arguments: dict[str, object] = {}
     captured_model_arguments: dict[str, object] = {}
     client = FakeOpenAIClient()
-    expected = ExtractedSearchIntent(
-        keywords=["반도체"],
-        regions=["서울"],
-        categories=["AI"],
-        target_terms=[],
-        clarification_needed=False,
-        clarification_question=None,
+    expected = SupportProgramRankingOutput(
+        rankings=[
+            ScoredSupportProgram(
+                programId="program-1",
+                semanticRelevance=40,
+                targetFit=25,
+                regionFit=15,
+                applicationStatusFit=10,
+                supportTypeFit=10,
+                totalScore=100,
+                recommendationReasons=["질의와 직접 관련"],
+            )
+        ]
     )
     model = ScriptedModel(
-        [[assistant_message(expected.model_dump_json())]]
+        [[assistant_message(expected.model_dump_json(by_alias=True))]]
     )
 
     def fake_openai_client(**arguments: object) -> FakeOpenAIClient:
@@ -74,7 +86,10 @@ async def test_builds_and_wires_agent_in_the_composition_root(
 
     container = build_application_container(OPENAI_SETTINGS)
 
-    assert isinstance(container.search_intent_service, SearchIntentAnalysisService)
+    assert isinstance(
+        container.support_program_ranking_service,
+        SupportProgramRankingService,
+    )
     assert container.openai_client is client
     assert captured_client_arguments == {
         "api_key": "private-key",
@@ -86,11 +101,28 @@ async def test_builds_and_wires_agent_in_the_composition_root(
         "openai_client": client,
     }
 
-    response = await container.search_intent_service.analyze(
-        SearchIntentRequest(query="서울 AI 반도체", acceptingOnly=True)
+    response = await container.support_program_ranking_service.rank(
+        SupportProgramRankingRequest(
+            originalQuery="서울 AI 반도체",
+            scoringVersion=SCORING_VERSION,
+            resultLimit=1,
+            candidates=[
+                SupportProgramCandidate(
+                    id="program-1",
+                    title="서울 AI 반도체 지원",
+                    organization="기관",
+                    summary="반도체 지원",
+                    categories=["AI"],
+                    regions=["서울"],
+                    targetDescription="중소기업",
+                    applicationPeriod="상시 접수",
+                    status="OPEN",
+                )
+            ],
+        )
     )
 
-    assert response.keywords == ["반도체"]
+    assert response.rankings[0].total_score == 100
     model.assert_complete()
 
 
@@ -99,7 +131,7 @@ def test_application_lifespan_closes_container_owned_client(
 ) -> None:
     client = FakeOpenAIClient()
     container = ApplicationContainer(
-        search_intent_service=SearchIntentAnalysisService(NeverCalledAgent()),
+        support_program_ranking_service=SupportProgramRankingService(NeverCalledAgent()),
         openai_client=client,  # type: ignore[arg-type]
     )
 

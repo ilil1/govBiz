@@ -13,7 +13,7 @@ import org.springframework.web.client.RestClientResponseException
 @Component
 class AiServiceClient(
     @param:Qualifier("aiServiceRestClient") private val restClient: RestClient,
-) {
+) : AiSupportProgramRankingClient {
 
     fun getHealth(): AiServiceHealthPayload {
         try {
@@ -61,12 +61,14 @@ class AiServiceClient(
         }
     }
 
-    fun analyzeSearchIntent(query: String, acceptingOnly: Boolean): AiSearchIntentPayload {
+    override fun rankSupportPrograms(
+        request: AiSupportProgramRankingRequest,
+    ): AiSupportProgramRankingPayload {
         try {
             val response = restClient.post()
-                .uri(SEARCH_INTENT_PATH)
+                .uri(SUPPORT_PROGRAM_RANKING_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(AiSearchIntentRequest(query, acceptingOnly))
+                .body(request)
                 .retrieve()
                 .onStatus(
                     { statusCode -> statusCode.value() != HttpStatus.OK.value() },
@@ -74,7 +76,7 @@ class AiServiceClient(
                         val statusCode = clientResponse.statusCode.value()
                         if (statusCode == HttpStatus.NO_CONTENT.value()) {
                             throw AiServiceClientException.invalidResponse(
-                                "AI Service returned HTTP 204 without a search intent",
+                                "AI Service returned HTTP 204 without support program rankings",
                                 null,
                             )
                         }
@@ -93,11 +95,11 @@ class AiServiceClient(
                         )
                     },
                 )
-                .toEntity(AiSearchIntentPayload::class.java)
+                .toEntity(AiSupportProgramRankingPayload::class.java)
 
             return response.body
                 ?: throw AiServiceClientException.invalidResponse(
-                    "AI Service returned an empty search intent response",
+                    "AI Service returned an empty support program ranking response",
                     null,
                 )
         } catch (exception: ResourceAccessException) {
@@ -112,7 +114,7 @@ class AiServiceClient(
             )
         } catch (exception: RestClientException) {
             throw AiServiceClientException.invalidResponse(
-                "AI Service search intent response could not be decoded",
+                "AI Service support program ranking response could not be decoded",
                 exception,
             )
         }
@@ -120,6 +122,13 @@ class AiServiceClient(
 
     companion object {
         private const val HEALTH_PATH = "/internal/v1/health"
-        private const val SEARCH_INTENT_PATH = "/internal/v1/search-intents/analyze"
+        private const val SUPPORT_PROGRAM_RANKING_PATH =
+            "/internal/v1/support-program-rankings/rank"
     }
+}
+
+fun interface AiSupportProgramRankingClient {
+    fun rankSupportPrograms(
+        request: AiSupportProgramRankingRequest,
+    ): AiSupportProgramRankingPayload
 }

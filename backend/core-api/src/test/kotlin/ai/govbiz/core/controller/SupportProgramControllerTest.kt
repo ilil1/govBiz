@@ -4,11 +4,11 @@ import ai.govbiz.core.client.ai.AiServiceClientException
 import ai.govbiz.core.client.bizinfo.BizInfoClient
 import ai.govbiz.core.client.bizinfo.BizInfoClientException
 import ai.govbiz.core.client.bizinfo.BizInfoProgramPayload
-import ai.govbiz.core.service.AiSearchIntentService
-import ai.govbiz.core.service.AnalyzedSearchIntent
 import ai.govbiz.core.service.BizInfoSupportProgramCatalog
+import ai.govbiz.core.service.CatalogSupportProgram
+import ai.govbiz.core.service.SupportProgramRanking
 import ai.govbiz.core.service.SupportProgramSearchService
-import ai.govbiz.core.service.SupportProgramRanker
+import ai.govbiz.core.domain.support.SupportProgram
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -39,8 +39,7 @@ class SupportProgramControllerTest {
     @Mock
     private lateinit var client: BizInfoClient
 
-    @Mock
-    private lateinit var aiSearchIntentService: AiSearchIntentService
+    private lateinit var ranking: StubSupportProgramRanking
 
     private lateinit var mockMvc: MockMvc
 
@@ -50,10 +49,10 @@ class SupportProgramControllerTest {
             Instant.parse("2026-08-24T03:00:00Z"),
             ZoneId.of("Asia/Seoul"),
         )
+        ranking = StubSupportProgramRanking()
         val service = SupportProgramSearchService(
-            aiSearchIntentService,
             BizInfoSupportProgramCatalog(client, clock),
-            SupportProgramRanker(),
+            ranking,
         )
         mockMvc = MockMvcBuilders
             .standaloneSetup(SupportProgramController(service))
@@ -63,12 +62,17 @@ class SupportProgramControllerTest {
 
     @Test
     fun returnsTheStableFrontendContractIncludingNullableParsedDates() {
-        Mockito.doReturn(emptyAnalyzedIntent())
-            .`when`(aiSearchIntentService)
-            .analyze("서울 AI", true)
         Mockito.doReturn(listOf(payload("상시 접수")))
             .`when`(client)
             .fetchAll()
+        ranking.response = { candidates ->
+            listOf(
+                candidates.single().program.copy(
+                    recommendationScore = 96,
+                    matchedReasons = listOf("서울 AI 기업 대상"),
+                ),
+            )
+        }
 
         mockMvc.perform(get(PATH).queryParam("query", "  서울 AI  "))
             .andExpect(status().isOk())
@@ -80,6 +84,8 @@ class SupportProgramControllerTest {
             .andExpect(jsonPath("$.programs[0].applicationStartDate").value(nullValue()))
             .andExpect(jsonPath("$.programs[0].applicationEndDate").value(nullValue()))
             .andExpect(jsonPath("$.programs[0].sourceName").value("기업마당"))
+            .andExpect(jsonPath("$.programs[0].recommendationScore").value(96))
+            .andExpect(jsonPath("$.programs[0].matchedReasons[0]").value("서울 AI 기업 대상"))
             .andExpect(
                 jsonPath("$.programs[0].sourceUrl")
                     .value("https://www.bizinfo.go.kr/detail?id=PBLN_TEST"),
@@ -89,9 +95,6 @@ class SupportProgramControllerTest {
     @ParameterizedTest
     @MethodSource("supportProgramProblemCases")
     fun mapsEverySupportProgramFailureToAStableProblem(problemCase: ProblemCase) {
-        Mockito.doReturn(emptyAnalyzedIntent())
-            .`when`(aiSearchIntentService)
-            .analyze("서울", true)
         Mockito.doThrow(problemCase.exception).`when`(client).fetchAll()
 
         assertProblem(
@@ -103,9 +106,8 @@ class SupportProgramControllerTest {
     @ParameterizedTest
     @MethodSource("aiServiceProblemCases")
     fun mapsEveryDirectAiClientFailureToAStableProblem(problemCase: ProblemCase) {
-        Mockito.doThrow(problemCase.exception)
-            .`when`(aiSearchIntentService)
-            .analyze("서울", true)
+        Mockito.doReturn(listOf(payload("상시 접수"))).`when`(client).fetchAll()
+        ranking.failure = problemCase.exception
 
         assertProblem(
             mockMvc.perform(get(PATH).queryParam("query", "서울")),
@@ -147,16 +149,6 @@ class SupportProgramControllerTest {
             .andExpect(content().string(not(containsString(PRIVATE_DETAIL))))
     }
 
-    private fun emptyAnalyzedIntent() =
-        AnalyzedSearchIntent(
-            emptyList(),
-            emptyList(),
-            emptyList(),
-            emptyList(),
-            false,
-            null,
-        )
-
     private fun payload(period: String) =
         BizInfoProgramPayload(
             "서울 AI 지원사업",
@@ -173,6 +165,20 @@ class SupportProgramControllerTest {
             "AI,서울",
             "온라인",
         )
+
+    private class StubSupportProgramRanking : SupportProgramRanking {
+        var response: (List<CatalogSupportProgram>) -> List<SupportProgram> = { emptyList() }
+        var failure: RuntimeException? = null
+
+        override fun rank(
+            query: String,
+            candidates: List<CatalogSupportProgram>,
+            limit: Int,
+        ): List<SupportProgram> {
+            failure?.let { throw it }
+            return response(candidates)
+        }
+    }
 
     private companion object {
         const val PATH = "/api/v1/support-programs/search"

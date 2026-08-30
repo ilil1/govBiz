@@ -17,12 +17,12 @@ from pydantic import ValidationError
 
 from app.agents.errors import AgentExecutionError
 
-from .models import ExtractedSearchIntent
-from .prompt import SEARCH_INTENT_INSTRUCTIONS
+from .models import SupportProgramRankingOutput, SupportProgramRankingRequest
+from .prompt import SUPPORT_PROGRAM_RANKING_INSTRUCTIONS
 
 
-class SearchIntentAgent:
-    """단일 turn에서 검색 의도를 구조화하는 typed agent."""
+class SupportProgramRecommendationAgent:
+    """한 번의 structured LLM 호출로 모든 공고 후보를 점수화한다."""
 
     def __init__(
         self,
@@ -33,31 +33,32 @@ class SearchIntentAgent:
     ) -> None:
         self._run_timeout_seconds = run_timeout_seconds
         self._agent: Agent[None] = Agent(
-            name="GovBiz Search Intent Extractor",
-            instructions=SEARCH_INTENT_INSTRUCTIONS,
+            name="GovBiz Support Program Recommendation Scorer",
+            instructions=SUPPORT_PROGRAM_RANKING_INSTRUCTIONS,
             model=model,
-            output_type=ExtractedSearchIntent,
+            output_type=SupportProgramRankingOutput,
             model_settings=ModelSettings(
-                max_tokens=500,
+                max_tokens=4_000,
                 reasoning=Reasoning(effort="none"),
                 store=False,
                 timeout=model_timeout_seconds,
             ),
         )
         self._run_config = RunConfig(
-            workflow_name="GovBiz search intent analysis",
+            workflow_name="GovBiz support program recommendation ranking",
             tracing_disabled=True,
             trace_include_sensitive_data=False,
         )
 
-    async def analyze(self, query: str) -> ExtractedSearchIntent:
-        """실제 Runner를 한 turn만 실행하고 검증된 최종 출력만 반환한다."""
-
+    async def rank(
+        self,
+        request: SupportProgramRankingRequest,
+    ) -> SupportProgramRankingOutput:
         try:
             async with asyncio.timeout(self._run_timeout_seconds):
                 result = await Runner.run(
                     self._agent,
-                    query,
+                    request.model_dump_json(by_alias=True),
                     max_turns=1,
                     run_config=self._run_config,
                 )
@@ -71,12 +72,12 @@ class SearchIntentAgent:
             ValidationError,
         ) as error:
             raise AgentExecutionError(
-                "Search intent agent did not produce a usable result"
+                "Support program recommendation agent did not produce a usable result"
             ) from error
 
         output = result.final_output
-        if not isinstance(output, ExtractedSearchIntent):
+        if not isinstance(output, SupportProgramRankingOutput):
             raise AgentExecutionError(
-                "Search intent agent returned an unexpected output type"
+                "Support program recommendation agent returned an unexpected output type"
             )
         return output

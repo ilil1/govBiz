@@ -18,6 +18,7 @@ data class SupportProgramResponse(
     val sourceName: String,
     val sourceUrl: String,
     val matchedReasons: List<String>,
+    val recommendationScore: Int?,
 ) {
     companion object {
         fun from(program: SupportProgram): SupportProgramResponse =
@@ -36,6 +37,7 @@ data class SupportProgramResponse(
                 sourceName = program.sourceName,
                 sourceUrl = program.sourceUrl,
                 matchedReasons = program.matchedReasons,
+                recommendationScore = program.recommendationScore,
             )
     }
 }

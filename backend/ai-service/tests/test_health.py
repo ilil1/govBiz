@@ -1,16 +1,22 @@
 from fastapi.testclient import TestClient
 
-from app.agents.search_intent.agent import SearchIntentAgent
-from app.agents.search_intent.models import ExtractedSearchIntent
+from app.agents.support_program_ranking.agent import SupportProgramRecommendationAgent
+from app.agents.support_program_ranking.models import (
+    SupportProgramRankingOutput,
+    SupportProgramRankingRequest,
+)
 from app.config import Settings
 from app.main import create_app
 
 
-class NeverCalledAgent(SearchIntentAgent):
+class NeverCalledAgent(SupportProgramRecommendationAgent):
     def __init__(self) -> None:
         pass
 
-    async def analyze(self, query: str) -> ExtractedSearchIntent:
+    async def rank(
+        self,
+        request: SupportProgramRankingRequest,
+    ) -> SupportProgramRankingOutput:
         raise AssertionError("health tests must not invoke the agent")
 
 
@@ -22,7 +28,7 @@ client = TestClient(
             llm_model_timeout_seconds=2.0,
             llm_run_timeout_seconds=2.5,
         ),
-        search_intent_agent=NeverCalledAgent(),
+        support_program_recommendation_agent=NeverCalledAgent(),
     )
 )
 

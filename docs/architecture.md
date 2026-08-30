@@ -76,48 +76,49 @@ Controller → Service → Domain
 ```
 
 - **Controller**는 HTTP 요청·응답 DTO 변환과 Bean Validation을 담당합니다.
-- **Service**는 검색 조정, 검색 의도 검증, 기업마당 정규화와 순위 계산을 분리해 담당합니다.
+- **Service**는 검색 조정, 기업마당 정규화, AI 점수 요청과 응답 검증을 분리해 담당합니다.
 - **Domain**은 프레임워크에 의존하지 않는 record·enum·불변식을 둡니다.
 - **client/bizinfo**는 공공데이터포털 전송 계약과 인증키를 소유합니다. Catalog가 외부 공고를
-  GovBiz 모델로 변환하고 Ranker가 검색·정렬을 담당합니다.
-- **client/ai**는 FastAPI의 Health와 검색 의도 내부 HTTP 계약을 소비합니다.
+  GovBiz 모델로 변환합니다.
+- **client/ai**는 FastAPI의 Health와 후보 점수화 내부 HTTP 계약을 소비합니다.
 - **config**는 외부 서비스 주소와 HTTP Client 설정을 조립합니다.
 
 외부 HTTP 호출은 영속성 Repository와 다른 책임이므로 `client`에 둡니다. 데이터베이스를 도입할 때
 그때 필요한 Repository를 추가합니다.
 
-## 검색 의도 분석과 장애 격리
+## LLM 추천 점수화와 장애 격리
 
 Core API는 공개 검색 요청을 받으면 AI Service에 다음 내부 요청을 보냅니다.
 
 ```http
-POST /internal/v1/search-intents/analyze
+POST /internal/v1/support-program-rankings/rank
 Content-Type: application/json
 
-{"query":"서울 AI 창업지원 찾아줘","acceptingOnly":true}
+{"originalQuery":"서울 AI 창업지원 찾아줘","scoringVersion":"govbiz-support-program-ranking-v1","resultLimit":5,"candidates":["Core가 검증한 공식 공고 후보"]}
 ```
 
 AI Service는 필수 [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/)의 단일 typed
-agent를 실행해 키워드, 지역, 분야와 지원대상 표현을 제한된 JSON schema로 받습니다.
-공고 내용·자격·금액·접수상태를 생성하거나 공공데이터 원문을 대체하지 않습니다.
+agent를 실행합니다. 프롬프트의 버전된 100점 기준에 따라 모든 후보의 의미 관련성·대상·지역·접수
+상태·지원 유형을 점수화하고 추천 이유를 반환합니다. 공고에 없는 사실은 생성하지 않습니다.
 
 ```text
 AI Service
-  ├→ Agent + Runner 성공 + schema 검증 성공 → 구조화 검색 의도
+  ├→ Agent + Runner 성공 + schema 검증 성공 → 후보별 세부 점수·총점·추천 이유
   └→ 키 누락은 시작 실패, 실행·검증 실패는 안전한 HTTP 503
 
 Core API
-  ├→ 응답 계약을 검증하고 유효한 AI 검색 의도를 그대로 사용
-  └→ AI HTTP 오류·timeout·JSON 오류·echo 불일치·허용되지 않은 값 → 공개 오류
+  ├→ 접수 상태를 먼저 필터링하고 최신 후보 최대 20개만 전송
+  ├→ 후보 ID·중복·점수 범위·합계·내림차순을 재검증
+  └→ AI HTTP 오류·timeout·JSON 오류·echo 불일치·계약 위반 → 공개 오류
 ```
 
-AI Service가 유효하지 않은 요청을 받으면 422를 반환합니다. LLM 실패를 제한적인 규칙 의미 분석으로
-숨기지 않으므로 AI Service나 OpenAI 장애는 공개 검색 오류로 전파됩니다. 성공 응답은 계속
+AI Service가 유효하지 않은 요청을 받으면 422를 반환합니다. LLM 실패를 Kotlin 고정 가중치나
+단어 사전으로 숨기지 않으므로 AI Service나 OpenAI 장애는 공개 검색 오류로 전파됩니다. 성공 응답은 계속
 `{query, programs}` 계약을 유지합니다.
 
-현재는 한 번의 짧고 구조화된 추출만 필요하므로 agent 하나를 `max_turns=1`로 실행합니다. tool,
-handoff, session이나 manager agent는 실제 역할이 없어 추가하지 않습니다. 검색 의도 기능의 Agent,
-prompt, model, port와 서비스 흐름은 `agents/search_intent` 수직 슬라이스에 모으고, OpenAI
+현재는 한 번의 구조화된 후보 점수화만 필요하므로 agent 하나를 `max_turns=1`로 실행합니다. tool,
+handoff, session이나 manager agent는 실제 역할이 없어 추가하지 않습니다. 추천 기능의 Agent,
+prompt, model과 서비스 흐름은 `agents/support_program_ranking` 수직 슬라이스에 모으고, OpenAI
 client 소유권과 DI는 root `bootstrap.py`에 둡니다. 실제 사업 조회 도구나 서로 다른 전문가로 실행권을
 넘기는 요구가 생길 때 `agents/<agent_name>` 모듈과 tool 또는 handoff 도입을 다시 평가합니다.
 
@@ -153,8 +154,8 @@ Browser (127.0.0.1:5173)
   않습니다.
 - OpenAI 인증키는 AI Service 환경변수에만 주입하며 Core API·Frontend·공개 응답·로그에 노출하지
   않습니다.
-- LLM 분석은 후보 검색어를 구조화할 뿐이며 공고 사실, 신청 가능 여부, 금액과 날짜의 최종 근거는
-  기업마당 원문과 Core API 규칙입니다.
+- LLM은 Core가 제공한 후보만 점수화하며 공고 사실, 신청 가능 여부, 금액과 날짜의 최종 근거는
+  기업마당 원문입니다. Core는 존재하지 않는 공고 ID와 잘못된 점수 합계를 거부합니다.
 - 외부 공고의 신청기간을 확실히 해석할 수 없으면 `UNKNOWN`으로 유지하며 접수 상태를 추정하지
   않습니다.
 - 서비스 간 통신은 명시적인 HTTP·JSON 계약과 테스트로 검증합니다.

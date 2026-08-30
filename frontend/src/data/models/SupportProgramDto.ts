@@ -29,6 +29,7 @@ export const supportProgramDtoSchema = z.object({
   sourceName: z.string().min(1),
   sourceUrl: officialBizInfoUrlSchema,
   matchedReasons: z.array(z.string()),
+  recommendationScore: z.number().int().min(0).max(100).nullable(),
 })
 
 export const supportProgramSearchResponseDtoSchema = z.object({
@@ -58,5 +59,6 @@ export function toSupportProgram(dto: SupportProgramDto): SupportProgram {
     sourceName: dto.sourceName,
     sourceUrl: dto.sourceUrl,
     matchedReasons: [...dto.matchedReasons],
+    recommendationScore: dto.recommendationScore,
   }
 }

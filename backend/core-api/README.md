@@ -13,8 +13,8 @@ Spring Boot 기반의 GovBiz 브라우저 공개 API입니다. React의 업무 �
 | `POST /api/v1/sample-items/prepare` | 예제 수직 슬라이스의 입력 검증과 준비 상태 반환 |
 
 지원사업 검색의 요청·응답 필드, 날짜·상태 의미와 오류 코드는
-[지원사업 검색 HTTP 계약](../../docs/support-program-search-contract.md)을 참고하세요. 검색 결과는
-관련도와 갱신시각 순으로 최대 5개를 반환합니다.
+[지원사업 검색·추천 HTTP 계약](../../docs/support-program-search-contract.md)을 참고하세요. 검색 결과는
+LLM 총점 순으로 최대 5개를 반환합니다.
 
 `SampleItem`의 정확한 요청·응답은 [SampleItem 계약](../../docs/sample-item-contract.md)을
 참고하세요.
@@ -25,7 +25,7 @@ Spring Boot 기반의 GovBiz 브라우저 공개 API입니다. React의 업무 �
 
 ```text
 controller/      # HTTP 요청·응답과 application/problem+json 변환
-service/         # 검색 조정, 기업마당 정규화와 관련도 순위 계산
+service/         # 검색 조정, 기업마당 정규화와 AI 점수 검증
 domain/support/  # 지원사업 모델과 상태
 dto/support/     # 브라우저 공개 검색 DTO
 client/bizinfo/  # 공공데이터포털 전송 DTO와 HTTP Client
@@ -37,8 +37,8 @@ Kotlin 기본 패키지는 `ai.govbiz.core`이고 Gradle 프로젝트명은 `gov
 
 외부 HTTP 호출은 영속성 Repository가 아니므로 소스별 `client`에 둡니다. Bizinfo client는 인증키와
 공공데이터포털 전송 계약만 소유하고, Catalog가 HTML 제거·공식 원문 URL 검증·신청기간과 접수상태
-계산을, Ranker가 검색과 정렬을 담당합니다. 데이터 저장이 필요한 기능이 생길 때 실제 Repository를
-추가하세요.
+계산을 담당합니다. `SupportProgramRanking` 포트의 AI 구현은 후보를 FastAPI에 보내고 ID·점수 합계·
+내림차순을 재검증합니다. Kotlin 단어 사전과 고정 관련도 가중치는 사용하지 않습니다.
 
 ## 실행
 
@@ -61,7 +61,7 @@ Frontend 환경변수에 기록하지 마세요.
 | `BIZINFO_API_READ_TIMEOUT` | `10s` | 공고 API 응답 제한시간 |
 | `AI_SERVICE_BASE_URL` | `http://127.0.0.1:8000` | 내부 AI Service 주소 |
 | `AI_SERVICE_CONNECT_TIMEOUT` | `1s` | AI Service 연결 제한시간 |
-| `AI_SERVICE_READ_TIMEOUT` | `3s` | AI Service 응답 제한시간(LLM 기본 제한 2.5초 + 내부 응답 여유) |
+| `AI_SERVICE_READ_TIMEOUT` | `12s` | AI Service 응답 제한시간(LLM 전체 제한 10초 + 내부 응답 여유) |
 | `APP_CORS_ALLOWED_ORIGIN` | `http://localhost:5173` | 허용할 Web origin |
 
 Compose 실행은 저장소 루트 `.env`의 `DATA_GO_KR_SERVICE_KEY`를 Core API에, `OPENAI_API_KEY`를 AI
@@ -70,7 +70,10 @@ Service에만 전달합니다. 네이티브 실행에서는 각 프로세스 환
 ## 지원사업 검색 동작
 
 Core API는 현재 검색 요청마다 공공데이터포털을 조회하며 메모리 캐시를 사용하지 않습니다. 외부
-호출 실패는 즉시 안전한 공개 오류로 반환합니다. 검색은 서울 시간 기준으로 접수상태를 계산하며,
+호출 실패는 즉시 안전한 공개 오류로 반환합니다. 검색은 서울 시간 기준으로 접수상태를 계산하고,
+접수 필터 적용 후 최신 후보 최대 20개를 AI Service에 보냅니다. LLM이 버전된 100점 기준으로 모든
+후보를 점수화하며 Core는 결과를 방어적으로 검증합니다.
+현재 최신 20개 제한은 벡터 검색 전의 임시 후보 선택입니다.
 다음 단계에서는 정기 수집과 DB 검색으로 외부 호출을 사용자 요청 경로에서 제거합니다.
 
 | 상황 | HTTP | code |

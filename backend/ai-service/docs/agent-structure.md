@@ -1,145 +1,67 @@
 # AI Agent 모듈 구조
 
-GovBiz AI Service는 여러 Agent가 추가될 수 있다는 전제에서 `app/agents/<agent_name>/` 단위로
-코드를 묶습니다. Agent별 폴더는 SDK 객체만 보관하는 기술 레이어가 아니라, 해당 Agent가 제공하는
-기능을 한곳에서 찾을 수 있게 하는 수직 슬라이스입니다.
-
-OpenAI 공식 문서는 `Agent`, instructions, model, tools, handoffs, structured output 같은 구성 요소를
-정의하지만 애플리케이션의 디렉터리 구조까지 강제하지 않습니다. 이 문서의 폴더와 의존성 규칙은
-GovBiz에서 여러 Agent를 일관되게 관리하기 위한 프로젝트 규약입니다.
-
 ## 현재 구조
 
+GovBiz AI Service에는 현재 실제 업무 Agent가 하나 있습니다.
+
 ```text
-app/
-├── agents/
-│   ├── __init__.py
-│   ├── errors.py
-│   └── search_intent/
-│       ├── __init__.py
-│       ├── agent.py
-│       ├── models.py
-│       ├── prompt.py
-│       └── service.py
-├── api/
-│   ├── health.py
-│   └── search_intents.py
-├── schemas/
-│   └── health.py
-├── bootstrap.py
-├── config.py
-└── main.py
+agents/support_program_ranking/
+├── models.py   # 후보·점수 structured schema
+├── prompt.py   # 평가 기준과 안전 지시
+├── agent.py    # OpenAI Agents SDK Runner 실행
+└── service.py  # 후보 집합 검증과 상위 결과 선택
 ```
 
-| 파일 | 책임 |
-|---|---|
-| `agent.py` | Agents SDK의 `Agent`, 모델 설정과 `Runner.run()` 실행 |
-| `agents/errors.py` | 모든 Agent 실행 실패를 API 경계까지 전달하는 공통 오류 |
-| `prompt.py` | Agent instructions 원문 |
-| `models.py` | Structured Output, 요청·응답, enum 계약 |
-| `service.py` | 필수 Agent 실행과 응답 계약 조립 |
-| `__init__.py` | 패키지 설명만 제공하며 다른 모듈을 자동으로 다시 export하지 않음 |
-
-HTTP 라우팅과 FastAPI 수명주기는 특정 Agent가 소유하지 않으므로 `api/`와 `main.py`에 둡니다.
-OpenAI client 생성·소유·종료와 구체 구현 조립은 애플리케이션 composition root인 `bootstrap.py`가
-담당합니다.
-
-## 의존성 방향
+이 Agent는 사용자 질문을 키워드 배열로 바꾸는 것이 아니라, Core가 전달한 공식 후보 전체를 버전된
+규칙으로 점수화합니다.
 
 ```text
-agents.errors + models + prompt ← agent
-agent + models ← service
-agent + service ← bootstrap
-agents.errors + models + service ← api
-agent + bootstrap ← main
-```
-
-다음 규칙을 지킵니다.
-
-- `models.py`와 `prompt.py`는 다른 Agent 모듈을 import하지 않습니다.
-- 공통 `agents/errors.py`는 개별 Agent 모듈을 import하지 않습니다.
-- `agent.py`는 HTTP 처리를 위해 `service.py`, `api/`를 import하지 않습니다.
-- `service.py`는 주입받은 `SearchIntentAgent`를 호출하되 직접 생성하지 않습니다.
-- OpenAI client와 `OpenAIResponsesModel`은 `bootstrap.py`에서만 생성합니다.
-- 슬라이스 내부에서는 `.models`처럼 형제 모듈을 명시하고, 공통 오류는
-  `app.agents.errors`에서 가져오며, 외부에서는
-  `app.agents.search_intent.agent`처럼 전체 경로를 사용합니다. 패키지 `__init__.py`의 광범위한
-  re-export로 순환 import를 숨기지 않습니다.
-
-## 검색 의도 Agent 실행 흐름
-
-```text
-POST /internal/v1/search-intents/analyze
-→ SearchIntentAnalysisService
-→ SearchIntentAgent
+HTTP router
+→ SupportProgramRankingService
+→ SupportProgramRecommendationAgent
 → Runner.run(max_turns=1)
-→ ExtractedSearchIntent 검증
-    ├→ 성공 → SearchIntentResponse
-    └→ 실패 → 안전한 HTTP 503
+→ SupportProgramRankingOutput
+→ exact candidate ID 검증
+→ 점수순 SupportProgramRankingResponse
 ```
 
-Agent는 SDK·OpenAI·timeout·structured output 오류를 공통 `AgentExecutionError`로 바꿉니다.
-API는 이 경계 오류를 세부정보 없는 HTTP 503으로 변환합니다. 규칙 기반 의미 분석으로 오류를
-숨기지 않으며, `OPENAI_API_KEY`가 없으면 애플리케이션 생성 단계에서 실패합니다.
+## 계층 규칙
 
-## 새로운 Agent 추가 방법
+- `api`는 HTTP와 안전한 오류 변환만 담당합니다.
+- `service`는 Agent를 주입받고 후보 집합·정렬 규칙을 검증합니다.
+- `agent`는 SDK 실행·timeout·모델 오류 변환을 담당합니다.
+- `models`는 요청과 structured output 불변식을 담당합니다.
+- `prompt`는 LLM 평가 기준의 단일 원본입니다.
+- `bootstrap`만 OpenAI client, model, Agent와 Service를 조립합니다.
 
-예를 들어 지원 자격 판정 Agent를 추가한다면 다음처럼 시작합니다.
+후보 원문은 신뢰할 수 없는 데이터입니다. 프롬프트는 후보 안의 명령을 따르지 않도록 명시하고,
+Agent는 tool이나 handoff 없이 한 turn만 실행합니다. Core와 AI Service는 모두 존재하지 않는 공고 ID와
+잘못된 점수 합계를 거부합니다.
 
-```text
-app/agents/eligibility/
-├── __init__.py
-├── agent.py
-├── models.py
-├── prompt.py
-└── service.py
+## 새 Agent를 추가하는 기준
 
-tests/agents/eligibility/
-└── test_eligibility_agent.py
-```
+파일을 나누기 위해 Agent를 추가하지 않습니다. 다음처럼 독립된 목표·입력·도구·평가 기준이 생길 때
+새 수직 슬라이스를 만듭니다.
 
-1. `models.py`에 입력과 structured output 계약을 먼저 정의합니다.
-2. 실행 실패는 공통 `app.agents.errors.AgentExecutionError`로 변환합니다.
-3. `prompt.py`에는 instructions만 둡니다.
-4. `agent.py`에서 SDK Agent와 Runner 실행 한도를 설정합니다.
-5. 응답 조립이나 추가 애플리케이션 흐름이 필요할 때만 `service.py`를 추가합니다.
-6. `bootstrap.py`에서 client, model, Agent와 서비스를 조립하고 소유 자원을 등록합니다.
-7. HTTP가 필요하면 `api/`에 얇은 라우터를 추가합니다.
-8. `tests/agents/<agent_name>/`에서 실제 Runner를 네트워크 없이 실행해 Agent 계약을 검증합니다.
+- 실제 공고 상세를 읽고 근거 있는 답변을 만드는 안내 Agent
+- 여러 공고를 비교해 차이를 설명하는 비교 Agent
+- GovClause의 승인 조건과 사람 검토를 다루는 별도 Agent
 
-모든 Agent가 `service.py`를 반드시 가져야 하는 것은 아닙니다. 필요한 책임만 추가하고,
-파일 이름과 의존 방향은 같은 규칙을 따릅니다.
-
-## 공통 코드 추출 기준
-
-두 번째 Agent가 생기기 전에는 `BaseAgent`, `AgentRegistry`, 범용 Runner wrapper를 만들지 않습니다.
-OpenAI Agents SDK가 이미 `Agent`와 `Runner`를 제공하므로 동일한 개념을 다시 감싸면 실제 설정과 오류
-경계가 보이지 않게 됩니다.
-
-두 개 이상의 Agent에서 같은 코드가 반복되고 변경 이유도 같을 때만 `app/agents/shared/`를 만듭니다.
-공유 후보는 개인정보 제거 로깅, 공통 timeout 검증, 순수한 변환 함수처럼 Agent 업무 의미와 무관한
-기능으로 제한합니다. prompt, output model과 서비스 흐름은 각 Agent 폴더에 남깁니다.
+지역 Agent, 카테고리 Agent, API 출처별 Agent처럼 단순 함수나 adapter를 억지로 Agent로 만들지
+않습니다. 대화 상태, 분기·반복, 중단·재개가 실제로 필요해질 때 LangGraph 같은 상태ful orchestration을
+다시 평가합니다.
 
 ## 테스트 배치
 
 ```text
 tests/
-├── agents/
-│   └── search_intent/
-│       └── test_search_intent_agent.py
+├── agents/support_program_ranking/
+│   └── test_support_program_recommendation_agent.py
+├── test_support_program_rankings.py
 ├── test_bootstrap.py
-├── test_config.py
-├── test_health.py
-└── test_search_intents.py
+└── test_health.py
 ```
 
-- Agent 단위 테스트는 `tests/agents/<agent_name>/`에서 공식 `ScriptedModel`로 실제 Runner를
-  실행합니다.
-- API 성공·실패와 요청·응답 JSON 계약은 HTTP 경계 테스트에 남깁니다.
-- client 생성과 lifespan 종료는 `test_bootstrap.py`에서 검증합니다.
-- 실제 OpenAI 네트워크를 사용하지 않고, provider wire 계약이 필요할 때만 mock transport를
-  사용합니다.
-
-Agent 정의와 structured output의 공식 개념은
-[OpenAI Agent definitions](https://developers.openai.com/api/docs/guides/agents/define-agents)를
-기준으로 합니다.
+- Agent 테스트: 실제 Runner + ScriptedModel, strict OpenAI wire 계약
+- API 테스트: 요청 검증, 정렬, 후보 ID 위조·누락 거부, 안전한 503
+- bootstrap 테스트: 단일 client/model/Agent/Service 객체 그래프와 종료 시 client close

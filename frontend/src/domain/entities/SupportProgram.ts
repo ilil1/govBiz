@@ -15,4 +15,5 @@ export type SupportProgram = {
   sourceName: string
   sourceUrl: string
   matchedReasons: string[]
+  recommendationScore: number | null
 }
