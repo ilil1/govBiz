@@ -1,4 +1,4 @@
-package ai.govbiz.core.aiservice.config
+package ai.govbiz.core._adapters.ai.config
 
 import java.lang.reflect.InvocationTargetException
 import java.net.URI

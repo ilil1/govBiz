@@ -1,4 +1,4 @@
-package ai.govbiz.core.aiservice.config
+package ai.govbiz.core._adapters.ai.config
 
 import ai.govbiz.core._common.config.validateHttpBaseUrl
 import ai.govbiz.core._common.config.validatePositiveDuration

@@ -1,7 +1,7 @@
 package ai.govbiz.core.supportprogram.controller
 
 import ai.govbiz.core._common.exception.ApiExceptionHandler
-import ai.govbiz.core.aiservice.client.AiServiceClientException
+import ai.govbiz.core._adapters.ai.client.AiServiceClientException
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClient
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClientException
 import ai.govbiz.core.supportprogram.dto.bizinfo.BizInfoProgramPayload

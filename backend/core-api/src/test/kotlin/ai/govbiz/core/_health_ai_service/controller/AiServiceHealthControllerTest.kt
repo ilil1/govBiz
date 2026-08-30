@@ -1,10 +1,10 @@
-package ai.govbiz.core.aiservice.controller
+package ai.govbiz.core._health_ai_service.controller
 
 import ai.govbiz.core._common.exception.ApiExceptionHandler
-import ai.govbiz.core.aiservice.client.AiServiceClient
-import ai.govbiz.core.aiservice.client.AiServiceClientException
-import ai.govbiz.core.aiservice.client.AiServiceHealthPayload
-import ai.govbiz.core.aiservice.service.AiServiceHealthService
+import ai.govbiz.core._adapters.ai.client.AiServiceClient
+import ai.govbiz.core._adapters.ai.client.AiServiceClientException
+import ai.govbiz.core._adapters.ai.client.AiServiceHealthPayload
+import ai.govbiz.core._health_ai_service.service.AiServiceHealthService
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.util.stream.Stream

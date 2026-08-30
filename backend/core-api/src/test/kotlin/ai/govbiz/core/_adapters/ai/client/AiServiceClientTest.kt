@@ -1,4 +1,4 @@
-package ai.govbiz.core.aiservice.client
+package ai.govbiz.core._adapters.ai.client
 
 import ai.govbiz.core.supportprogram.dto.ai.AiSupportProgramCandidateRequest
 import ai.govbiz.core.supportprogram.dto.ai.AiSupportProgramRankingRequest

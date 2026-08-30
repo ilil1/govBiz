@@ -1,6 +1,6 @@
-package ai.govbiz.core.aiservice.service
+package ai.govbiz.core._health_ai_service.service
 
-import ai.govbiz.core.aiservice.client.AiServiceClientException
+import ai.govbiz.core._adapters.ai.client.AiServiceClientException
 
 class AiServiceHealthException private constructor(
     val failure: AiServiceClientException.Failure,

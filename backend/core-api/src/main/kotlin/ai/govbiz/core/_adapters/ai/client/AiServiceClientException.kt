@@ -1,4 +1,4 @@
-package ai.govbiz.core.aiservice.client
+package ai.govbiz.core._adapters.ai.client
 
 class AiServiceClientException private constructor(
     val failure: Failure,

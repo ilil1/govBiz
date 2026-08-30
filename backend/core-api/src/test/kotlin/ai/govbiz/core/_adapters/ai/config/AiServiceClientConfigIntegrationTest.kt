@@ -1,7 +1,7 @@
-package ai.govbiz.core.aiservice.config
+package ai.govbiz.core._adapters.ai.config
 
-import ai.govbiz.core.aiservice.client.AiServiceClient
-import ai.govbiz.core.aiservice.client.AiServiceClientException
+import ai.govbiz.core._adapters.ai.client.AiServiceClient
+import ai.govbiz.core._adapters.ai.client.AiServiceClientException
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress

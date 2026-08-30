@@ -1,7 +1,7 @@
-package ai.govbiz.core.aiservice.controller
+package ai.govbiz.core._health_ai_service.controller
 
-import ai.govbiz.core.aiservice.dto.AiServiceHealthResponse
-import ai.govbiz.core.aiservice.service.AiServiceHealthService
+import ai.govbiz.core._health_ai_service.dto.AiServiceHealthResponse
+import ai.govbiz.core._health_ai_service.service.AiServiceHealthService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController

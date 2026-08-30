@@ -1,7 +1,7 @@
 package ai.govbiz.core._common.exception
 
-import ai.govbiz.core.aiservice.client.AiServiceClientException
-import ai.govbiz.core.aiservice.service.AiServiceHealthException
+import ai.govbiz.core._adapters.ai.client.AiServiceClientException
+import ai.govbiz.core._health_ai_service.service.AiServiceHealthException
 import ai.govbiz.core.supportprogram.service.SupportProgramSearchException
 import jakarta.servlet.http.HttpServletRequest
 import java.net.URI

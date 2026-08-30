@@ -1,8 +1,8 @@
-package ai.govbiz.core.aiservice.service
+package ai.govbiz.core._health_ai_service.service
 
-import ai.govbiz.core.aiservice.client.AiServiceClient
-import ai.govbiz.core.aiservice.client.AiServiceClientException
-import ai.govbiz.core.aiservice.client.AiServiceHealthPayload
+import ai.govbiz.core._adapters.ai.client.AiServiceClient
+import ai.govbiz.core._adapters.ai.client.AiServiceClientException
+import ai.govbiz.core._adapters.ai.client.AiServiceHealthPayload
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.util.stream.Stream

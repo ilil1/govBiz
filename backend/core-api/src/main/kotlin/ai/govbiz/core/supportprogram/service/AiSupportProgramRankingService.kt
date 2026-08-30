@@ -1,6 +1,6 @@
 package ai.govbiz.core.supportprogram.service
 
-import ai.govbiz.core.aiservice.client.AiServiceClientException
+import ai.govbiz.core._adapters.ai.client.AiServiceClientException
 import ai.govbiz.core.supportprogram.dto.ai.AiScoredSupportProgramPayload
 import ai.govbiz.core.supportprogram.dto.ai.AiSupportProgramCandidateRequest
 import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingClient
