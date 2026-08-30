@@ -39,7 +39,7 @@ React Web
                       → GET /api/v1/support-programs/search
                           → POST /internal/v1/search-intents/analyze
                               → 필수 OpenAI typed agent
-                          → Core API 로컬 parser 결과에 검증된 분석을 병합
+                          → Core API가 검증된 AI 검색 의도를 그대로 사용
                           → 공공데이터포털 기업마당 공고 조회·변환·검색·정렬
               → Redux Toolkit chat slice
                   → 지원사업 카드·마감일·추천 이유 표시

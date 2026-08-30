@@ -56,10 +56,11 @@ Content-Type: application/json
 `OPENAI_API_KEY`는 필수이며, timeout·인증·rate limit·refusal·잘못된 structured output이 발생하면
 AI Service는 불완전한 규칙 결과 대신 오류를 반환합니다.
 
-Core API는 원문 토큰을 보존하면서 `originalQuery`와 `acceptingOnly` echo, 배열 길이·문자열 길이,
-허용 지역·분야 값과 clarification 필드 조합을 다시 검증한 AI 분석만 병합합니다. AI Service의 HTTP
-오류, timeout, JSON 오류, echo 불일치나 유효하지 않은 값은 공개 502·503·504로 변환하며 로컬 parser
-성공으로 숨기지 않습니다. 내부 검색 의도 DTO는 공개 성공 응답에 추가되지 않습니다.
+Core API는 `originalQuery`와 `acceptingOnly` echo, 배열 길이·문자열 길이, 허용 지역·분야 값과
+clarification 필드 조합을 다시 검증한 뒤 AI 검색 의도를 그대로 사용합니다. 별도의 로컬 자연어
+parser나 단어 사전으로 AI 결과를 재해석하지 않습니다. AI Service의 HTTP 오류, timeout, JSON 오류,
+echo 불일치나 유효하지 않은 값은 공개 502·503·504로 변환합니다. 내부 검색 의도 DTO는 공개 성공
+응답에 추가되지 않습니다.
 
 ## 성공 응답
 

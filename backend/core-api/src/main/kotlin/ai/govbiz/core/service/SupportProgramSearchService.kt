@@ -38,11 +38,10 @@ class SupportProgramSearchService(
 
     fun search(rawQuery: String?, acceptingOnly: Boolean): SupportProgramSearchResult {
         val query = rawQuery?.trimLikeJava().orEmpty()
-        val localIntent = SearchIntent.from(query)
         val intent = if (query.isBlankLikeJava()) {
-            localIntent
+            SearchIntent.empty()
         } else {
-            localIntent.merge(aiSearchIntentService.analyze(query, acceptingOnly), query)
+            SearchIntent.from(aiSearchIntentService.analyze(query, acceptingOnly))
         }
 
         val scored = catalog()
@@ -195,26 +194,27 @@ class SupportProgramSearchService(
         }
         if (term.kind == TermKind.TARGET &&
             term.variants.asSequence()
-                .map(::normalize)
-                .filter { !it.isBlankLikeJava() }
-                .any(candidate.target::contains)
+                .any { containsSearchTerm(candidate.target, it) }
         ) {
             return 8
         }
 
         var best = 0
         for (variant in term.variants) {
-            val normalizedVariant = normalize(variant)
-            if (normalizedVariant.isBlankLikeJava()) continue
+            if (variant.isBlankLikeJava()) continue
 
-            if (normalizedVariant in candidate.title) best = max(best, 9)
-            if (normalizedVariant in candidate.categories) best = max(best, 7)
-            if (normalizedVariant in candidate.regions || normalizedVariant in candidate.hashtags) {
+            if (containsSearchTerm(candidate.title, variant)) best = max(best, 9)
+            if (containsSearchTerm(candidate.categories, variant)) best = max(best, 7)
+            if (containsSearchTerm(candidate.regions, variant) ||
+                containsSearchTerm(candidate.hashtags, variant)
+            ) {
                 best = max(best, 6)
             }
-            if (normalizedVariant in candidate.target) best = max(best, 4)
-            if (normalizedVariant in candidate.summary) best = max(best, 3)
-            if (normalizedVariant in candidate.organization || normalizedVariant in candidate.searchable) {
+            if (containsSearchTerm(candidate.target, variant)) best = max(best, 4)
+            if (containsSearchTerm(candidate.summary, variant)) best = max(best, 3)
+            if (containsSearchTerm(candidate.organization, variant) ||
+                containsSearchTerm(candidate.searchable, variant)
+            ) {
                 best = max(best, 2)
             }
         }
@@ -257,63 +257,24 @@ class SupportProgramSearchService(
     )
 
     private data class SearchIntent(val terms: List<QueryTerm>) {
-        fun merge(analyzed: AnalyzedSearchIntent, rawQuery: String): SearchIntent {
-            val normalizedQuery = normalize(rawQuery)
-            val merged = LinkedHashMap<String, QueryTerm>()
-            for (term in terms) merged.putIfAbsent(termKey(term), term)
-
-            val locallyDetectedRegions = terms
-                .asSequence()
-                .filter { it.kind == TermKind.REGION }
-                .map(QueryTerm::label)
-                .toSet()
-            for (regionValue in analyzed.regions) {
-                val region = REGION_ALIASES[regionValue]
-                if (region != null && region in locallyDetectedRegions) {
-                    addTerm(
-                        merged,
-                        QueryTerm(region, listOf(regionValue, region), TermKind.REGION),
-                    )
-                }
-            }
-            for (categoryValue in analyzed.categories) {
-                val category = CATEGORY_ALIASES[normalize(categoryValue)]
-                if (category != null && categoryIsGrounded(category, normalizedQuery)) {
-                    addTerm(
-                        merged,
-                        QueryTerm(
-                            category,
-                            CATEGORY_VARIANTS[category] ?: listOf(categoryValue),
-                            TermKind.CATEGORY,
-                        ),
-                    )
-                }
-            }
-            for (targetTerm in analyzed.targetTerms) {
-                if (queryContains(normalizedQuery, targetTerm)) {
-                    addTerm(merged, QueryTerm(targetTerm, listOf(targetTerm), TermKind.TARGET))
-                }
-            }
-            for (keyword in analyzed.keywords) {
-                if (queryContains(normalizedQuery, keyword)) {
-                    addTerm(merged, QueryTerm(keyword, listOf(keyword), TermKind.TEXT))
-                }
-            }
-            return SearchIntent(java.util.List.copyOf(merged.values))
-        }
-
         companion object {
-            fun categoryIsGrounded(category: String, normalizedQuery: String): Boolean =
-                (CATEGORY_VARIANTS[category] ?: listOf(category))
-                    .any { queryContains(normalizedQuery, it) }
+            fun empty(): SearchIntent = SearchIntent(emptyList())
 
-            fun queryContains(normalizedQuery: String, value: String): Boolean {
-                val normalizedValue = normalize(value)
-                if (normalizedValue.isBlankLikeJava()) return false
-                if (ASCII_QUERY_TERM.matcher(normalizedValue).matches()) {
-                    return QUERY_SEPARATOR.split(normalizedQuery).any(normalizedValue::equals)
+            fun from(analyzed: AnalyzedSearchIntent): SearchIntent {
+                val terms = LinkedHashMap<String, QueryTerm>()
+                for (region in analyzed.regions) {
+                    addTerm(terms, QueryTerm(region, listOf(region), TermKind.REGION))
                 }
-                return normalizedValue in normalizedQuery
+                for (category in analyzed.categories) {
+                    addTerm(terms, QueryTerm(category, listOf(category), TermKind.CATEGORY))
+                }
+                for (targetTerm in analyzed.targetTerms) {
+                    addTerm(terms, QueryTerm(targetTerm, listOf(targetTerm), TermKind.TARGET))
+                }
+                for (keyword in analyzed.keywords) {
+                    addTerm(terms, QueryTerm(keyword, listOf(keyword), TermKind.TEXT))
+                }
+                return SearchIntent(java.util.List.copyOf(terms.values))
             }
 
             fun addTerm(terms: LinkedHashMap<String, QueryTerm>, term: QueryTerm) {
@@ -322,58 +283,6 @@ class SupportProgramSearchService(
 
             fun termKey(term: QueryTerm): String =
                 "${term.kind.name}:${normalize(term.label)}"
-
-            fun from(query: String): SearchIntent {
-                val normalized = normalize(query)
-                val terms = LinkedHashMap<String, QueryTerm>()
-                for (token in QUERY_SEPARATOR.split(normalized)) {
-                    if (token.isBlankLikeJava() || token in QUERY_STOP_WORDS) continue
-
-                    val regionToken = regionToken(token)
-                    val region = REGION_ALIASES[regionToken]
-                    if (region != null) {
-                        terms.putIfAbsent(
-                            "region:$region",
-                            QueryTerm(region, listOf(token, regionToken, region), TermKind.REGION),
-                        )
-                        continue
-                    }
-
-                    val category = CATEGORY_ALIASES[token]
-                    if (category != null) {
-                        terms.putIfAbsent(
-                            "category:$category",
-                            QueryTerm(
-                                category,
-                                CATEGORY_VARIANTS[category] ?: listOf(token),
-                                TermKind.CATEGORY,
-                            ),
-                        )
-                        continue
-                    }
-
-                    val variants = mutableListOf(token)
-                    if (token.endsWith("지원") && token.length > 2) {
-                        variants += token.substring(0, token.length - 2)
-                    }
-                    terms.putIfAbsent(
-                        "text:$token",
-                        QueryTerm(token, java.util.List.copyOf(variants), TermKind.TEXT),
-                    )
-                }
-                return SearchIntent(java.util.List.copyOf(terms.values))
-            }
-
-            fun regionToken(token: String): String {
-                if (token in REGION_ALIASES) return token
-                for (suffix in REGION_SUFFIXES) {
-                    if (token.endsWith(suffix) && token.length > suffix.length) {
-                        val candidate = token.substring(0, token.length - suffix.length)
-                        if (candidate in REGION_ALIASES) return candidate
-                    }
-                }
-                return token
-            }
         }
     }
 
@@ -411,18 +320,12 @@ class SupportProgramSearchService(
         val HTML_BLOCK: Pattern = Pattern.compile("(?is)<(script|style)[^>]*>.*?</\\1>")
         val HTML_BREAK: Pattern = Pattern.compile("(?i)<br\\s*/?>|</p>|</li>")
         val HTML_TAG: Pattern = Pattern.compile("(?s)<[^>]*>")
-        val QUERY_SEPARATOR: Pattern = Pattern.compile("[^\\p{L}\\p{N}&]+")
-        val ASCII_QUERY_TERM: Pattern = Pattern.compile("[a-z0-9&]+")
+        val SEARCH_TOKEN_SEPARATOR: Pattern = Pattern.compile("[^\\p{L}\\p{N}&]+")
+        val ASCII_SEARCH_TERM: Pattern = Pattern.compile("[a-z0-9&]+")
         val CATEGORY_SEPARATOR: Pattern = Pattern.compile("[,/·>]")
         val WHITESPACE: Pattern = Pattern.compile("\\s+")
 
-        val QUERY_STOP_WORDS = setOf(
-            "공고", "사업", "지원", "지원사업", "정부지원", "정부지원사업",
-            "찾아줘", "알려줘", "보여줘", "추천해줘", "추천", "해줘", "주세요",
-            "현재", "접수", "중인", "가능한", "가능", "신청", "프로그램",
-        )
-
-        val REGION_ALIASES = mapOf(
+        val SOURCE_REGION_ALIASES = mapOf(
             "서울" to "서울", "서울특별시" to "서울",
             "부산" to "부산", "부산광역시" to "부산",
             "대구" to "대구", "대구광역시" to "대구",
@@ -442,33 +345,6 @@ class SupportProgramSearchService(
             "제주" to "제주", "제주특별자치도" to "제주",
             "전국" to "전국",
         )
-
-        val CATEGORY_ALIASES = mapOf(
-            "ai" to "AI", "인공지능" to "AI",
-            "창업" to "창업", "기술" to "기술",
-            "기술개발" to "기술", "r&d" to "기술",
-            "수출" to "수출", "해외진출" to "수출",
-            "경영" to "경영", "금융" to "금융",
-            "인력" to "인력", "내수" to "내수",
-            "판로" to "내수", "제조" to "제조",
-            "콘텐츠" to "콘텐츠", "소상공인" to "소상공인",
-        )
-
-        val CATEGORY_VARIANTS = mapOf(
-            "AI" to listOf("ai", "인공지능"),
-            "창업" to listOf("창업", "스타트업"),
-            "기술" to listOf("기술", "기술개발", "r&d", "연구개발"),
-            "수출" to listOf("수출", "해외진출"),
-            "경영" to listOf("경영"),
-            "금융" to listOf("금융", "융자", "보증"),
-            "인력" to listOf("인력", "채용", "고용"),
-            "내수" to listOf("내수", "판로", "유통"),
-            "제조" to listOf("제조", "스마트공장"),
-            "콘텐츠" to listOf("콘텐츠"),
-            "소상공인" to listOf("소상공인"),
-        )
-
-        val REGION_SUFFIXES = listOf("지역에서", "지역에", "지역", "소재", "에서", "에는", "에")
 
         fun parseDates(applicationPeriod: String): DateRange {
             val dates = ArrayList<LocalDate>(2)
@@ -556,7 +432,7 @@ class SupportProgramSearchService(
                     regions += "전남"
                     continue
                 }
-                REGION_ALIASES[normalized]?.let(regions::add)
+                SOURCE_REGION_ALIASES[normalized]?.let(regions::add)
             }
             if ("전국" in regions || regions.size >= 10) return listOf("전국")
             return java.util.List.copyOf(regions)
@@ -594,6 +470,16 @@ class SupportProgramSearchService(
             values.firstOrNull { !it.isNullOrBlankLikeJava() }?.trimLikeJava().orEmpty()
 
         fun textOrEmpty(value: String?): String = value?.trimLikeJava().orEmpty()
+
+        fun containsSearchTerm(value: String, term: String): Boolean {
+            val normalizedTerm = normalize(term)
+            if (normalizedTerm.isBlankLikeJava()) return false
+            val normalizedValue = normalize(value)
+            if (ASCII_SEARCH_TERM.matcher(normalizedTerm).matches()) {
+                return SEARCH_TOKEN_SEPARATOR.split(normalizedValue).any(normalizedTerm::equals)
+            }
+            return normalizedTerm in normalizedValue
+        }
 
         fun normalize(value: String?): String {
             if (value == null) return ""

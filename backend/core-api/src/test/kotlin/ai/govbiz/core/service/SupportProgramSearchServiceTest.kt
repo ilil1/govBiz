@@ -75,8 +75,17 @@ class SupportProgramSearchServiceTest {
     }
 
     @Test
-    fun tokenizesNaturalLanguageAndUnderstandsRegionPostpositions() {
-        Mockito.doReturn(emptyAnalyzedIntent())
+    fun usesTheStructuredAiIntentInsteadOfParsingTheQueryLocally() {
+        Mockito.doReturn(
+            AnalyzedSearchIntent(
+                emptyList(),
+                listOf("서울"),
+                listOf("AI"),
+                emptyList(),
+                false,
+                null,
+            ),
+        )
             .`when`(aiSearchIntentService)
             .analyze("서울에서 AI 지원사업 찾아줘", true)
         Mockito.doReturn(
@@ -144,7 +153,7 @@ class SupportProgramSearchServiceTest {
     }
 
     @Test
-    fun mergesAGroundedAiCategoryAliasThatTheLocalParserCannotCanonicalize() {
+    fun usesTheCanonicalCategoryReturnedByAi() {
         val query = "스타트업 프로그램"
         Mockito.doReturn(
             AnalyzedSearchIntent(
@@ -174,13 +183,13 @@ class SupportProgramSearchServiceTest {
     }
 
     @Test
-    fun ignoresValidButUngroundedAiTerms() {
-        val query = "서울 AI"
+    fun usesAiIntentWithoutRequiringLiteralLocalVocabularyMatches() {
+        val query = "머신러닝 기술을 만드는 초기 회사가 받을 사업"
         Mockito.doReturn(
             AnalyzedSearchIntent(
-                listOf("반도체"),
-                listOf("부산"),
-                listOf("수출"),
+                emptyList(),
+                emptyList(),
+                listOf("AI", "창업"),
                 listOf("창업기업"),
                 false,
                 null,
@@ -190,13 +199,19 @@ class SupportProgramSearchServiceTest {
             .analyze(query, true)
         Mockito.doReturn(
             listOf(
-                payload("grounded", "인공지능 기술", "상시 접수", "AI,서울"),
                 payload(
-                    "hallucinated",
-                    "반도체 전용",
+                    "ai-startup",
+                    "인공지능 기술 사업화",
+                    "상시 접수",
+                    "AI,서울",
+                    "창업기업",
+                ).copy(category = "AI/창업"),
+                payload(
+                    "unrelated",
+                    "해외 판로 개척",
                     "상시 접수",
                     "수출,부산",
-                    "창업기업",
+                    "수출기업",
                 ),
             ),
         )
@@ -205,11 +220,13 @@ class SupportProgramSearchServiceTest {
 
         val result = service.search(query, true)
 
-        assertEquals(listOf("grounded"), result.programs.map { it.id })
+        assertEquals(listOf("ai-startup"), result.programs.map { it.id })
+        assertTrue(result.programs.first().matchedReasons.contains("AI 분야"))
+        assertTrue(result.programs.first().matchedReasons.contains("창업 분야"))
     }
 
     @Test
-    fun doesNotGroundShortAsciiCategoriesInsideLongerEnglishWords() {
+    fun doesNotReinterpretValidatedAiTermsWithLocalSubstringRules() {
         val query = "training 지원"
         Mockito.doReturn(
             AnalyzedSearchIntent(
@@ -234,13 +251,22 @@ class SupportProgramSearchServiceTest {
 
         val result = service.search(query, true)
 
-        assertEquals(listOf("training"), result.programs.map { it.id })
+        assertEquals(listOf("other"), result.programs.map { it.id })
     }
 
     @Test
     fun capsRegionScoreAndMatchedReasonsAtOnePerProgram() {
         val query = "서울 부산 대구 인천 광주 대전 울산 세종 수출"
-        Mockito.doReturn(emptyAnalyzedIntent())
+        Mockito.doReturn(
+            AnalyzedSearchIntent(
+                emptyList(),
+                listOf("서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종"),
+                listOf("수출"),
+                emptyList(),
+                false,
+                null,
+            ),
+        )
             .`when`(aiSearchIntentService)
             .analyze(query, true)
         Mockito.doReturn(
