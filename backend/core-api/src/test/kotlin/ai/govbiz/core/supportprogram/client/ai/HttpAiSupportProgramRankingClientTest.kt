@@ -1,5 +1,6 @@
 package ai.govbiz.core.supportprogram.client.ai
 
+import ai.govbiz.core._common.exception.AiServiceCallException
 import ai.govbiz.core._common.exception.AiServiceFailure
 import ai.govbiz.core.supportprogram.dto.ai.AiSupportProgramCandidateRequest
 import ai.govbiz.core.supportprogram.dto.ai.AiSupportProgramRankingRequest
@@ -118,7 +119,7 @@ class HttpAiSupportProgramRankingClientTest {
     }
 
     private fun assertRankingFailure(expectedFailure: AiServiceFailure) {
-        val exception = assertThrows(AiSupportProgramRankingClientException::class.java) {
+        val exception = assertThrows(AiServiceCallException::class.java) {
             client.rankSupportPrograms(rankingRequest())
         }
         assertEquals(expectedFailure, exception.failure)

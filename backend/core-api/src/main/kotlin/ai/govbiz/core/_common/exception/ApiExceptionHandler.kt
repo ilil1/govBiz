@@ -1,7 +1,5 @@
 package ai.govbiz.core._common.exception
 
-import ai.govbiz.core._health_ai_service.service.AiServiceHealthException
-import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingClientException
 import ai.govbiz.core.supportprogram.service.SupportProgramSearchException
 import jakarta.servlet.http.HttpServletRequest
 import java.net.URI
@@ -28,16 +26,9 @@ class ApiExceptionHandler {
     ): ResponseEntity<ProblemDetail> =
         problemResponse(supportProgramDefinitionFor(exception.failure), request)
 
-    @ExceptionHandler(AiServiceHealthException::class)
-    fun handleAiServiceHealthException(
-        exception: AiServiceHealthException,
-        request: HttpServletRequest,
-    ): ResponseEntity<ProblemDetail> =
-        problemResponse(definitionFor(exception.failure), request)
-
-    @ExceptionHandler(AiSupportProgramRankingClientException::class)
-    fun handleAiSupportProgramRankingClientException(
-        exception: AiSupportProgramRankingClientException,
+    @ExceptionHandler(AiServiceCallException::class)
+    fun handleAiServiceCallException(
+        exception: AiServiceCallException,
         request: HttpServletRequest,
     ): ResponseEntity<ProblemDetail> =
         problemResponse(definitionFor(exception.failure), request)

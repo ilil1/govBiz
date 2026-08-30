@@ -1,8 +1,8 @@
 package ai.govbiz.core._common.ai_config
 
+import ai.govbiz.core._common.exception.AiServiceCallException
 import ai.govbiz.core._common.exception.AiServiceFailure
 import ai.govbiz.core._health_ai_service.client.AiServiceHealthClient
-import ai.govbiz.core._health_ai_service.client.AiServiceHealthClientException
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
@@ -99,7 +99,7 @@ class AiServiceClientConfigIntegrationTest {
         }
         server.start()
 
-        val exception = assertThrows(AiServiceHealthClientException::class.java) {
+        val exception = assertThrows(AiServiceCallException::class.java) {
             createClient(Duration.ofSeconds(1)).getHealth()
         }
 
@@ -131,8 +131,8 @@ class AiServiceClientConfigIntegrationTest {
         }
         server.start()
 
-        val exception = assertTimeout<AiServiceHealthClientException>(Duration.ofSeconds(3)) {
-            assertThrows(AiServiceHealthClientException::class.java) {
+        val exception = assertTimeout<AiServiceCallException>(Duration.ofSeconds(3)) {
+            assertThrows(AiServiceCallException::class.java) {
                 createClient(Duration.ofMillis(150)).getHealth()
             }
         }

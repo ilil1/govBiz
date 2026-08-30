@@ -1,6 +1,6 @@
 package ai.govbiz.core.supportprogram.service
 
-import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingClientException
+import ai.govbiz.core._common.exception.AiServiceCallException
 import ai.govbiz.core.supportprogram.dto.ai.AiScoredSupportProgramPayload
 import ai.govbiz.core.supportprogram.dto.ai.AiSupportProgramCandidateRequest
 import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingClient
@@ -37,7 +37,7 @@ class AiSupportProgramRankingService(
         )
         val payload = client.rankSupportPrograms(request)
         return validate(payload, query, candidates, request.resultLimit)
-            ?: throw AiSupportProgramRankingClientException.invalidResponse(
+            ?: throw AiServiceCallException.invalidResponse(
                 "AI Service support program rankings violated the internal contract",
                 null,
             )

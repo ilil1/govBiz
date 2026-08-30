@@ -1,7 +1,7 @@
 package ai.govbiz.core.supportprogram.controller
 
+import ai.govbiz.core._common.exception.AiServiceCallException
 import ai.govbiz.core._common.exception.ApiExceptionHandler
-import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingClientException
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClient
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClientException
 import ai.govbiz.core.supportprogram.dto.bizinfo.BizInfoProgramPayload
@@ -189,7 +189,7 @@ class SupportProgramControllerTest {
         fun aiServiceProblemCases(): Stream<ProblemCase> =
             Stream.of(
                 ProblemCase(
-                    AiSupportProgramRankingClientException.upstreamError(
+                    AiServiceCallException.upstreamError(
                         PRIVATE_DETAIL,
                         IllegalStateException(PRIVATE_DETAIL),
                     ),
@@ -200,7 +200,7 @@ class SupportProgramControllerTest {
                     "AI_SERVICE_UPSTREAM_ERROR",
                 ),
                 ProblemCase(
-                    AiSupportProgramRankingClientException.invalidResponse(
+                    AiServiceCallException.invalidResponse(
                         PRIVATE_DETAIL,
                         IllegalArgumentException(PRIVATE_DETAIL),
                     ),
@@ -211,7 +211,7 @@ class SupportProgramControllerTest {
                     "AI_SERVICE_INVALID_RESPONSE",
                 ),
                 ProblemCase(
-                    AiSupportProgramRankingClientException.unavailable(
+                    AiServiceCallException.unavailable(
                         IllegalStateException(PRIVATE_DETAIL),
                     ),
                     503,
@@ -221,7 +221,7 @@ class SupportProgramControllerTest {
                     "AI_SERVICE_UNAVAILABLE",
                 ),
                 ProblemCase(
-                    AiSupportProgramRankingClientException.timeout(
+                    AiServiceCallException.timeout(
                         IllegalStateException(PRIVATE_DETAIL),
                     ),
                     504,

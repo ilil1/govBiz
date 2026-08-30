@@ -49,10 +49,10 @@ _health_ai_service/
 ├── service/                # AI Service Health 응답 검증
 └── dto/                    # AI Service Health 공개 응답 DTO
 _common/
-├── ai_config/              # 두 AI Client가 공유하는 주소와 HTTP 설정
+├── ai_config/              # 두 AI Client가 공유하는 주소·timeout·RestClient 설정
 ├── config/                 # CORS, JSON, 범용 RestClient 생성 지원
-├── exception/              # 모든 기능이 공유하는 ProblemDetail 예외 처리
-└── http/                   # 외부 Client가 공유하는 timeout 판별
+├── exception/              # 공통 AI 호출 예외와 ProblemDetail 예외 처리
+└── http/                   # AI 호출 실행 지원과 외부 Client timeout 판별
 ```
 
 Kotlin 기본 패키지는 `ai.govbiz.core`이고 Gradle 프로젝트명은 `govbiz-core-api`입니다.
@@ -63,7 +63,86 @@ Kotlin 기본 패키지는 `ai.govbiz.core`이고 Gradle 프로젝트명은 `gov
 
 Core API 프로세스 자체의 생존 상태는 `_health/controller`와 `_health/dto`가 담당합니다. AI Service 연결 상태를 확인하는 `_health_ai_service` 기능과는 별개입니다. `_health_ai_service/client/AiServiceHealthClient`는 내부 Health API만 호출하고, 지원사업 점수화 호출은 `supportprogram/client/ai/HttpAiSupportProgramRankingClient`가 담당합니다.
 
-둘 이상의 기능이 실제로 함께 사용하는 코드만 `_common`에 둡니다. 앞의 밑줄은 IDE의 알파벳 정렬에서 공통 코드를 기능보다 위에 표시하려는 프로젝트 규칙입니다. `_common/ai_config`는 AI Service 주소·timeout과 공용 `RestClient`를, `_common/config`는 전체 API의 JSON·CORS 정책과 범용 `RestClient` 생성 지원을 담당합니다. `ApiExceptionHandler`는 기능별 예외를 동일한 ProblemDetail 형식으로 변환하고, `TimeoutCause`는 AI·기업마당 HTTP Client가 timeout 원인을 같은 방식으로 판별합니다.
+둘 이상의 기능이 실제로 함께 사용하는 코드만 `_common`에 둡니다. 앞의 밑줄은 IDE의 알파벳 정렬에서 공통 코드를 기능보다 위에 표시하려는 프로젝트 규칙입니다. `_common/ai_config`는 AI Service 주소·timeout과 공용 `RestClient` 설정만 담당합니다. `_common/http`는 연결 실패·timeout·응답 해석 실패의 공통 변환을, `_common/exception`은 공통 AI 호출 예외와 공개 ProblemDetail 변환을 담당합니다. 반면 HTTP 204·503·504가 각 기능에서 무엇을 뜻하는지는 Health와 지원사업 Client가 각각 판단합니다. `_common/config`는 전체 API의 JSON·CORS 정책과 범용 `RestClient` 생성 지원을 담당하고, `TimeoutCause`는 AI·기업마당 HTTP Client가 timeout 원인을 같은 방식으로 판별합니다.
+
+## AI HTTP 호출의 공통 처리와 기능별 처리
+
+AI Health와 지원사업 점수화는 같은 `RestClient` 설정과 통신 오류 형식을 사용하지만 서로 다른 내부
+API입니다. 그래서 모든 코드를 하나로 합치지 않고, 실제로 의미가 같은 부분만 공통화합니다.
+
+```text
+AiServiceHealthClient ───────┐
+                             ├─ executeAiServiceCall { 각 Client의 HTTP 호출 }
+HttpAiSupportProgramRankingClient ─┘
+                                  ├─ 연결 실패 공통 변환
+                                  ├─ 네트워크 timeout 공통 변환
+                                  └─ JSON 응답 해석 실패 공통 변환
+```
+
+공통 함수는
+[`AiServiceCallSupport.kt`](src/main/kotlin/ai/govbiz/core/_common/http/AiServiceCallSupport.kt)에
+있습니다. 각 Client가 전달한 코드 블록을 `try` 안에서 실행하고 Spring HTTP 예외를 공통
+[`AiServiceCallException`](src/main/kotlin/ai/govbiz/core/_common/exception/AiServiceCallException.kt)으로
+변환합니다.
+
+```kotlin
+fun <T> executeAiServiceCall(block: () -> T): T =
+    try {
+        block()
+    } catch (exception: ResourceAccessException) {
+        // 연결 실패 또는 네트워크 timeout
+    } catch (exception: RestClientResponseException) {
+        // Client가 별도로 처리하지 못한 HTTP 응답 오류
+    } catch (exception: RestClientException) {
+        // JSON 변환 실패 같은 RestClient 오류
+    }
+```
+
+Health Client는 다음처럼 이 공통 함수 안에서 자기 HTTP 요청을 실행합니다.
+
+```kotlin
+fun getHealth(): AiServiceHealthPayload =
+    executeAiServiceCall {
+        restClient.get()
+            .uri("/internal/v1/health")
+            .retrieve()
+            .onStatus(/* Health 응답 상태 해석 */)
+            .toEntity(AiServiceHealthPayload::class.java)
+    }
+```
+
+여기서 `executeAiServiceCall`은 연결·timeout·JSON 해석 오류를 처리하고, `onStatus`는 실제 HTTP
+응답을 받은 뒤 그 상태 코드의 의미를 판단합니다. 숫자 대신 Spring 상수를 사용합니다.
+
+| Spring 표현 | 실제 HTTP 상태 |
+|---|---:|
+| `HttpStatus.OK.value()` | 200 |
+| `HttpStatus.NO_CONTENT.value()` | 204 |
+| `HttpStatus.REQUEST_TIMEOUT.value()` | 408 |
+| `HttpStatus.SERVICE_UNAVAILABLE.value()` | 503 |
+| `HttpStatus.GATEWAY_TIMEOUT.value()` | 504 |
+
+현재 상태 해석은 다음과 같습니다.
+
+| 내부 API | 204 | 503 | 408·504 | 그 밖의 200이 아닌 상태 |
+|---|---|---|---|---|
+| Health | `INVALID_RESPONSE` | `UNAVAILABLE` | `UPSTREAM_ERROR` | `UPSTREAM_ERROR` |
+| 지원사업 점수화 | `INVALID_RESPONSE` | `UNAVAILABLE` | `TIMEOUT` | `UPSTREAM_ERROR` |
+
+204와 503은 현재 두 Client에서 같은 오류로 바뀌지만, 각 내부 API의 상태 계약을 코드에서 바로
+확인할 수 있도록 `onStatus` 안에 명시적으로 둡니다. 공통화된 것은 그 뒤에 사용하는
+`AiServiceCallException`의 네 가지 분류와 공개 ProblemDetail 변환입니다. 따라서 흐름은 다음과
+같습니다.
+
+```text
+HTTP 상태를 기능별 Client가 해석
+  → UPSTREAM_ERROR | INVALID_RESPONSE | UNAVAILABLE | TIMEOUT
+  → ApiExceptionHandler가 공개 502 | 502 | 503 | 504 ProblemDetail로 변환
+```
+
+HTTP 200을 받았더라도 body가 없으면 각 Client가 `INVALID_RESPONSE`를 발생시킵니다. 연결조차 되지
+않거나 소켓 timeout이 발생하면 HTTP 상태가 없으므로 `onStatus`가 아니라 공통
+`executeAiServiceCall`이 처리합니다.
 
 ## 실행
 

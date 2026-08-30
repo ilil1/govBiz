@@ -1,5 +1,6 @@
 package ai.govbiz.core._health_ai_service.client
 
+import ai.govbiz.core._common.exception.AiServiceCallException
 import ai.govbiz.core._common.exception.AiServiceFailure
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -68,9 +69,20 @@ class AiServiceHealthClientTest {
     }
 
     @Test
-    fun mapsDownstream5xxToUpstreamError() {
+    fun mapsDownstream503ToUnavailable() {
         expectResponse(
             withStatus(HttpStatus.SERVICE_UNAVAILABLE)
+                .contentType(MediaType.TEXT_PLAIN)
+                .body("not-json"),
+        )
+
+        assertFailure(AiServiceFailure.UNAVAILABLE)
+    }
+
+    @Test
+    fun mapsOtherDownstream5xxToUpstreamError() {
+        expectResponse(
+            withStatus(HttpStatus.INTERNAL_SERVER_ERROR)
                 .contentType(MediaType.TEXT_PLAIN)
                 .body("not-json"),
         )
@@ -154,7 +166,7 @@ class AiServiceHealthClientTest {
     }
 
     private fun assertFailure(expectedFailure: AiServiceFailure) {
-        val exception = assertThrows(AiServiceHealthClientException::class.java) {
+        val exception = assertThrows(AiServiceCallException::class.java) {
             client.getHealth()
         }
         assertEquals(expectedFailure, exception.failure)

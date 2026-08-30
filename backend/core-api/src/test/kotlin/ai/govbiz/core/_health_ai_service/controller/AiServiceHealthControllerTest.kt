@@ -1,7 +1,7 @@
 package ai.govbiz.core._health_ai_service.controller
 
+import ai.govbiz.core._common.exception.AiServiceCallException
 import ai.govbiz.core._common.exception.ApiExceptionHandler
-import ai.govbiz.core._health_ai_service.client.AiServiceHealthClientException
 import ai.govbiz.core._health_ai_service.client.AiServiceHealthClient
 import ai.govbiz.core._health_ai_service.client.AiServiceHealthPayload
 import ai.govbiz.core._health_ai_service.service.AiServiceHealthService
@@ -60,7 +60,7 @@ class AiServiceHealthControllerTest {
     @ParameterizedTest
     @MethodSource("problemCases")
     fun mapsFailuresToStableProblemDetails(
-        clientException: AiServiceHealthClientException,
+        clientException: AiServiceCallException,
         expectedStatus: Int,
         expectedCode: String,
         expectedType: String,
@@ -93,7 +93,7 @@ class AiServiceHealthControllerTest {
         fun problemCases(): Stream<Arguments> =
             Stream.of(
                 Arguments.of(
-                    AiServiceHealthClientException.upstreamError(
+                    AiServiceCallException.upstreamError(
                         "AI Service returned HTTP 503",
                         IllegalStateException("do not expose this"),
                     ),
@@ -104,7 +104,7 @@ class AiServiceHealthControllerTest {
                     "AI Service returned an unexpected HTTP status.",
                 ),
                 Arguments.of(
-                    AiServiceHealthClientException.invalidResponse(
+                    AiServiceCallException.invalidResponse(
                         "invalid JSON",
                         IllegalArgumentException("do not expose this"),
                     ),
@@ -115,7 +115,7 @@ class AiServiceHealthControllerTest {
                     "AI Service returned an invalid response.",
                 ),
                 Arguments.of(
-                    AiServiceHealthClientException.unavailable(
+                    AiServiceCallException.unavailable(
                         ConnectException("127.0.0.1:8000"),
                     ),
                     503,
@@ -125,7 +125,7 @@ class AiServiceHealthControllerTest {
                     "AI Service is currently unavailable.",
                 ),
                 Arguments.of(
-                    AiServiceHealthClientException.timeout(
+                    AiServiceCallException.timeout(
                         SocketTimeoutException("internal timeout"),
                     ),
                     504,

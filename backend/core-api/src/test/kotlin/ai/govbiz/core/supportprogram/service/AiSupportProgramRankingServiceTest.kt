@@ -1,7 +1,7 @@
 package ai.govbiz.core.supportprogram.service
 
+import ai.govbiz.core._common.exception.AiServiceCallException
 import ai.govbiz.core._common.exception.AiServiceFailure
-import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingClientException
 import ai.govbiz.core.supportprogram.dto.ai.AiScoredSupportProgramPayload
 import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingClient
 import ai.govbiz.core.supportprogram.dto.ai.AiSupportProgramRankingPayload
@@ -78,7 +78,7 @@ class AiSupportProgramRankingServiceTest {
     }
 
     private fun assertInvalidResponse() {
-        val exception = assertThrows(AiSupportProgramRankingClientException::class.java) {
+        val exception = assertThrows(AiServiceCallException::class.java) {
             service().rank(QUERY, candidates(), 5)
         }
         assertEquals(AiServiceFailure.INVALID_RESPONSE, exception.failure)
