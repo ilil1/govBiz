@@ -1,14 +1,10 @@
 package ai.govbiz.core.supportprogram.client.bizinfo
 
-import ai.govbiz.core._common.http.hasTimeoutCause
 import ai.govbiz.core.supportprogram.dto.bizinfo.BizInfoProgramPayload
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
-import org.springframework.web.client.ResourceAccessException
 import org.springframework.web.client.RestClient
-import org.springframework.web.client.RestClientException
-import org.springframework.web.client.RestClientResponseException
 import tools.jackson.databind.JsonNode
 
 @Component
@@ -24,30 +20,74 @@ class BizInfoClient(
         }
 
         val firstPage = fetchPage(serviceKey, 1)
-        if (firstPage.totalCount < 0) {
-            throw BizInfoClientException.invalidResponse(
-                "BizInfo API returned a negative totalCount",
-                null,
-            )
-        }
-
-        val pageCount = maxOf(1, ceilDiv(firstPage.totalCount, PAGE_SIZE))
+        val pageCount = maxOf(1, Math.ceilDiv(firstPage.totalCount, firstPage.pageSize))
         if (pageCount > MAX_PAGES) {
             throw BizInfoClientException.invalidResponse(
                 "BizInfo API result exceeded the safe pagination limit",
                 null,
             )
         }
+        validatePage(firstPage, 1, firstPage.totalCount, firstPage.pageSize)
 
-        val programs = ArrayList(firstPage.items)
+        val programs = ArrayList<BizInfoProgramPayload>(firstPage.totalCount)
+        addPageItems(programs, firstPage.items)
         for (pageNumber in 2..pageCount) {
-            programs.addAll(fetchPage(serviceKey, pageNumber).items)
+            val page = fetchPage(serviceKey, pageNumber)
+            validatePage(page, pageNumber, firstPage.totalCount, firstPage.pageSize)
+            addPageItems(programs, page.items)
+        }
+        if (programs.size != firstPage.totalCount) {
+            throw BizInfoClientException.invalidResponse(
+                "BizInfo API returned an incomplete paginated result",
+                null,
+            )
         }
         return java.util.List.copyOf(programs)
     }
 
-    private fun fetchPage(serviceKey: String, pageNumber: Int): Page {
-        try {
+    private fun validatePage(
+        page: BizInfoPage,
+        expectedPageNumber: Int,
+        expectedTotalCount: Int,
+        expectedPageSize: Int,
+    ) {
+        if (
+            page.pageNumber != expectedPageNumber ||
+            page.totalCount != expectedTotalCount ||
+            page.pageSize != expectedPageSize
+        ) {
+            throw BizInfoClientException.invalidResponse(
+                "BizInfo API returned inconsistent pagination metadata",
+                null,
+            )
+        }
+
+        val firstItemIndex = (expectedPageNumber - 1L) * expectedPageSize
+        val remaining = expectedTotalCount - firstItemIndex
+        val expectedItemCount = minOf(expectedPageSize.toLong(), remaining.coerceAtLeast(0L)).toInt()
+        if (page.items.size != expectedItemCount) {
+            throw BizInfoClientException.invalidResponse(
+                "BizInfo API returned an incomplete page",
+                null,
+            )
+        }
+    }
+
+    private fun addPageItems(
+        programs: MutableList<BizInfoProgramPayload>,
+        pageItems: List<BizInfoProgramPayload>,
+    ) {
+        if (programs.size + pageItems.size > MAX_ITEMS) {
+            throw BizInfoClientException.invalidResponse(
+                "BizInfo API result exceeded the safe item limit",
+                null,
+            )
+        }
+        programs.addAll(pageItems)
+    }
+
+    private fun fetchPage(serviceKey: String, pageNumber: Int): BizInfoPage =
+        executeBizInfoCall {
             val response = restClient.get()
                 .uri(
                     PROGRAMS_PATH +
@@ -77,129 +117,13 @@ class BizInfoClient(
                     "BizInfo API returned an empty response",
                     null,
                 )
-            return decodePage(body)
-        } catch (exception: ResourceAccessException) {
-            if (exception.hasTimeoutCause()) {
-                throw BizInfoClientException.timeout(exception)
-            }
-            throw BizInfoClientException.unavailable(exception)
-        } catch (exception: RestClientResponseException) {
-            throw BizInfoClientException.upstreamError(
-                "BizInfo API returned HTTP ${exception.statusCode.value()}",
-                exception,
-            )
-        } catch (exception: RestClientException) {
-            throw BizInfoClientException.invalidResponse(
-                "BizInfo API response could not be decoded",
-                exception,
-            )
-        } catch (exception: IllegalArgumentException) {
-            throw BizInfoClientException.invalidResponse(
-                "BizInfo API response could not be decoded",
-                exception,
-            )
+            BizInfoPageDecoder.decode(body, PAGE_SIZE)
         }
-    }
-
-    private fun decodePage(root: JsonNode): Page {
-        val response = root.path("response")
-        val header = response.path("header")
-        if (text(header, "resultCode") != "00") {
-            throw BizInfoClientException.upstreamError(
-                "BizInfo API returned a non-success result code",
-                null,
-            )
-        }
-
-        val body = response.path("body")
-        val totalCount = integer(body, "totalCount")
-        if (body.isMissingNode || totalCount == null) {
-            throw BizInfoClientException.invalidResponse(
-                "BizInfo API response did not contain a valid body",
-                null,
-            )
-        }
-
-        return Page(readItems(body.path("items")), totalCount)
-    }
-
-    private fun readItems(itemsNode: JsonNode?): List<BizInfoProgramPayload> {
-        if (itemsNode == null || itemsNode.isMissingNode || itemsNode.isNull) {
-            return emptyList()
-        }
-
-        val itemNode = if (itemsNode.isArray) itemsNode else itemsNode.path("item")
-        if (itemNode.isMissingNode || itemNode.isNull) {
-            return emptyList()
-        }
-
-        val items = ArrayList<BizInfoProgramPayload>()
-        if (itemNode.isArray) {
-            for (node in itemNode) {
-                items.add(toPayload(node))
-            }
-        } else if (itemNode.isObject) {
-            items.add(toPayload(itemNode))
-        } else {
-            throw BizInfoClientException.invalidResponse(
-                "BizInfo API items had an unexpected shape",
-                null,
-            )
-        }
-        return java.util.List.copyOf(items)
-    }
-
-    private fun toPayload(node: JsonNode): BizInfoProgramPayload {
-        if (!node.isObject) {
-            throw BizInfoClientException.invalidResponse(
-                "BizInfo API item was not an object",
-                null,
-            )
-        }
-        return BizInfoProgramPayload(
-            text(node, "pblancNm"),
-            text(node, "pblancUrl"),
-            text(node, "pblancId"),
-            text(node, "jrsdInsttNm"),
-            text(node, "excInsttNm"),
-            text(node, "bsnsSumryCn"),
-            text(node, "pldirSportRealmLclasCodeNm"),
-            text(node, "creatPnttm"),
-            text(node, "reqstBeginEndDe"),
-            text(node, "updtPnttm"),
-            text(node, "trgetNm"),
-            text(node, "hashtags"),
-            text(node, "reqstMthPapersCn"),
-        )
-    }
-
-    private fun text(node: JsonNode, fieldName: String): String? {
-        val value = node.path(fieldName)
-        if (value.isMissingNode || value.isNull) {
-            return null
-        }
-        return value.asString().trim().ifEmpty { null }
-    }
-
-    private fun integer(node: JsonNode, fieldName: String): Int? {
-        val value = node.path(fieldName)
-        if (!value.isIntegralNumber || !value.canConvertToInt()) {
-            return null
-        }
-        return value.intValue()
-    }
-
-    private fun ceilDiv(value: Int, divisor: Int): Int =
-        if (value == 0) 0 else ((value - 1) / divisor) + 1
-
-    private data class Page(
-        val items: List<BizInfoProgramPayload>,
-        val totalCount: Int,
-    )
 
     companion object {
         const val PROGRAMS_PATH = "/1421000/bizinfo/pblancBsnsService"
         const val PAGE_SIZE = 1_000
         private const val MAX_PAGES = 20
+        private const val MAX_ITEMS = PAGE_SIZE * MAX_PAGES
     }
 }
