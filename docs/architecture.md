@@ -74,7 +74,14 @@ supportprogram/controller
 → supportprogram/service
 → supportprogram/domain
    ├→ supportprogram/client/bizinfo → 공공데이터포털
-   └→ supportprogram/client/ai → _adapters/ai/client → FastAPI → OpenAI
+   └→ supportprogram/client/ai
+       → HttpAiSupportProgramRankingClient
+           → FastAPI → OpenAI
+
+_health_ai_service/controller
+→ _health_ai_service/service
+→ _health_ai_service/client/AiServiceHealthClient
+    → FastAPI Health API
 ```
 
 - **supportprogram/controller**는 HTTP 요청을 받고 응답 DTO로 변환합니다.
@@ -82,11 +89,11 @@ supportprogram/controller
 - **supportprogram/domain**은 프레임워크에 의존하지 않는 지원사업 모델과 상태를 둡니다.
 - **supportprogram/dto/api**는 브라우저 공개 응답을, **supportprogram/dto/ai**는 AI Service 내부 요청·응답을, **supportprogram/dto/bizinfo**는 기업마당 응답 전송 객체를 둡니다.
 - **supportprogram/client/bizinfo**는 기업마당 HTTP 요청·응답 계약과 연결 설정을 담당합니다.
-- **supportprogram/client/ai**는 AI 점수화 Client 인터페이스를 담당합니다.
-- **_adapters/ai/client·config**는 비즈니스 기능이 아닌 공통 FastAPI 연결 어댑터를 관리합니다.
-- **_health_ai_service**는 AI Service 상태 조회 API와 Health 계약 검증을 독립적으로 관리합니다.
+- **supportprogram/client/ai**는 AI 점수화 Client 인터페이스·HTTP 구현·호출 오류를 함께 관리합니다.
+- **_common/ai_config**는 두 AI HTTP 클라이언트가 공유하는 FastAPI 주소·timeout·`RestClient` 설정을 관리합니다.
+- **_health_ai_service**는 AI Service 상태 조회의 Controller·Service·전용 HTTP Client와 Health 계약을 독립적으로 관리합니다.
 
-각 기능은 자기 `controller`, `service`, `domain`, `dto`, `client`, `config`를 소유합니다. 여러 기능에서 실제로 함께 쓰는 JSON·CORS·RestClient 설정, 전역 예외 처리와 timeout 판별만 `_common/config`, `_common/exception`, `_common/http`에 둡니다. `_common`의 밑줄은 IDE에서 공통 코드를 기능보다 위에 표시하기 위한 프로젝트 규칙입니다. 데이터베이스를 도입할 때도 해당 기능 아래에 필요한 저장 계층을 추가합니다.
+각 기능은 자기 `controller`, `service`, `domain`, `dto`, `client`, `config`를 소유합니다. 두 AI 기능이 공유하는 연결 설정은 `_common/ai_config`에 두고, 여러 기능에서 실제로 함께 쓰는 JSON·CORS·RestClient 생성 지원, 전역 예외 처리와 timeout 판별은 `_common/config`, `_common/exception`, `_common/http`에 둡니다. `_common`의 밑줄은 IDE에서 공통 코드를 기능보다 위에 표시하기 위한 프로젝트 규칙입니다. 데이터베이스를 도입할 때도 해당 기능 아래에 필요한 저장 계층을 추가합니다.
 
 ## LLM 추천 점수화와 장애 격리
 

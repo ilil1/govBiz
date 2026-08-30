@@ -1,7 +1,7 @@
 package ai.govbiz.core._common.exception
 
-import ai.govbiz.core._adapters.ai.client.AiServiceClientException
 import ai.govbiz.core._health_ai_service.service.AiServiceHealthException
+import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingClientException
 import ai.govbiz.core.supportprogram.service.SupportProgramSearchException
 import jakarta.servlet.http.HttpServletRequest
 import java.net.URI
@@ -35,9 +35,9 @@ class ApiExceptionHandler {
     ): ResponseEntity<ProblemDetail> =
         problemResponse(definitionFor(exception.failure), request)
 
-    @ExceptionHandler(AiServiceClientException::class)
-    fun handleAiServiceClientException(
-        exception: AiServiceClientException,
+    @ExceptionHandler(AiSupportProgramRankingClientException::class)
+    fun handleAiSupportProgramRankingClientException(
+        exception: AiSupportProgramRankingClientException,
         request: HttpServletRequest,
     ): ResponseEntity<ProblemDetail> =
         problemResponse(definitionFor(exception.failure), request)
@@ -152,30 +152,30 @@ class ApiExceptionHandler {
     private fun toValidationError(fieldError: FieldError): ValidationError =
         ValidationError(fieldError.field, "INVALID_VALUE")
 
-    private fun definitionFor(failure: AiServiceClientException.Failure): ProblemDefinition =
+    private fun definitionFor(failure: AiServiceFailure): ProblemDefinition =
         when (failure) {
-            AiServiceClientException.Failure.UPSTREAM_ERROR -> ProblemDefinition(
+            AiServiceFailure.UPSTREAM_ERROR -> ProblemDefinition(
                 HttpStatus.BAD_GATEWAY,
                 URI.create("urn:govbiz:problem:ai-service-upstream-error"),
                 "AI Service Upstream Error",
                 "AI Service returned an unexpected HTTP status.",
                 "AI_SERVICE_UPSTREAM_ERROR",
             )
-            AiServiceClientException.Failure.INVALID_RESPONSE -> ProblemDefinition(
+            AiServiceFailure.INVALID_RESPONSE -> ProblemDefinition(
                 HttpStatus.BAD_GATEWAY,
                 URI.create("urn:govbiz:problem:ai-service-invalid-response"),
                 "AI Service Invalid Response",
                 "AI Service returned an invalid response.",
                 "AI_SERVICE_INVALID_RESPONSE",
             )
-            AiServiceClientException.Failure.UNAVAILABLE -> ProblemDefinition(
+            AiServiceFailure.UNAVAILABLE -> ProblemDefinition(
                 HttpStatus.SERVICE_UNAVAILABLE,
                 URI.create("urn:govbiz:problem:ai-service-unavailable"),
                 "AI Service Unavailable",
                 "AI Service is currently unavailable.",
                 "AI_SERVICE_UNAVAILABLE",
             )
-            AiServiceClientException.Failure.TIMEOUT -> ProblemDefinition(
+            AiServiceFailure.TIMEOUT -> ProblemDefinition(
                 HttpStatus.GATEWAY_TIMEOUT,
                 URI.create("urn:govbiz:problem:ai-service-timeout"),
                 "AI Service Gateway Timeout",

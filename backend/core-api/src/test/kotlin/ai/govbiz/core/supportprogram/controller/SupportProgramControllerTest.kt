@@ -1,7 +1,7 @@
 package ai.govbiz.core.supportprogram.controller
 
 import ai.govbiz.core._common.exception.ApiExceptionHandler
-import ai.govbiz.core._adapters.ai.client.AiServiceClientException
+import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingClientException
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClient
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClientException
 import ai.govbiz.core.supportprogram.dto.bizinfo.BizInfoProgramPayload
@@ -189,7 +189,7 @@ class SupportProgramControllerTest {
         fun aiServiceProblemCases(): Stream<ProblemCase> =
             Stream.of(
                 ProblemCase(
-                    AiServiceClientException.upstreamError(
+                    AiSupportProgramRankingClientException.upstreamError(
                         PRIVATE_DETAIL,
                         IllegalStateException(PRIVATE_DETAIL),
                     ),
@@ -200,7 +200,7 @@ class SupportProgramControllerTest {
                     "AI_SERVICE_UPSTREAM_ERROR",
                 ),
                 ProblemCase(
-                    AiServiceClientException.invalidResponse(
+                    AiSupportProgramRankingClientException.invalidResponse(
                         PRIVATE_DETAIL,
                         IllegalArgumentException(PRIVATE_DETAIL),
                     ),
@@ -211,7 +211,9 @@ class SupportProgramControllerTest {
                     "AI_SERVICE_INVALID_RESPONSE",
                 ),
                 ProblemCase(
-                    AiServiceClientException.unavailable(IllegalStateException(PRIVATE_DETAIL)),
+                    AiSupportProgramRankingClientException.unavailable(
+                        IllegalStateException(PRIVATE_DETAIL),
+                    ),
                     503,
                     "urn:govbiz:problem:ai-service-unavailable",
                     "AI Service Unavailable",
@@ -219,7 +221,9 @@ class SupportProgramControllerTest {
                     "AI_SERVICE_UNAVAILABLE",
                 ),
                 ProblemCase(
-                    AiServiceClientException.timeout(IllegalStateException(PRIVATE_DETAIL)),
+                    AiSupportProgramRankingClientException.timeout(
+                        IllegalStateException(PRIVATE_DETAIL),
+                    ),
                     504,
                     "urn:govbiz:problem:ai-service-timeout",
                     "AI Service Gateway Timeout",

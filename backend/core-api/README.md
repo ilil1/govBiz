@@ -33,12 +33,8 @@ supportprogram/
 │   ├── ai/                 # AI Service 내부 요청·응답 DTO
 │   └── bizinfo/            # 기업마당 응답 DTO
 └── client/
-    ├── ai/                 # AI 점수화 Client 계약
+    ├── ai/                 # AI 점수화 Client 계약과 HTTP 구현
     └── bizinfo/            # 기업마당 Client와 연결 설정
-_adapters/
-└── ai/
-    ├── client/             # FastAPI HTTP Client
-    └── config/             # FastAPI 주소와 HTTP 설정
 _sampleitem/
 ├── controller/             # SampleItem 예제 공개 API
 ├── service/                # SampleItem 준비 흐름
@@ -48,11 +44,13 @@ _health/
 ├── controller/             # Core API 자체 Health API
 └── dto/                    # Core Health 응답 DTO
 _health_ai_service/
+├── client/                 # AI Service 내부 Health HTTP 호출
 ├── controller/             # AI Service Health 공개 API
-├── service/                # AI Service Health 계약 검증
+├── service/                # AI Service Health 응답 검증
 └── dto/                    # AI Service Health 공개 응답 DTO
 _common/
-├── config/                 # CORS, JSON, 공통 RestClient 생성 설정
+├── ai_config/              # 두 AI Client가 공유하는 주소와 HTTP 설정
+├── config/                 # CORS, JSON, 범용 RestClient 생성 지원
 ├── exception/              # 모든 기능이 공유하는 ProblemDetail 예외 처리
 └── http/                   # 외부 Client가 공유하는 timeout 판별
 ```
@@ -63,9 +61,9 @@ Kotlin 기본 패키지는 `ai.govbiz.core`이고 Gradle 프로젝트명은 `gov
 
 계층 연결 예제인 SampleItem도 `_sampleitem/controller → service → domain`으로 독립되어 있으며 공개 요청·응답 형식은 `_sampleitem/dto`가 소유합니다.
 
-Core API 프로세스 자체의 생존 상태는 `health/controller`와 `health/dto`가 담당합니다. AI Service 연결 상태를 확인하는 `aiservice` 기능과는 별개입니다.
+Core API 프로세스 자체의 생존 상태는 `_health/controller`와 `_health/dto`가 담당합니다. AI Service 연결 상태를 확인하는 `_health_ai_service` 기능과는 별개입니다. `_health_ai_service/client/AiServiceHealthClient`는 내부 Health API만 호출하고, 지원사업 점수화 호출은 `supportprogram/client/ai/HttpAiSupportProgramRankingClient`가 담당합니다.
 
-둘 이상의 기능이 실제로 함께 사용하는 코드만 `_common`에 둡니다. 앞의 밑줄은 IDE의 알파벳 정렬에서 공통 코드를 기능보다 위에 표시하려는 프로젝트 규칙입니다. `_common/config`는 전체 API의 JSON·CORS 정책과 외부 HTTP Client 공통 생성을 담당합니다. `ApiExceptionHandler`는 기능별 예외를 동일한 ProblemDetail 형식으로 변환하고, `TimeoutCause`는 AI·기업마당 HTTP Client가 timeout 원인을 같은 방식으로 판별합니다.
+둘 이상의 기능이 실제로 함께 사용하는 코드만 `_common`에 둡니다. 앞의 밑줄은 IDE의 알파벳 정렬에서 공통 코드를 기능보다 위에 표시하려는 프로젝트 규칙입니다. `_common/ai_config`는 AI Service 주소·timeout과 공용 `RestClient`를, `_common/config`는 전체 API의 JSON·CORS 정책과 범용 `RestClient` 생성 지원을 담당합니다. `ApiExceptionHandler`는 기능별 예외를 동일한 ProblemDetail 형식으로 변환하고, `TimeoutCause`는 AI·기업마당 HTTP Client가 timeout 원인을 같은 방식으로 판별합니다.
 
 ## 실행
 

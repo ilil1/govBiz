@@ -1,9 +1,9 @@
 package ai.govbiz.core._health_ai_service.controller
 
 import ai.govbiz.core._common.exception.ApiExceptionHandler
-import ai.govbiz.core._adapters.ai.client.AiServiceClient
-import ai.govbiz.core._adapters.ai.client.AiServiceClientException
-import ai.govbiz.core._adapters.ai.client.AiServiceHealthPayload
+import ai.govbiz.core._health_ai_service.client.AiServiceHealthClientException
+import ai.govbiz.core._health_ai_service.client.AiServiceHealthClient
+import ai.govbiz.core._health_ai_service.client.AiServiceHealthPayload
 import ai.govbiz.core._health_ai_service.service.AiServiceHealthService
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -31,7 +31,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 class AiServiceHealthControllerTest {
 
     @Mock
-    private lateinit var client: AiServiceClient
+    private lateinit var client: AiServiceHealthClient
 
     private lateinit var mockMvc: MockMvc
 
@@ -60,7 +60,7 @@ class AiServiceHealthControllerTest {
     @ParameterizedTest
     @MethodSource("problemCases")
     fun mapsFailuresToStableProblemDetails(
-        clientException: AiServiceClientException,
+        clientException: AiServiceHealthClientException,
         expectedStatus: Int,
         expectedCode: String,
         expectedType: String,
@@ -93,7 +93,7 @@ class AiServiceHealthControllerTest {
         fun problemCases(): Stream<Arguments> =
             Stream.of(
                 Arguments.of(
-                    AiServiceClientException.upstreamError(
+                    AiServiceHealthClientException.upstreamError(
                         "AI Service returned HTTP 503",
                         IllegalStateException("do not expose this"),
                     ),
@@ -104,7 +104,7 @@ class AiServiceHealthControllerTest {
                     "AI Service returned an unexpected HTTP status.",
                 ),
                 Arguments.of(
-                    AiServiceClientException.invalidResponse(
+                    AiServiceHealthClientException.invalidResponse(
                         "invalid JSON",
                         IllegalArgumentException("do not expose this"),
                     ),
@@ -115,7 +115,7 @@ class AiServiceHealthControllerTest {
                     "AI Service returned an invalid response.",
                 ),
                 Arguments.of(
-                    AiServiceClientException.unavailable(
+                    AiServiceHealthClientException.unavailable(
                         ConnectException("127.0.0.1:8000"),
                     ),
                     503,
@@ -125,7 +125,7 @@ class AiServiceHealthControllerTest {
                     "AI Service is currently unavailable.",
                 ),
                 Arguments.of(
-                    AiServiceClientException.timeout(
+                    AiServiceHealthClientException.timeout(
                         SocketTimeoutException("internal timeout"),
                     ),
                     504,

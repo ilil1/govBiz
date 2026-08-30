@@ -1,8 +1,9 @@
 package ai.govbiz.core._health_ai_service.service
 
-import ai.govbiz.core._adapters.ai.client.AiServiceClient
-import ai.govbiz.core._adapters.ai.client.AiServiceClientException
-import ai.govbiz.core._adapters.ai.client.AiServiceHealthPayload
+import ai.govbiz.core._common.exception.AiServiceFailure
+import ai.govbiz.core._health_ai_service.client.AiServiceHealthClient
+import ai.govbiz.core._health_ai_service.client.AiServiceHealthClientException
+import ai.govbiz.core._health_ai_service.client.AiServiceHealthPayload
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.util.stream.Stream
@@ -23,7 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 class AiServiceHealthServiceTest {
 
     @Mock
-    private lateinit var client: AiServiceClient
+    private lateinit var client: AiServiceHealthClient
 
     private lateinit var service: AiServiceHealthService
 
@@ -53,14 +54,14 @@ class AiServiceHealthServiceTest {
             service.getHealth()
         }
 
-        assertEquals(AiServiceClientException.Failure.INVALID_RESPONSE, exception.failure)
+        assertEquals(AiServiceFailure.INVALID_RESPONSE, exception.failure)
     }
 
     @ParameterizedTest
     @MethodSource("clientFailures")
     fun preservesClientFailureCategory(
-        clientException: AiServiceClientException,
-        expectedFailure: AiServiceClientException.Failure,
+        clientException: AiServiceHealthClientException,
+        expectedFailure: AiServiceFailure,
     ) {
         Mockito.doThrow(clientException).`when`(client).getHealth()
 
@@ -86,26 +87,26 @@ class AiServiceHealthServiceTest {
         fun clientFailures(): Stream<Arguments> =
             Stream.of(
                 Arguments.of(
-                    AiServiceClientException.upstreamError(
+                    AiServiceHealthClientException.upstreamError(
                         "unexpected status",
                         IllegalStateException("test"),
                     ),
-                    AiServiceClientException.Failure.UPSTREAM_ERROR,
+                    AiServiceFailure.UPSTREAM_ERROR,
                 ),
                 Arguments.of(
-                    AiServiceClientException.invalidResponse(
+                    AiServiceHealthClientException.invalidResponse(
                         "invalid response",
                         IllegalArgumentException("test"),
                     ),
-                    AiServiceClientException.Failure.INVALID_RESPONSE,
+                    AiServiceFailure.INVALID_RESPONSE,
                 ),
                 Arguments.of(
-                    AiServiceClientException.unavailable(ConnectException("test")),
-                    AiServiceClientException.Failure.UNAVAILABLE,
+                    AiServiceHealthClientException.unavailable(ConnectException("test")),
+                    AiServiceFailure.UNAVAILABLE,
                 ),
                 Arguments.of(
-                    AiServiceClientException.timeout(SocketTimeoutException("test")),
-                    AiServiceClientException.Failure.TIMEOUT,
+                    AiServiceHealthClientException.timeout(SocketTimeoutException("test")),
+                    AiServiceFailure.TIMEOUT,
                 ),
             )
     }

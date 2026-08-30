@@ -1,4 +1,4 @@
-package ai.govbiz.core._adapters.ai.config
+package ai.govbiz.core._common.ai_config
 
 import ai.govbiz.core._common.config.buildRestClient
 import org.springframework.boot.context.properties.EnableConfigurationProperties

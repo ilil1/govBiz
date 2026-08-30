@@ -1,7 +1,8 @@
-package ai.govbiz.core._adapters.ai.config
+package ai.govbiz.core._common.ai_config
 
-import ai.govbiz.core._adapters.ai.client.AiServiceClient
-import ai.govbiz.core._adapters.ai.client.AiServiceClientException
+import ai.govbiz.core._common.exception.AiServiceFailure
+import ai.govbiz.core._health_ai_service.client.AiServiceHealthClient
+import ai.govbiz.core._health_ai_service.client.AiServiceHealthClientException
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
@@ -98,14 +99,14 @@ class AiServiceClientConfigIntegrationTest {
         }
         server.start()
 
-        val exception = assertThrows(AiServiceClientException::class.java) {
+        val exception = assertThrows(AiServiceHealthClientException::class.java) {
             createClient(Duration.ofSeconds(1)).getHealth()
         }
 
         assertAll(
             {
                 assertEquals(
-                    AiServiceClientException.Failure.UPSTREAM_ERROR,
+                    AiServiceFailure.UPSTREAM_ERROR,
                     exception.failure,
                 )
             },
@@ -130,19 +131,19 @@ class AiServiceClientConfigIntegrationTest {
         }
         server.start()
 
-        val exception = assertTimeout<AiServiceClientException>(Duration.ofSeconds(3)) {
-            assertThrows(AiServiceClientException::class.java) {
+        val exception = assertTimeout<AiServiceHealthClientException>(Duration.ofSeconds(3)) {
+            assertThrows(AiServiceHealthClientException::class.java) {
                 createClient(Duration.ofMillis(150)).getHealth()
             }
         }
 
         assertAll(
-            { assertEquals(AiServiceClientException.Failure.TIMEOUT, exception.failure) },
+            { assertEquals(AiServiceFailure.TIMEOUT, exception.failure) },
             { assertEquals(0L, requestReceived.count) },
         )
     }
 
-    private fun createClient(readTimeout: Duration): AiServiceClient {
+    private fun createClient(readTimeout: Duration): AiServiceHealthClient {
         val baseUrl = URI.create("http://127.0.0.1:${server.address.port}")
         val properties = AiServiceClientProperties(
             baseUrl,
@@ -153,7 +154,7 @@ class AiServiceClientConfigIntegrationTest {
             RestClient.builder(),
             properties,
         )
-        return AiServiceClient(restClient)
+        return AiServiceHealthClient(restClient)
     }
 
     private fun sendJson(exchange: HttpExchange, body: String) {
