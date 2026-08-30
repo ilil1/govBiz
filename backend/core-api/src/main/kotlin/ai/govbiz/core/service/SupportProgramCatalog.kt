@@ -5,9 +5,6 @@ import ai.govbiz.core.client.bizinfo.BizInfoClientException
 import ai.govbiz.core.client.bizinfo.BizInfoProgramPayload
 import ai.govbiz.core.domain.support.SupportProgram
 import ai.govbiz.core.domain.support.SupportProgramStatus
-import ai.govbiz.core.text.isBlankLikeJava
-import ai.govbiz.core.text.isNullOrBlankLikeJava
-import ai.govbiz.core.text.trimLikeJava
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import org.springframework.web.util.HtmlUtils
@@ -57,8 +54,8 @@ class BizInfoSupportProgramCatalog(
     }
 
     private fun toCatalogProgram(payload: BizInfoProgramPayload?): CatalogSupportProgram? {
-        val id = payload?.id?.takeUnless { it.isBlankLikeJava() } ?: return null
-        val title = payload.title?.takeUnless { it.isBlankLikeJava() } ?: return null
+        val id = payload?.id?.takeUnless { it.isBlank() } ?: return null
+        val title = payload.title?.takeUnless { it.isBlank() } ?: return null
         val sourceUrl = officialSourceUrl(payload.sourceUrl) ?: return null
         val applicationPeriod = firstPresent(payload.applicationPeriod, "정보 없음")
         val dates = parseDates(applicationPeriod)
@@ -71,10 +68,10 @@ class BizInfoSupportProgramCatalog(
 
         return CatalogSupportProgram(
             program = SupportProgram(
-                id = id.trimLikeJava(),
-                title = title.trimLikeJava(),
+                id = id.trim(),
+                title = title.trim(),
                 organization = organization,
-                summary = if (summary.isBlankLikeJava()) "정보 없음" else summary,
+                summary = if (summary.isBlank()) "정보 없음" else summary,
                 categories = categories(payload.category),
                 regions = regions(payload.hashtags),
                 targetDescription = firstPresent(payload.target, "정보 없음"),
@@ -183,11 +180,11 @@ class BizInfoSupportProgramCatalog(
 
         fun categories(category: String?): List<String> {
             val value = category ?: return emptyList()
-            if (value.isBlankLikeJava()) return emptyList()
+            if (value.isBlank()) return emptyList()
             return CATEGORY_SEPARATOR.split(value)
                 .asSequence()
-                .map { it.trimLikeJava() }
-                .filter { !it.isBlankLikeJava() }
+                .map { it.trim() }
+                .filter { !it.isBlank() }
                 .distinct()
                 .toList()
                 .let { java.util.List.copyOf(it) }
@@ -195,11 +192,11 @@ class BizInfoSupportProgramCatalog(
 
         fun regions(hashtags: String?): List<String> {
             val value = hashtags ?: return emptyList()
-            if (value.isBlankLikeJava()) return emptyList()
+            if (value.isBlank()) return emptyList()
 
             val regions = LinkedHashSet<String>()
             for (hashtag in value.split(',')) {
-                val normalized = hashtag.trimLikeJava()
+                val normalized = hashtag.trim()
                 if (normalized == "전남광주") {
                     regions += "광주"
                     regions += "전남"
@@ -213,20 +210,20 @@ class BizInfoSupportProgramCatalog(
 
         fun plainText(html: String?): String {
             val value = html ?: return ""
-            if (value.isBlankLikeJava()) return ""
+            if (value.isBlank()) return ""
             val withoutBlocks = HTML_BLOCK.matcher(value).replaceAll(" ")
             val withBreaks = HTML_BREAK.matcher(withoutBlocks).replaceAll(" ")
             val withoutTags = HTML_TAG.matcher(withBreaks).replaceAll(" ")
             return WHITESPACE.matcher(
                 HtmlUtils.htmlUnescape(withoutTags).replace('\u00a0', ' '),
-            ).replaceAll(" ").trimLikeJava()
+            ).replaceAll(" ").trim()
         }
 
         fun officialSourceUrl(value: String?): String? {
             val source = value ?: return null
-            if (source.isBlankLikeJava()) return null
+            if (source.isBlank()) return null
             return try {
-                val uri = URI(source.trimLikeJava())
+                val uri = URI(source.trim())
                 val host = uri.host
                 val supportedScheme = uri.scheme.equals("https", ignoreCase = true) ||
                     uri.scheme.equals("http", ignoreCase = true)
@@ -240,12 +237,12 @@ class BizInfoSupportProgramCatalog(
         }
 
         fun firstPresent(vararg values: String?): String =
-            values.firstOrNull { !it.isNullOrBlankLikeJava() }?.trimLikeJava().orEmpty()
+            values.firstOrNull { !it.isNullOrBlank() }?.trim().orEmpty()
 
         fun normalize(value: String): String {
             val normalized = Normalizer.normalize(value, Normalizer.Form.NFKC)
                 .lowercase(Locale.ROOT)
-            return WHITESPACE.matcher(normalized).replaceAll(" ").trimLikeJava()
+            return WHITESPACE.matcher(normalized).replaceAll(" ").trim()
         }
     }
 }

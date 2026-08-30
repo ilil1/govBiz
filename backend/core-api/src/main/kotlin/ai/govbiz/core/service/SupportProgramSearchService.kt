@@ -1,7 +1,5 @@
 package ai.govbiz.core.service
 
-import ai.govbiz.core.text.isBlankLikeJava
-import ai.govbiz.core.text.trimLikeJava
 import org.springframework.stereotype.Service
 
 /** AI 검색 의도, 공고 카탈로그와 순위 계산을 연결하는 검색 유스케이스입니다. */
@@ -12,8 +10,8 @@ class SupportProgramSearchService(
     private val ranker: SupportProgramRanker,
 ) {
     fun search(rawQuery: String?, acceptingOnly: Boolean): SupportProgramSearchResult {
-        val query = rawQuery?.trimLikeJava().orEmpty()
-        val analyzedIntent = if (query.isBlankLikeJava()) {
+        val query = rawQuery?.trim().orEmpty()
+        val analyzedIntent = if (query.isBlank()) {
             null
         } else {
             aiSearchIntentService.analyze(query, acceptingOnly)

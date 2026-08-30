@@ -2,8 +2,6 @@ package ai.govbiz.core.service
 
 import ai.govbiz.core.domain.support.SupportProgram
 import ai.govbiz.core.domain.support.SupportProgramStatus
-import ai.govbiz.core.text.isBlankLikeJava
-import ai.govbiz.core.text.trimLikeJava
 import org.springframework.stereotype.Component
 import java.text.Normalizer
 import java.util.LinkedHashMap
@@ -75,7 +73,7 @@ class SupportProgramRanker {
 
         var best = 0
         for (variant in term.variants) {
-            if (variant.isBlankLikeJava()) continue
+            if (variant.isBlank()) continue
             if (containsSearchTerm(program.title, variant)) best = max(best, 9)
             if (program.categories.any { containsSearchTerm(it, variant) }) best = max(best, 7)
             if (program.regions.any { containsSearchTerm(it, variant) }) best = max(best, 6)
@@ -159,7 +157,7 @@ class SupportProgramRanker {
 
         fun containsSearchTerm(value: String, term: String): Boolean {
             val normalizedTerm = normalize(term)
-            if (normalizedTerm.isBlankLikeJava()) return false
+            if (normalizedTerm.isBlank()) return false
             val normalizedValue = normalize(value)
             if (ASCII_SEARCH_TERM.matcher(normalizedTerm).matches()) {
                 return SEARCH_TOKEN_SEPARATOR.split(normalizedValue).any(normalizedTerm::equals)
@@ -170,7 +168,7 @@ class SupportProgramRanker {
         fun normalize(value: String): String {
             val normalized = Normalizer.normalize(value, Normalizer.Form.NFKC)
                 .lowercase(Locale.ROOT)
-            return WHITESPACE.matcher(normalized).replaceAll(" ").trimLikeJava()
+            return WHITESPACE.matcher(normalized).replaceAll(" ").trim()
         }
     }
 }

@@ -1,6 +1,5 @@
 package ai.govbiz.core.config
 
-import ai.govbiz.core.text.trimLikeJava
 import java.net.URI
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -18,7 +17,7 @@ class BizInfoClientProperties(
 
     val baseUrl: URI = baseUrl
         ?: throw NullPointerException("app.bizinfo.base-url must be configured")
-    val serviceKey: String = serviceKey?.trimLikeJava().orEmpty()
+    val serviceKey: String = serviceKey?.trim().orEmpty()
     val connectTimeout: Duration = connectTimeout
         ?: throw NullPointerException("app.bizinfo.connect-timeout must be configured")
     val readTimeout: Duration = readTimeout

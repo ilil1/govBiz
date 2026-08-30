@@ -3,8 +3,6 @@ package ai.govbiz.core.service
 import ai.govbiz.core.client.ai.AiSearchIntentPayload
 import ai.govbiz.core.client.ai.AiServiceClient
 import ai.govbiz.core.client.ai.AiServiceClientException
-import ai.govbiz.core.text.isBlankLikeJava
-import ai.govbiz.core.text.trimLikeJava
 import org.springframework.stereotype.Service
 import java.util.LinkedHashSet
 
@@ -14,8 +12,8 @@ class AiSearchIntentService(
     private val client: AiServiceClient,
 ) {
     fun analyze(query: String?, acceptingOnly: Boolean): AnalyzedSearchIntent {
-        val normalizedQuery = query?.trimLikeJava().orEmpty()
-        require(!normalizedQuery.isBlankLikeJava()) { "query must not be blank" }
+        val normalizedQuery = query?.trim().orEmpty()
+        require(!normalizedQuery.isBlank()) { "query must not be blank" }
 
         val payload = client.analyzeSearchIntent(normalizedQuery, acceptingOnly)
         return validate(payload, normalizedQuery, acceptingOnly)
@@ -83,7 +81,7 @@ class AiSearchIntentService(
     }
 
     private fun trimToNull(value: String?): String? =
-        value?.trimLikeJava()?.takeIf(String::isNotEmpty)
+        value?.trim()?.takeIf(String::isNotEmpty)
 
     private fun containsControlCharacter(value: String): Boolean =
         value.codePoints().anyMatch(Character::isISOControl)

@@ -2,8 +2,6 @@ package ai.govbiz.core.client.bizinfo
 
 import ai.govbiz.core.client.hasTimeoutCause
 import ai.govbiz.core.config.BizInfoClientProperties
-import ai.govbiz.core.text.isBlankLikeJava
-import ai.govbiz.core.text.trimLikeJava
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
@@ -21,7 +19,7 @@ class BizInfoClient(
 
     fun fetchAll(): List<BizInfoProgramPayload> {
         val serviceKey = properties.decodedServiceKey()
-        if (serviceKey.isBlankLikeJava()) {
+        if (serviceKey.isBlank()) {
             throw BizInfoClientException.notConfigured()
         }
 
@@ -180,7 +178,7 @@ class BizInfoClient(
         if (value.isMissingNode || value.isNull) {
             return null
         }
-        return value.asString().trimLikeJava().ifEmpty { null }
+        return value.asString().trim().ifEmpty { null }
     }
 
     private fun integer(node: JsonNode, fieldName: String): Int? {
