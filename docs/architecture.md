@@ -59,7 +59,8 @@ View
 - **Data Layer**는 Fetch, URL, Zod 응답 검증을 소유합니다.
 
 SampleItem의 두 화면은 같은 UseCase·Repository·endpoint를 사용하며 상태 보관 위치만 다릅니다.
-Hook 화면은 이탈 시 초기화되고 Redux 화면의 완료 상태는 같은 Store가 유지됩니다. 둘 다 새로고침
+Hook 화면은 이탈 시 초기화되고 Redux 화면의 완료 상태는 `App`이 한 번 만든 SampleItem 전용 Store가
+유지합니다. 둘 다 새로고침
 후에는 초기화됩니다. 사이드바 열림과 DOM 참조 같은 화면 전용 상태는 Redux에 넣지 않고 React 로컬 hook에 둡니다.
 Health 조회처럼 업무 도메인이 아닌 연결 상태는 UseCase·Repository를 억지로 거치지 않지만, 서버
 요청과 취소 lifecycle은 해당 Hook이 직접 관리합니다.

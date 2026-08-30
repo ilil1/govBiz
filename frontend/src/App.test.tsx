@@ -33,9 +33,12 @@ describe('App navigation', () => {
       })
     })
     vi.stubGlobal('fetch', fetchMock)
+    const appStore = createAppStore()
+
+    expect(Object.keys(appStore.getState())).toEqual(['chat'])
 
     render(
-      <Provider store={createAppStore()}>
+      <Provider store={appStore}>
         <App />
       </Provider>,
     )

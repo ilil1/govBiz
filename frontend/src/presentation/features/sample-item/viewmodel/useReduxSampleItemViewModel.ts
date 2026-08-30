@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
 
 import { appContainer } from '../../../../app/appContainer'
-import { useAppDispatch, useAppSelector } from '../../../../app/hooks'
-import type { AppDispatch, RootState } from '../../../../app/store'
 import type { PrepareSampleItemUseCase } from '../../../../domain/usecases/PrepareSampleItemUseCase'
 import {
   categoryChanged,
@@ -23,6 +21,12 @@ import {
   selectReduxSampleItemState,
   selectReduxSampleItemValues,
 } from '../state/reduxSampleItemSlice'
+import {
+  type SampleItemDispatch,
+  type SampleItemRootState,
+  useSampleItemDispatch,
+  useSampleItemSelector,
+} from '../state/reduxSampleItemStore'
 import { sampleItemFormSchema, toSampleItem } from '../validation/sampleItemFormSchema'
 
 type SampleItemUseCase = Pick<PrepareSampleItemUseCase, 'execute'>
@@ -30,19 +34,19 @@ type SampleItemUseCase = Pick<PrepareSampleItemUseCase, 'execute'>
 export function useReduxSampleItemViewModel(
   prepareSampleItemUseCase: SampleItemUseCase = appContainer.resolve('prepareSampleItemUseCase'),
 ) {
-  const dispatchToStore = useAppDispatch()
+  const dispatchToStore = useSampleItemDispatch()
   const activeRequest = useRef<{
     controller: AbortController
     requestId: string
   } | null>(null)
-  const actionMessage = useAppSelector(selectReduxSampleItemActionMessage)
-  const errors = useAppSelector(selectReduxSampleItemErrors)
-  const isPreparing = useAppSelector(selectIsReduxSampleItemPreparing)
-  const isReady = useAppSelector(selectIsReduxSampleItemReady)
-  const preparation = useAppSelector(selectReduxSampleItemPreparation)
-  const preparationError = useAppSelector(selectReduxSampleItemError)
-  const submitButtonLabel = useAppSelector(selectReduxSampleItemButtonLabel)
-  const values = useAppSelector(selectReduxSampleItemValues)
+  const actionMessage = useSampleItemSelector(selectReduxSampleItemActionMessage)
+  const errors = useSampleItemSelector(selectReduxSampleItemErrors)
+  const isPreparing = useSampleItemSelector(selectIsReduxSampleItemPreparing)
+  const isReady = useSampleItemSelector(selectIsReduxSampleItemReady)
+  const preparation = useSampleItemSelector(selectReduxSampleItemPreparation)
+  const preparationError = useSampleItemSelector(selectReduxSampleItemError)
+  const submitButtonLabel = useSampleItemSelector(selectReduxSampleItemButtonLabel)
+  const values = useSampleItemSelector(selectReduxSampleItemValues)
 
   const cancelActiveRequest = useCallback(() => {
     const request = activeRequest.current
@@ -75,8 +79,8 @@ export function useReduxSampleItemViewModel(
 
   function prepare() {
     async function runPreparation(
-      dispatchAction: AppDispatch,
-      readCurrentState: () => RootState,
+      dispatchAction: SampleItemDispatch,
+      readCurrentState: () => SampleItemRootState,
     ): Promise<void> {
       const currentState = selectReduxSampleItemState(readCurrentState())
       if (currentState.status === 'pending') return

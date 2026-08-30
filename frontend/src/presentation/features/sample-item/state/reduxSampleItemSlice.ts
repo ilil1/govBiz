@@ -1,6 +1,5 @@
 import { createSelector, createSlice, nanoid, type PayloadAction } from '@reduxjs/toolkit'
 
-import type { RootState } from '../../../../app/store'
 import type { SampleItemPreparation } from '../../../../domain/entities/SampleItemPreparation'
 import {
   sampleItemFormSchema,
@@ -17,6 +16,10 @@ type ReduxSampleItemState = {
   status: ReduxSampleItemStatus
   touched: Record<keyof SampleItemFormValues, boolean>
   values: SampleItemFormValues
+}
+
+type ReduxSampleItemStateContainer = {
+  sampleItemRedux: ReduxSampleItemState
 }
 
 const initialState: ReduxSampleItemState = createInitialState()
@@ -96,12 +99,15 @@ export const {
   reduxSampleItemReset,
 } = reduxSampleItemSlice.actions
 
-export const selectReduxSampleItemState = (state: RootState) => state.sampleItemRedux
-export const selectReduxSampleItemValues = (state: RootState) => state.sampleItemRedux.values
-export const selectReduxSampleItemPreparation = (state: RootState) =>
+export const selectReduxSampleItemState = (state: ReduxSampleItemStateContainer) =>
+  state.sampleItemRedux
+export const selectReduxSampleItemValues = (state: ReduxSampleItemStateContainer) =>
+  state.sampleItemRedux.values
+export const selectReduxSampleItemPreparation = (state: ReduxSampleItemStateContainer) =>
   state.sampleItemRedux.preparation
-export const selectReduxSampleItemError = (state: RootState) => state.sampleItemRedux.error
-export const selectIsReduxSampleItemPreparing = (state: RootState) =>
+export const selectReduxSampleItemError = (state: ReduxSampleItemStateContainer) =>
+  state.sampleItemRedux.error
+export const selectIsReduxSampleItemPreparing = (state: ReduxSampleItemStateContainer) =>
   state.sampleItemRedux.status === 'pending'
 
 const selectReduxSampleItemValidation = createSelector(

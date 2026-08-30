@@ -43,10 +43,10 @@ pnpm dev
 ```text
 src/
 ├── index.css                            # Tailwind CSS 진입점과 공통 base 스타일
-├── app/                                # Redux Store와 앱 단위 Awilix Service Locator
+├── app/                                # 채팅 Redux Store와 앱 단위 Awilix Service Locator
 │   └── di/                             # Repository·UseCase·외부 서비스 역할별 Awilix 등록
 ├── presentation/features/chat/         # View, Tailwind 스타일 맵, 인라인 Thunk ViewModel, slice
-├── presentation/features/sample-item/  # 비교 View, 공통 Tailwind 스타일 맵, ViewModel, slice
+├── presentation/features/sample-item/  # 비교 View, 전용 Redux Store·Provider, ViewModel, slice
 ├── presentation/shared/                # Core API 연결 상태 UI
 ├── domain/                             # Entity, Repository port, UseCase
 └── data/                               # Fetch API·Zod DTO·HTTP Repository와 테스트 fixture
@@ -144,32 +144,45 @@ plain Fake UseCase를 전달하거나 새 테스트 컨테이너를 만듭니다
 ## Redux Provider와 Service Locator에서 ViewModel까지 전달
 
 `useSupportProgramChatViewModel`이 Store를 직접 import하지 않아도 `dispatch`와 State를 사용할 수
-있는 이유는 React 컴포넌트 트리의 상위에 Redux `Provider`가 있기 때문입니다. UseCase는 React
-Context가 아니라 `app/appContainer.ts`가 한 번 생성한 전역 Awilix 컨테이너에서 조회합니다.
+있는 이유는 React 컴포넌트 트리의 상위에 채팅용 Redux `Provider`가 있기 때문입니다. Redux
+SampleItem은 다른 화면에서 접근하지 않도록 기능 전용 Store와 중첩 `Provider`를 사용합니다. UseCase는
+두 Redux Context와 별개로 `app/appContainer.ts`가 한 번 생성한 전역 Awilix 컨테이너에서 조회합니다.
 
 ```text
-Provider store={store}
+Provider store={appStore}
 └─ App
-   └─ ChatPage → useSupportProgramChatViewModel
+   ├─ ChatPage → useSupportProgramChatViewModel
+   └─ Provider store={sampleItemStore}
+      └─ ReduxSampleItemPage → useReduxSampleItemViewModel
 ```
 
 현재 `App`은 ChatPage를 첫 화면으로 렌더링하고, 상태관리 비교 화면에서 React Hook 또는 Redux
-SampleItemPage로 전환합니다. 세 화면 모두 같은 `Provider` 아래에 있어 Redux 예제의 입력과 완료
-결과는 화면 이동 후에도 유지됩니다.
+SampleItemPage로 전환합니다. 채팅 Store에는 `chat` slice만 있고, SampleItem Store에는
+`sampleItemRedux` slice만 있습니다. `App`이 `sampleItemStore`를 한 번 생성해 보관하므로 Redux 화면이
+잠시 unmount되어도 입력과 완료 결과는 유지됩니다.
 
 `main.tsx`에는 Redux Store Provider만 남습니다.
 
 ```tsx
-const store = createAppStore()
+const appStore = createAppStore()
 
-<Provider store={store}>
+<Provider store={appStore}>
   <App />
 </Provider>
 ```
 
-Provider는 Store를 React Context에 보관합니다. `ChatPage`가 렌더링되는 동안 실행되는 ViewModel
-Hook은 같은 Context에서 Store를 찾을 수 있습니다. `app/hooks.ts`는 React Redux Hook에 GovBiz
-Store 타입만 미리 적용합니다.
+`App`은 SampleItem 전용 Store를 한 번만 만들고 Redux 화면에만 Provider를 제공합니다.
+
+```tsx
+const [sampleItemStore] = useState(createSampleItemStore)
+
+<Provider store={sampleItemStore}>
+  <ReduxSampleItemPage />
+</Provider>
+```
+
+Provider는 Store를 React Context에 보관합니다. `app/hooks.ts`는 채팅 Store용 typed Hook을 제공하고,
+`reduxSampleItemStore.ts`는 SampleItem Store 전용 typed Hook을 제공합니다.
 
 ```ts
 export const useAppDispatch =
@@ -177,6 +190,12 @@ export const useAppDispatch =
 
 export const useAppSelector =
   useSelector.withTypes<RootState>()
+
+export const useSampleItemDispatch =
+  useDispatch.withTypes<SampleItemDispatch>()
+
+export const useSampleItemSelector =
+  useSelector.withTypes<SampleItemRootState>()
 ```
 
 `withTypes()`는 Store를 새로 만들거나 전역 변수를 조회하지 않습니다. 런타임 동작은 기존
@@ -196,7 +215,7 @@ function useSelector(selector) {
 ```
 
 실제 `useSelector`는 Store 변경을 구독하고, 선택한 값이 달라질 때 컴포넌트를 다시 렌더링하는 로직도
-포함합니다. 따라서 ViewModel의 다음 코드는 Provider가 제공한 같은 Store를 사용합니다.
+포함합니다. 따라서 채팅 ViewModel의 다음 코드는 바깥 Provider의 `appStore`를 사용합니다.
 
 ```ts
 const dispatch = useAppDispatch()
@@ -218,6 +237,18 @@ useAppSelector(selectChatDraft)
 ```
 
 ViewModel이 의존성을 가져오는 경로는 Store와 별개입니다.
+
+Redux SampleItem ViewModel은 가장 가까운 중첩 Provider에서 전용 Store를 찾습니다.
+
+```text
+useSampleItemDispatch()
+→ ReduxSampleItemPage를 감싼 Provider
+→ sampleItemStore.dispatch
+
+useSampleItemSelector(selectReduxSampleItemValues)
+→ sampleItemStore.getState()
+→ state.sampleItemRedux.values
+```
 
 ```text
 appContainer
@@ -399,8 +430,9 @@ ReduxSampleItemPage
           → 화면 재렌더링
 ```
 
-Redux 화면에서 값을 입력하고 Hook 화면이나 채팅으로 이동했다가 돌아오면 같은 Store의 입력과 성공
-결과가 남습니다. `Redux 상태 초기화` 버튼은 slice를 명시적으로 초기 상태로 되돌립니다. 이 구현은
+Redux 화면에서 값을 입력하고 Hook 화면이나 채팅으로 이동했다가 돌아오면 `App`이 보관한 같은
+`sampleItemStore`의 입력과 성공 결과가 남습니다. `Redux 상태 초기화` 버튼은 slice를 명시적으로
+초기 상태로 되돌립니다. 이 구현은
 단순 폼도 항상 Redux에 넣으라는 권장이 아니라, 상태 공유·화면 간 유지 요구가 생겼을 때 추가되는
 비용과 동작을 비교하기 위한 예제입니다.
 

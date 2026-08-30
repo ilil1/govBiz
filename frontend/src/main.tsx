@@ -6,11 +6,11 @@ import './index.css'
 import App from './App.tsx'
 import { createAppStore } from './app/store'
 
-const store = createAppStore()
+const appStore = createAppStore()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Provider store={store}>
+    <Provider store={appStore}>
       <App />
     </Provider>
   </StrictMode>,
