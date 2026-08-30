@@ -1,7 +1,7 @@
-package ai.govbiz.core.sampleitem.controller
+package ai.govbiz.core._sampleitem.controller
 
 import ai.govbiz.core._common.config.JsonDeserializationConfig
-import ai.govbiz.core.sampleitem.service.SampleItemPreparationService
+import ai.govbiz.core._sampleitem.service.SampleItemPreparationService
 import java.util.stream.Stream
 import org.hamcrest.Matchers.nullValue
 import org.junit.jupiter.api.Test

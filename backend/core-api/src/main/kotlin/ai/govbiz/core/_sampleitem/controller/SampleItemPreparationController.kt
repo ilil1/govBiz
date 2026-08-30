@@ -1,9 +1,9 @@
-package ai.govbiz.core.sampleitem.controller
+package ai.govbiz.core._sampleitem.controller
 
-import ai.govbiz.core.sampleitem.domain.SampleItem
-import ai.govbiz.core.sampleitem.dto.SampleItemPreparationRequest
-import ai.govbiz.core.sampleitem.dto.SampleItemPreparationResponse
-import ai.govbiz.core.sampleitem.service.SampleItemPreparationService
+import ai.govbiz.core._sampleitem.domain.SampleItem
+import ai.govbiz.core._sampleitem.dto.SampleItemPreparationRequest
+import ai.govbiz.core._sampleitem.dto.SampleItemPreparationResponse
+import ai.govbiz.core._sampleitem.service.SampleItemPreparationService
 import jakarta.validation.Valid
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.PostMapping

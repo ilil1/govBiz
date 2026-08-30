@@ -1,10 +1,10 @@
-package ai.govbiz.core.sampleitem.service
+package ai.govbiz.core._sampleitem.service
 
-import ai.govbiz.core.sampleitem.domain.ProcessingStatus
-import ai.govbiz.core.sampleitem.domain.SampleCategory
-import ai.govbiz.core.sampleitem.domain.SampleItem
-import ai.govbiz.core.sampleitem.domain.SampleItemPhase
-import ai.govbiz.core.sampleitem.domain.SampleItemPreparation
+import ai.govbiz.core._sampleitem.domain.ProcessingStatus
+import ai.govbiz.core._sampleitem.domain.SampleCategory
+import ai.govbiz.core._sampleitem.domain.SampleItem
+import ai.govbiz.core._sampleitem.domain.SampleItemPhase
+import ai.govbiz.core._sampleitem.domain.SampleItemPreparation
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame

@@ -1,6 +1,6 @@
-package ai.govbiz.core.sampleitem.dto
+package ai.govbiz.core._sampleitem.dto
 
-import ai.govbiz.core.sampleitem.domain.SampleCategory
+import ai.govbiz.core._sampleitem.domain.SampleCategory
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 

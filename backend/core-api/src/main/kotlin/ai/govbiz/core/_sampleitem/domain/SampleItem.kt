@@ -1,4 +1,4 @@
-package ai.govbiz.core.sampleitem.domain
+package ai.govbiz.core._sampleitem.domain
 
 /** 프런트엔드부터 Core API까지 흐르는 최소 예제 도메인입니다. */
 class SampleItem(

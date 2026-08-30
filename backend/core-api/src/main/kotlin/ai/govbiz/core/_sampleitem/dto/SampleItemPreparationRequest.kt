@@ -1,4 +1,4 @@
-package ai.govbiz.core.sampleitem.dto
+package ai.govbiz.core._sampleitem.dto
 
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotNull
