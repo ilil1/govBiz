@@ -6,25 +6,25 @@ import {
   preparationFailed,
   preparationStarted,
   preparationSucceeded,
-  reduxSampleItemReset,
-  selectIsReduxSampleItemReady,
-  selectReduxSampleItemButtonLabel,
-  selectReduxSampleItemErrors,
-} from './reduxSampleItemSlice'
-import { createSampleItemStore } from './reduxSampleItemStore'
+  sampleItemReset,
+  selectIsSampleItemReady,
+  selectSampleItemButtonLabel,
+  selectSampleItemErrors,
+} from './sampleItemSlice'
+import { createSampleItemStore } from './sampleItemStore'
 
-describe('reduxSampleItemSlice', () => {
+describe('sampleItemSlice', () => {
   it('validates fields and derives whether the request is ready', () => {
     const store = createSampleItemStore()
 
-    expect(Object.keys(store.getState())).toEqual(['sampleItemRedux'])
-    expect(selectIsReduxSampleItemReady(store.getState())).toBe(false)
+    expect(Object.keys(store.getState())).toEqual(['sampleItem'])
+    expect(selectIsSampleItemReady(store.getState())).toBe(false)
     store.dispatch(nameChanged('Redux 예제'))
-    expect(selectIsReduxSampleItemReady(store.getState())).toBe(true)
+    expect(selectIsSampleItemReady(store.getState())).toBe(true)
 
     store.dispatch(noteChanged('a'.repeat(501)))
-    expect(selectIsReduxSampleItemReady(store.getState())).toBe(false)
-    expect(selectReduxSampleItemErrors(store.getState()).note).toBe(
+    expect(selectIsSampleItemReady(store.getState())).toBe(false)
+    expect(selectSampleItemErrors(store.getState()).note).toBe(
       '메모는 500자 이하여야 합니다.',
     )
   })
@@ -37,21 +37,21 @@ describe('reduxSampleItemSlice', () => {
     store.dispatch(started)
     store.dispatch(ignoredStart)
 
-    expect(store.getState().sampleItemRedux.activeRequestId).toBe(started.payload.requestId)
-    expect(selectIsReduxSampleItemReady(store.getState())).toBe(false)
+    expect(store.getState().sampleItem.activeRequestId).toBe(started.payload.requestId)
+    expect(selectIsSampleItemReady(store.getState())).toBe(false)
 
     store.dispatch(preparationSucceeded({
       preparation: successfulPreparation('무시할 결과'),
       requestId: 'stale-request',
     }))
-    expect(store.getState().sampleItemRedux.preparation).toBeNull()
+    expect(store.getState().sampleItem.preparation).toBeNull()
 
     store.dispatch(preparationSucceeded({
       preparation: successfulPreparation('Redux 예제'),
       requestId: started.payload.requestId,
     }))
-    expect(store.getState().sampleItemRedux.preparation?.item.name).toBe('Redux 예제')
-    expect(selectReduxSampleItemButtonLabel(store.getState())).toBe('다시 확인')
+    expect(store.getState().sampleItem.preparation?.item.name).toBe('Redux 예제')
+    expect(selectSampleItemButtonLabel(store.getState())).toBe('다시 확인')
   })
 
   it('derives retry state and supports an explicit reset', () => {
@@ -60,15 +60,15 @@ describe('reduxSampleItemSlice', () => {
     const first = preparationStarted()
     store.dispatch(first)
     store.dispatch(preparationFailed({ requestId: first.payload.requestId }))
-    expect(selectReduxSampleItemButtonLabel(store.getState())).toBe('다시 요청')
+    expect(selectSampleItemButtonLabel(store.getState())).toBe('다시 요청')
 
     const retry = preparationStarted()
     store.dispatch(retry)
-    expect(selectReduxSampleItemButtonLabel(store.getState())).toBe('다시 요청 중…')
+    expect(selectSampleItemButtonLabel(store.getState())).toBe('다시 요청 중…')
 
-    store.dispatch(reduxSampleItemReset())
-    expect(store.getState().sampleItemRedux.values.name).toBe('')
-    expect(store.getState().sampleItemRedux.status).toBe('idle')
+    store.dispatch(sampleItemReset())
+    expect(store.getState().sampleItem.values.name).toBe('')
+    expect(store.getState().sampleItem.status).toBe('idle')
   })
 })
 

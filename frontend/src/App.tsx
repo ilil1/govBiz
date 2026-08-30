@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Provider } from 'react-redux'
 
 import { ChatPage } from './presentation/features/chat/view/ChatPage'
-import { createSampleItemStore } from './presentation/features/sample-item/state/reduxSampleItemStore'
+import { createSampleItemStore } from './presentation/features/sample-item/state/sampleItemStore'
 import { ReduxSampleItemPage } from './presentation/features/sample-item/view/ReduxSampleItemPage'
 import { SampleItemPage } from './presentation/features/sample-item/view/SampleItemPage'
 

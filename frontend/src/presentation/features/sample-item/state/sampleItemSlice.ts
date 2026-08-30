@@ -6,27 +6,27 @@ import {
   type SampleItemFormValues,
 } from '../validation/sampleItemFormSchema'
 
-type ReduxSampleItemStatus = 'idle' | 'pending' | 'succeeded' | 'failed'
+type SampleItemStatus = 'idle' | 'pending' | 'succeeded' | 'failed'
 
-type ReduxSampleItemState = {
+type SampleItemState = {
   activeRequestId: string | null
   error: string | null
   isRetrying: boolean
   preparation: SampleItemPreparation | null
-  status: ReduxSampleItemStatus
+  status: SampleItemStatus
   touched: Record<keyof SampleItemFormValues, boolean>
   values: SampleItemFormValues
 }
 
-type ReduxSampleItemStateContainer = {
-  sampleItemRedux: ReduxSampleItemState
+type SampleItemStateContainer = {
+  sampleItem: SampleItemState
 }
 
-const initialState: ReduxSampleItemState = createInitialState()
+const initialState: SampleItemState = createInitialState()
 
 /** Redux 비교 화면의 직렬화 가능한 폼·요청 상태를 소유합니다. */
-const reduxSampleItemSlice = createSlice({
-  name: 'sampleItemRedux',
+const sampleItemSlice = createSlice({
+  name: 'sampleItem',
   initialState,
   reducers: {
     categoryChanged(state, action: PayloadAction<SampleItemFormValues['category']>) {
@@ -82,7 +82,7 @@ const reduxSampleItemSlice = createSlice({
       state.preparation = action.payload.preparation
       state.status = 'succeeded'
     },
-    reduxSampleItemReset() {
+    sampleItemReset() {
       return createInitialState()
     },
   },
@@ -96,27 +96,24 @@ export const {
   preparationFailed,
   preparationStarted,
   preparationSucceeded,
-  reduxSampleItemReset,
-} = reduxSampleItemSlice.actions
+  sampleItemReset,
+} = sampleItemSlice.actions
 
-export const selectReduxSampleItemState = (state: ReduxSampleItemStateContainer) =>
-  state.sampleItemRedux
-export const selectReduxSampleItemValues = (state: ReduxSampleItemStateContainer) =>
-  state.sampleItemRedux.values
-export const selectReduxSampleItemPreparation = (state: ReduxSampleItemStateContainer) =>
-  state.sampleItemRedux.preparation
-export const selectReduxSampleItemError = (state: ReduxSampleItemStateContainer) =>
-  state.sampleItemRedux.error
-export const selectIsReduxSampleItemPreparing = (state: ReduxSampleItemStateContainer) =>
-  state.sampleItemRedux.status === 'pending'
+export const selectSampleItemState = (state: SampleItemStateContainer) => state.sampleItem
+export const selectSampleItemValues = (state: SampleItemStateContainer) => state.sampleItem.values
+export const selectSampleItemPreparation = (state: SampleItemStateContainer) =>
+  state.sampleItem.preparation
+export const selectSampleItemError = (state: SampleItemStateContainer) => state.sampleItem.error
+export const selectIsSampleItemPreparing = (state: SampleItemStateContainer) =>
+  state.sampleItem.status === 'pending'
 
-const selectReduxSampleItemValidation = createSelector(
-  [selectReduxSampleItemValues],
+const selectSampleItemValidation = createSelector(
+  [selectSampleItemValues],
   (values) => sampleItemFormSchema.safeParse(values),
 )
 
-export const selectReduxSampleItemErrors = createSelector(
-  [selectReduxSampleItemValidation, selectReduxSampleItemState],
+export const selectSampleItemErrors = createSelector(
+  [selectSampleItemValidation, selectSampleItemState],
   (validation, state) => {
     const errors: Partial<Record<keyof SampleItemFormValues, string>> = {}
     if (validation.success) return errors
@@ -130,13 +127,13 @@ export const selectReduxSampleItemErrors = createSelector(
   },
 )
 
-export const selectIsReduxSampleItemReady = createSelector(
-  [selectReduxSampleItemValidation, selectIsReduxSampleItemPreparing],
+export const selectIsSampleItemReady = createSelector(
+  [selectSampleItemValidation, selectIsSampleItemPreparing],
   (validation, isPreparing) => validation.success && !isPreparing,
 )
 
-export const selectReduxSampleItemActionMessage = createSelector(
-  [selectReduxSampleItemValidation, selectReduxSampleItemState],
+export const selectSampleItemActionMessage = createSelector(
+  [selectSampleItemValidation, selectSampleItemState],
   (validation, state) => {
     if (state.status === 'pending') return 'Redux가 Core API 요청 상태를 관리하고 있습니다.'
     if (state.status === 'failed') return '요청이 실패했습니다. 아래 버튼으로 다시 요청할 수 있습니다.'
@@ -146,8 +143,8 @@ export const selectReduxSampleItemActionMessage = createSelector(
   },
 )
 
-export const selectReduxSampleItemButtonLabel = createSelector(
-  [selectReduxSampleItemState],
+export const selectSampleItemButtonLabel = createSelector(
+  [selectSampleItemState],
   (state) => {
     if (state.status === 'pending') return state.isRetrying ? '다시 요청 중…' : '요청 중…'
     if (state.status === 'failed') return '다시 요청'
@@ -155,9 +152,9 @@ export const selectReduxSampleItemButtonLabel = createSelector(
   },
 )
 
-export default reduxSampleItemSlice.reducer
+export default sampleItemSlice.reducer
 
-function clearPreviousOutcome(state: ReduxSampleItemState) {
+function clearPreviousOutcome(state: SampleItemState) {
   state.activeRequestId = null
   state.error = null
   state.isRetrying = false
@@ -165,7 +162,7 @@ function clearPreviousOutcome(state: ReduxSampleItemState) {
   state.status = 'idle'
 }
 
-function createInitialState(): ReduxSampleItemState {
+function createInitialState(): SampleItemState {
   return {
     activeRequestId: null,
     error: null,

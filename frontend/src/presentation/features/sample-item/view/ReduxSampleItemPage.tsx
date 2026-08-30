@@ -79,7 +79,7 @@ export function ReduxSampleItemPage({
               Sample item 준비
             </h2>
             <p className={sampleItemStyles.formDescription}>
-              입력·요청 상태·결과는 <code>state.sampleItemRedux</code>가 소유합니다.
+              입력·요청 상태·결과는 <code>state.sampleItem</code>이 소유합니다.
             </p>
           </div>
           <button

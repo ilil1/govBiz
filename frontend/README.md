@@ -158,7 +158,7 @@ Provider store={appStore}
 
 현재 `App`은 ChatPage를 첫 화면으로 렌더링하고, 상태관리 비교 화면에서 React Hook 또는 Redux
 SampleItemPage로 전환합니다. 채팅 Store에는 `chat` slice만 있고, SampleItem Store에는
-`sampleItemRedux` slice만 있습니다. `App`이 `sampleItemStore`를 한 번 생성해 보관하므로 Redux 화면이
+`sampleItem` slice만 있습니다. `App`이 `sampleItemStore`를 한 번 생성해 보관하므로 Redux 화면이
 잠시 unmount되어도 입력과 완료 결과는 유지됩니다.
 
 `main.tsx`에는 Redux Store Provider만 남습니다.
@@ -182,7 +182,7 @@ const [sampleItemStore] = useState(createSampleItemStore)
 ```
 
 Provider는 Store를 React Context에 보관합니다. `app/hooks.ts`는 채팅 Store용 typed Hook을 제공하고,
-`reduxSampleItemStore.ts`는 SampleItem Store 전용 typed Hook을 제공합니다.
+`sampleItemStore.ts`는 SampleItem Store 전용 typed Hook을 제공합니다.
 
 ```ts
 export const useAppDispatch =
@@ -245,9 +245,9 @@ useSampleItemDispatch()
 → ReduxSampleItemPage를 감싼 Provider
 → sampleItemStore.dispatch
 
-useSampleItemSelector(selectReduxSampleItemValues)
+useSampleItemSelector(selectSampleItemValues)
 → sampleItemStore.getState()
-→ state.sampleItemRedux.values
+→ state.sampleItem.values
 ```
 
 ```text
@@ -338,8 +338,8 @@ Awilix의 브라우저 지원·주입 방식·수명주기 규칙은
 
 | 항목 | React Hook 버전 | Redux Toolkit 버전 |
 |---|---|---|
-| 폼 값 | React Hook Form | `state.sampleItemRedux.values` |
-| 요청 상태·결과 | ViewModel의 `useState` | `sampleItemRedux` slice |
+| 폼 값 | React Hook Form | `state.sampleItem.values` |
+| 요청 상태·결과 | ViewModel의 `useState` | `sampleItem` slice |
 | 상태 전이 | ViewModel의 setter | action·reducer·selector |
 | 화면 이동 후 | 초기화 | 입력·완료 결과 유지 |
 | 새로고침 후 | 초기화 | 초기화 |
@@ -421,11 +421,11 @@ React Hook에 둡니다. 따라서 SampleItem 방식과 Redux 방식은 둘 중 
 ```text
 ReduxSampleItemPage
   → useReduxSampleItemViewModel
-      ├→ typed selector로 state.sampleItemRedux 구독
+      ├→ typed selector로 state.sampleItem 구독
       ├→ ViewModel 안의 Thunk가 getState로 최신 상태 확인
       ├→ PrepareSampleItemUseCase.execute
       └→ started·succeeded·failed·cancelled action
-          → sampleItemRedux reducer
+          → sampleItem reducer
           → selector 재계산
           → 화면 재렌더링
 ```

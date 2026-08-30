@@ -11,7 +11,7 @@ import type { PrepareSampleItemUseCase } from '../../../../domain/usecases/Prepa
 import {
   createSampleItemStore,
   type SampleItemStore,
-} from '../state/reduxSampleItemStore'
+} from '../state/sampleItemStore'
 import { useReduxSampleItemViewModel } from './useReduxSampleItemViewModel'
 
 afterEach(cleanup)
@@ -67,7 +67,7 @@ describe('useReduxSampleItemViewModel', () => {
 
     fireEvent.change(screen.getByTestId('name-input'), { target: { value: '새 입력' } })
     expect(signal?.aborted).toBe(true)
-    expect(store.getState().sampleItemRedux.status).toBe('idle')
+    expect(store.getState().sampleItem.status).toBe('idle')
 
     await act(async () => {
       pending.resolve(successfulPreparation('이전 입력'))
@@ -94,7 +94,7 @@ describe('useReduxSampleItemViewModel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Redux 상태 초기화' }))
 
     expect(signal?.aborted).toBe(true)
-    expect(store.getState().sampleItemRedux).toMatchObject({
+    expect(store.getState().sampleItem).toMatchObject({
       activeRequestId: null,
       error: null,
       preparation: null,
@@ -106,7 +106,7 @@ describe('useReduxSampleItemViewModel', () => {
       pending.resolve(successfulPreparation('초기화할 입력'))
       await pending.promise
     })
-    expect(store.getState().sampleItemRedux.preparation).toBeNull()
+    expect(store.getState().sampleItem.preparation).toBeNull()
   })
 
   it('retries the same input with a new signal and cancels pending work on unmount', async () => {
@@ -130,12 +130,12 @@ describe('useReduxSampleItemViewModel', () => {
 
     view.unmount()
     expect(retrySignal.aborted).toBe(true)
-    expect(store.getState().sampleItemRedux.status).toBe('idle')
-    expect(store.getState().sampleItemRedux.values.name).toBe('같은 입력')
+    expect(store.getState().sampleItem.status).toBe('idle')
+    expect(store.getState().sampleItem.values.name).toBe('같은 입력')
 
     retryPending.resolve(successfulPreparation('같은 입력'))
     await retryPending.promise
-    expect(store.getState().sampleItemRedux.preparation).toBeNull()
+    expect(store.getState().sampleItem.preparation).toBeNull()
   })
 })
 
