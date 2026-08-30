@@ -1,4 +1,4 @@
-package ai.govbiz.core.health.controller
+package ai.govbiz.core._health.controller
 
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
