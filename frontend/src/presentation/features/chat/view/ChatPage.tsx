@@ -263,7 +263,6 @@ function ProgramCard({ program }: { program: SupportProgram }) {
       <p className={chatPageStyles.programOrganization}>{program.organization}</p>
       <p className={chatPageStyles.programSummary}>{program.summary}</p>
       <div className={chatPageStyles.programDetails}>
-        <span>{program.supportAmount}</span>
         <span>{program.targetDescription}</span>
       </div>
       <div className={chatPageStyles.matchedReasons}>

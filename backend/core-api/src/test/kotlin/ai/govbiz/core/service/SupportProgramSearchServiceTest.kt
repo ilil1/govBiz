@@ -32,7 +32,11 @@ class SupportProgramSearchServiceTest {
 
     @BeforeEach
     fun setUp() {
-        service = SupportProgramSearchService(client, aiSearchIntentService, CLOCK)
+        service = SupportProgramSearchService(
+            aiSearchIntentService,
+            BizInfoSupportProgramCatalog(client, CLOCK),
+            SupportProgramRanker(),
+        )
     }
 
     @Test
@@ -71,7 +75,7 @@ class SupportProgramSearchServiceTest {
 
         val accepting = service.search("", true).programs
         assertEquals(listOf("open", "rolling"), accepting.map { it.id })
-        Mockito.verify(client, Mockito.times(1)).fetchAll()
+        Mockito.verify(client, Mockito.times(2)).fetchAll()
     }
 
     @Test

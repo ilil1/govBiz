@@ -25,7 +25,7 @@ Spring Boot 기반의 GovBiz 브라우저 공개 API입니다. React의 업무 �
 
 ```text
 controller/      # HTTP 요청·응답과 application/problem+json 변환
-service/         # 검색·정렬·날짜 판정·캐시와 use case
+service/         # 검색 조정, 기업마당 정규화와 관련도 순위 계산
 domain/support/  # 지원사업 모델과 상태
 dto/support/     # 브라우저 공개 검색 DTO
 client/bizinfo/  # 공공데이터포털 전송 DTO와 HTTP Client
@@ -36,8 +36,9 @@ config/          # CORS, HTTP Client, Clock, JSON 설정
 Kotlin 기본 패키지는 `ai.govbiz.core`이고 Gradle 프로젝트명은 `govbiz-core-api`입니다.
 
 외부 HTTP 호출은 영속성 Repository가 아니므로 소스별 `client`에 둡니다. Bizinfo client는 인증키와
-공공데이터포털 전송 계약만 소유하고, Service가 HTML 제거, 공식 원문 URL 검증, 신청기간·접수상태
-계산, 검색과 정렬을 담당합니다. 데이터 저장이 필요한 기능이 생길 때 실제 Repository를 추가하세요.
+공공데이터포털 전송 계약만 소유하고, Catalog가 HTML 제거·공식 원문 URL 검증·신청기간과 접수상태
+계산을, Ranker가 검색과 정렬을 담당합니다. 데이터 저장이 필요한 기능이 생길 때 실제 Repository를
+추가하세요.
 
 ## 실행
 
@@ -68,9 +69,9 @@ Service에만 전달합니다. 네이티브 실행에서는 각 프로세스 환
 
 ## 지원사업 검색 동작
 
-Core API는 공공데이터포털 응답을 한 시간 동안 메모리에 캐시합니다. 갱신 호출이 실패해도 직전
-데이터가 24시간 이내라면 stale cache로 검색을 이어가고, 사용 가능한 cache가 없을 때만 안전한
-공개 오류를 반환합니다. 검색은 서울 시간 기준으로 접수상태를 계산합니다.
+Core API는 현재 검색 요청마다 공공데이터포털을 조회하며 메모리 캐시를 사용하지 않습니다. 외부
+호출 실패는 즉시 안전한 공개 오류로 반환합니다. 검색은 서울 시간 기준으로 접수상태를 계산하며,
+다음 단계에서는 정기 수집과 DB 검색으로 외부 호출을 사용자 요청 경로에서 제거합니다.
 
 | 상황 | HTTP | code |
 |---|---:|---|

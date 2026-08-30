@@ -6,7 +6,9 @@ import ai.govbiz.core.client.bizinfo.BizInfoClientException
 import ai.govbiz.core.client.bizinfo.BizInfoProgramPayload
 import ai.govbiz.core.service.AiSearchIntentService
 import ai.govbiz.core.service.AnalyzedSearchIntent
+import ai.govbiz.core.service.BizInfoSupportProgramCatalog
 import ai.govbiz.core.service.SupportProgramSearchService
+import ai.govbiz.core.service.SupportProgramRanker
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -49,9 +51,9 @@ class SupportProgramControllerTest {
             ZoneId.of("Asia/Seoul"),
         )
         val service = SupportProgramSearchService(
-            client,
             aiSearchIntentService,
-            clock,
+            BizInfoSupportProgramCatalog(client, clock),
+            SupportProgramRanker(),
         )
         mockMvc = MockMvcBuilders
             .standaloneSetup(SupportProgramController(service))

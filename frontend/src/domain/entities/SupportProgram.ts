@@ -8,7 +8,6 @@ export type SupportProgram = {
   categories: string[]
   regions: string[]
   targetDescription: string
-  supportAmount: string
   applicationPeriod: string
   applicationStartDate: string | null
   applicationEndDate: string | null

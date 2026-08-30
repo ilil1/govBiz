@@ -76,10 +76,10 @@ Controller → Service → Domain
 ```
 
 - **Controller**는 HTTP 요청·응답 DTO 변환과 Bean Validation을 담당합니다.
-- **Service**는 use case, 검색 의도 검증, 오류 경계와 상태 전이를 담당합니다.
+- **Service**는 검색 조정, 검색 의도 검증, 기업마당 정규화와 순위 계산을 분리해 담당합니다.
 - **Domain**은 프레임워크에 의존하지 않는 record·enum·불변식을 둡니다.
-- **client/bizinfo**는 공공데이터포털 전송 계약과 인증키를 소유합니다. Service가 외부 공고를
-  GovBiz 모델로 변환하고 검색·정렬·캐시 정책을 적용합니다.
+- **client/bizinfo**는 공공데이터포털 전송 계약과 인증키를 소유합니다. Catalog가 외부 공고를
+  GovBiz 모델로 변환하고 Ranker가 검색·정렬을 담당합니다.
 - **client/ai**는 FastAPI의 Health와 검색 의도 내부 HTTP 계약을 소비합니다.
 - **config**는 외부 서비스 주소와 HTTP Client 설정을 조립합니다.
 

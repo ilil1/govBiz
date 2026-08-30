@@ -76,7 +76,6 @@ echo 불일치나 유효하지 않은 값은 공개 502·503·504로 변환합�
       "categories": ["수출"],
       "regions": ["전국"],
       "targetDescription": "지원 대상",
-      "supportAmount": "정보 없음",
       "applicationPeriod": "예산 소진시까지",
       "applicationStartDate": null,
       "applicationEndDate": null,
@@ -96,7 +95,7 @@ echo 불일치나 유효하지 않은 값은 공개 502·503·504로 변환합�
 - `status`는 `OPEN`, `UPCOMING`, `CLOSED`, `UNKNOWN` 중 하나입니다. 날짜 근거가 불충분한 공고를
   접수 중으로 추정하지 않습니다. 다만 `예산 소진시까지`, `상시`, `모집 완료시`처럼 원문이
   명시적으로 계속 접수한다고 밝힌 경우는 `OPEN`으로 분류합니다.
-- `supportAmount`처럼 원본에 독립된 값이 없는 필드는 추정하지 않고 `정보 없음`으로 제공합니다.
+- 원본이 제공하지 않는 지원금액 필드는 API 응답에 만들지 않습니다.
 - `sourceUrl`은 사용자가 사실을 확인할 수 있는 공식 원문 주소입니다.
 
 ## 비밀정보와 오류 처리

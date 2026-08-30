@@ -10,7 +10,6 @@ data class SupportProgram(
     val categories: List<String>,
     val regions: List<String>,
     val targetDescription: String,
-    val supportAmount: String,
     val applicationPeriod: String,
     val applicationStartDate: LocalDate?,
     val applicationEndDate: LocalDate?,

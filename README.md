@@ -74,9 +74,9 @@ Repository와 UseCase의 생성·연결·앱 단위 singleton 수명주기는 Aw
 ViewModel은 Repository가 아니라 필요한 UseCase만 resolve합니다. DI 등록은 `frontend/src/app/di`에서
 Repository, UseCase와 외부 서비스 역할별 모듈로 분리해 관리합니다.
 
-현재는 대화와 검색 결과를 브라우저 메모리에 보관합니다. Core API는 필요할 때 외부 공고를 조회하고
-한 시간 동안 메모리에 캐시하며, 갱신 실패 시 최대 24시간 이내의 직전 데이터로 검색을 이어갑니다.
-운영 전에는 메시지 보관 한도·서버 저장과 호출량·영속 캐시 정책을 추가합니다.
+현재는 대화와 검색 결과를 브라우저 메모리에 보관합니다. Core API는 검색 요청마다 외부 공고를
+조회하며 별도 메모리 캐시를 두지 않습니다. 다음 단계에서는 정기 수집 작업이 공고를 DB에 저장하고
+사용자 검색은 DB만 조회하도록 전환합니다.
 현재 구현 평가와 구체적인 확장 원칙은
 [Frontend 상태 관리 설계](frontend/README.md#상태-관리-설계와-확장-원칙)와
 [Provider와 Service Locator에서 ViewModel까지 전달](frontend/README.md#redux-provider와-service-locator에서-viewmodel까지-전달)을
@@ -190,7 +190,7 @@ govBiz/
 ## 다음 단계
 
 1. 대표 검색 질문과 Top-5 관련성 기준으로 현재 검색 품질을 측정합니다.
-2. 외부 API 호출량·응답 시간에 따라 서버 캐시 또는 주기 수집 저장소를 도입합니다.
+2. 외부 공고를 정기 수집해 DB에 저장하고 사용자 검색 경로에서 외부 API 호출을 제거합니다.
 3. 데이터가 부족하다는 근거가 생기면 K-Startup 등 두 번째 공식 소스를 추가합니다.
 4. 이후 기업정보 기반 추천과 GovClause의 PDF·조건 판정을 결합합니다.
 
