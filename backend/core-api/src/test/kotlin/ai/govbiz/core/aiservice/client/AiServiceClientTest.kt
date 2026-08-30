@@ -1,7 +1,7 @@
 package ai.govbiz.core.aiservice.client
 
-import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramCandidateRequest
-import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingRequest
+import ai.govbiz.core.supportprogram.dto.ai.AiSupportProgramCandidateRequest
+import ai.govbiz.core.supportprogram.dto.ai.AiSupportProgramRankingRequest
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.http.HttpConnectTimeoutException

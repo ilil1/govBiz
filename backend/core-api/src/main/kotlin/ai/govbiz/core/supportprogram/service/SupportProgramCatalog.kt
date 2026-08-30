@@ -2,7 +2,7 @@ package ai.govbiz.core.supportprogram.service
 
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClient
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClientException
-import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoProgramPayload
+import ai.govbiz.core.supportprogram.dto.bizinfo.BizInfoProgramPayload
 import ai.govbiz.core.supportprogram.domain.SupportProgram
 import ai.govbiz.core.supportprogram.domain.SupportProgramStatus
 import org.springframework.beans.factory.annotation.Qualifier

@@ -1,6 +1,7 @@
 package ai.govbiz.core.supportprogram.client.bizinfo
 
 import ai.govbiz.core._common.http.hasTimeoutCause
+import ai.govbiz.core.supportprogram.dto.bizinfo.BizInfoProgramPayload
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component

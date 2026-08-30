@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.client.ai
+package ai.govbiz.core.supportprogram.dto.ai
 
 /** nullable 필드로 누락과 유효한 0점을 구분하는 내부 AI 응답 계약. */
 data class AiSupportProgramRankingPayload(

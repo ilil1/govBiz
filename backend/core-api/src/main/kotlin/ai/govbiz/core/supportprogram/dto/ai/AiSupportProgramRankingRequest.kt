@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.client.ai
+package ai.govbiz.core.supportprogram.dto.ai
 
 data class AiSupportProgramCandidateRequest(
     val id: String,
@@ -18,10 +18,3 @@ data class AiSupportProgramRankingRequest(
     val resultLimit: Int,
     val candidates: List<AiSupportProgramCandidateRequest>,
 )
-
-
-fun interface AiSupportProgramRankingClient {
-    fun rankSupportPrograms(
-        request: AiSupportProgramRankingRequest,
-    ): AiSupportProgramRankingPayload
-}

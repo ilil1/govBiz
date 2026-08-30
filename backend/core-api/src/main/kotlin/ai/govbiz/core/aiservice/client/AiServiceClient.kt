@@ -1,8 +1,8 @@
 package ai.govbiz.core.aiservice.client
 
 import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingClient
-import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingPayload
-import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingRequest
+import ai.govbiz.core.supportprogram.dto.ai.AiSupportProgramRankingPayload
+import ai.govbiz.core.supportprogram.dto.ai.AiSupportProgramRankingRequest
 import ai.govbiz.core._common.http.hasTimeoutCause
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
