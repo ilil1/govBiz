@@ -5,13 +5,10 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { Provider } from 'react-redux'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { createAppStore, type AppStore } from '../../../../app/store'
 import type { SampleItem } from '../../../../domain/entities/SampleItem'
 import type { SampleItemPreparation } from '../../../../domain/entities/SampleItemPreparation'
 import type { PrepareSampleItemUseCase } from '../../../../domain/usecases/PrepareSampleItemUseCase'
-import {
-  createSampleItemStore,
-  type SampleItemStore,
-} from '../state/sampleItemStore'
 import { useReduxSampleItemViewModel } from './useReduxSampleItemViewModel'
 
 afterEach(cleanup)
@@ -20,7 +17,7 @@ describe('useReduxSampleItemViewModel', () => {
   it('normalizes input, blocks duplicate submits, and preserves success in the same Store', async () => {
     const pending = deferred<SampleItemPreparation>()
     const execute = vi.fn((_item: SampleItem, _signal?: AbortSignal) => pending.promise)
-    const store = createSampleItemStore()
+    const store = createAppStore()
     const view = renderHarness(store, { execute })
 
     fireEvent.change(screen.getByTestId('name-input'), { target: { value: '  Redux 예제  ' } })
@@ -58,7 +55,7 @@ describe('useReduxSampleItemViewModel', () => {
       signal = requestSignal
       return pending.promise
     })
-    const store = createSampleItemStore()
+    const store = createAppStore()
     renderHarness(store, { execute })
 
     fireEvent.change(screen.getByTestId('name-input'), { target: { value: '이전 입력' } })
@@ -83,7 +80,7 @@ describe('useReduxSampleItemViewModel', () => {
       signal = requestSignal
       return pending.promise
     })
-    const store = createSampleItemStore()
+    const store = createAppStore()
     renderHarness(store, { execute })
 
     fireEvent.change(screen.getByTestId('name-input'), { target: { value: '초기화할 입력' } })
@@ -114,7 +111,7 @@ describe('useReduxSampleItemViewModel', () => {
     const execute = vi.fn()
       .mockRejectedValueOnce(new Error('private detail'))
       .mockImplementationOnce((_item: SampleItem, _signal?: AbortSignal) => retryPending.promise)
-    const store = createSampleItemStore()
+    const store = createAppStore()
     const view = renderHarness(store, { execute })
 
     fireEvent.change(screen.getByTestId('name-input'), { target: { value: '같은 입력' } })
@@ -181,7 +178,7 @@ function TestHarness({ useCase }: { useCase: Pick<PrepareSampleItemUseCase, 'exe
 }
 
 function renderHarness(
-  store: SampleItemStore,
+  store: AppStore,
   useCase: Pick<PrepareSampleItemUseCase, 'execute'>,
 ) {
   return render(

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { createAppStore } from '../../../../app/store'
 import {
   nameChanged,
   noteChanged,
@@ -11,13 +12,12 @@ import {
   selectSampleItemButtonLabel,
   selectSampleItemErrors,
 } from './sampleItemSlice'
-import { createSampleItemStore } from './sampleItemStore'
 
 describe('sampleItemSlice', () => {
   it('validates fields and derives whether the request is ready', () => {
-    const store = createSampleItemStore()
+    const store = createAppStore()
 
-    expect(Object.keys(store.getState())).toEqual(['sampleItem'])
+    expect(Object.keys(store.getState())).toEqual(['chat', 'sampleItem'])
     expect(selectIsSampleItemReady(store.getState())).toBe(false)
     store.dispatch(nameChanged('Redux 예제'))
     expect(selectIsSampleItemReady(store.getState())).toBe(true)
@@ -30,7 +30,7 @@ describe('sampleItemSlice', () => {
   })
 
   it('accepts only the active request result and keeps actions serializable', () => {
-    const store = createSampleItemStore()
+    const store = createAppStore()
     store.dispatch(nameChanged('Redux 예제'))
     const started = preparationStarted()
     const ignoredStart = preparationStarted()
@@ -55,7 +55,7 @@ describe('sampleItemSlice', () => {
   })
 
   it('derives retry state and supports an explicit reset', () => {
-    const store = createSampleItemStore()
+    const store = createAppStore()
     store.dispatch(nameChanged('재시도'))
     const first = preparationStarted()
     store.dispatch(first)

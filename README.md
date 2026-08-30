@@ -102,9 +102,9 @@ Redux 화면 ──────┘
 
 `name`은 필수이고 `category`, `note`는 선택입니다. 성공 응답은 처리 시작 전의
 `READY_FOR_PROCESSING` / `NOT_STARTED` 상태만 반환합니다. 즉 실제 비동기 작업이나 영속성은
-의도적으로 포함하지 않습니다. Hook 버전은 화면 이동 시 상태가 초기화되고, Redux 버전은 같은
-SampleItem 전용 `Provider` 아래의 Store를 `App`이 보관하므로 화면을 이동해도 입력과 결과가
-유지됩니다. 새로고침하면 둘 다 초기화되며 API,
+의도적으로 포함하지 않습니다. Hook 버전은 화면 이동 시 상태가 초기화되고, Redux 버전은 최상위
+`Provider`의 `appStore` 안에 있는 `sampleItem` Slice가 상태를 보관하므로 화면을 이동해도 입력과
+결과가 유지됩니다. 새로고침하면 둘 다 초기화되며 API,
 UseCase와 Repository는 완전히 동일합니다. 자세한 비교는
 [SampleItem 상태 관리 비교](frontend/README.md#sampleitem-react-hook과-redux-비교)를 참고하세요.
 
