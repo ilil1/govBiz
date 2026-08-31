@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.dto.api
+package ai.govbiz.core.supportprogram.dto
 
 import ai.govbiz.core.supportprogram.service.SupportProgramSearchResult
 

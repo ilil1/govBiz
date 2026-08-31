@@ -1,6 +1,5 @@
 package ai.govbiz.core.supportprogram.client.bizinfo
 
-import ai.govbiz.core.supportprogram.dto.bizinfo.BizInfoProgramPayload
 import tools.jackson.databind.JsonNode
 
 /** 기업마당 JSON의 허용된 페이지 구조만 내부 전송 모델로 변환합니다. */

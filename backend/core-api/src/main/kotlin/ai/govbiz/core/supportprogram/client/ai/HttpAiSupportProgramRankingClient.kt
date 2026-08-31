@@ -2,8 +2,6 @@ package ai.govbiz.core.supportprogram.client.ai
 
 import ai.govbiz.core._common.exception.AiServiceCallException
 import ai.govbiz.core._common.http.executeAiServiceCall
-import ai.govbiz.core.supportprogram.dto.ai.AiSupportProgramRankingPayload
-import ai.govbiz.core.supportprogram.dto.ai.AiSupportProgramRankingRequest
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType

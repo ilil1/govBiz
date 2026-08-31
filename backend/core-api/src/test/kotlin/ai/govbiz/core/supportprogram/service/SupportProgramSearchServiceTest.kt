@@ -3,7 +3,7 @@ package ai.govbiz.core.supportprogram.service
 import ai.govbiz.core.supportprogram.service.BizInfoSupportProgramCatalog
 import ai.govbiz.core.supportprogram.service.CatalogSupportProgram
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClient
-import ai.govbiz.core.supportprogram.dto.bizinfo.BizInfoProgramPayload
+import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoProgramPayload
 import ai.govbiz.core.supportprogram.domain.SupportProgram
 import ai.govbiz.core.supportprogram.domain.SupportProgramStatus
 import org.junit.jupiter.api.Assertions.assertEquals
