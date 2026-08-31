@@ -50,6 +50,28 @@ _common/
 
 Kotlin 기본 패키지는 `ai.govbiz.core`이고 Gradle 프로젝트명은 `govbiz-core-api`입니다.
 
+### 파일 배치 규칙
+
+전송 객체와 모델은 이름에 `Request`, `Response`, `Payload`가 들어가는지만 보고 한 DTO 폴더에
+모으지 않습니다. 그 객체를 만들고 해석하며 책임지는 코드 가까이에 둡니다.
+
+```text
+공개 HTTP Request/Response → controller
+외부 API Request/Payload  → client
+검증된 실행 Result        → service
+업무 모델                 → domain
+```
+
+| 구분 | 배치 위치 | 현재 예시 |
+|---|---|---|
+| 브라우저가 Core API에 보내거나 받는 공개 HTTP 계약 | 해당 기능의 `controller` | `SampleItemPreparationRequest`, `SupportProgramSearchResponse` |
+| Core가 AI Service·기업마당처럼 다른 시스템과 주고받는 계약 | 해당 외부 시스템의 `client` | `AiSupportProgramRankingRequest`, `BizInfoProgramPayload` |
+| 외부 응답 검증과 업무 처리를 마친 애플리케이션 실행 결과 | 해당 기능의 `service` | `AiServiceHealthResult`, `SupportProgramSearchResult` |
+| 프레임워크·HTTP 형식과 무관한 업무 개념과 불변식 | 해당 기능의 `domain` | `SampleItem`, `SupportProgram`, `SupportProgramStatus` |
+
+두 곳에서 같은 필드가 보인다는 이유만으로 계약을 합치거나 `_common`으로 옮기지 않습니다. 실제로
+둘 이상의 기능이 같은 의미와 변경 이유를 공유할 때만 공통화를 검토합니다.
+
 지원사업 검색 관련 코드는 `supportprogram` 기능 디렉터리에서 함께 관리합니다. 기능 안의 `controller → service → domain` 흐름과 `client/ai`, `client/bizinfo` 외부 연결을 한곳에서 따라갈 수 있습니다. 모든 전송 객체를 한 DTO 폴더에 모으지 않습니다. 브라우저 공개 응답은 실제 사용자인 `supportprogram/controller`, AI Service 요청·응답은 `supportprogram/client/ai`, 기업마당 응답은 `supportprogram/client/bizinfo`, 검증된 검색 결과는 `supportprogram/service`가 각각 소유합니다. BizInfo Client는 인증키·pagination·공공데이터포털 HTTP 전송을 담당하고, `BizInfoPageDecoder`가 허용된 JSON 구조만 DTO로 변환합니다. Service는 HTML 제거·공식 원문 URL 검증·신청기간과 접수상태 계산을 담당합니다. AI 점수화 Service는 후보를 FastAPI에 보내고 ID·점수 합계·내림차순을 재검증합니다. Kotlin 단어 사전과 고정 관련도 가중치는 사용하지 않습니다.
 
 계층 연결 예제인 SampleItem도 `_sampleitem/controller → service → domain`으로 독립되어 있으며 공개 요청·응답 형식은 실제 사용자인 `_sampleitem/controller`가 소유합니다.
