@@ -4,7 +4,6 @@ import ai.govbiz.core._sampleitem.domain.ProcessingStatus
 import ai.govbiz.core._sampleitem.domain.SampleCategory
 import ai.govbiz.core._sampleitem.domain.SampleItem
 import ai.govbiz.core._sampleitem.domain.SampleItemPhase
-import ai.govbiz.core._sampleitem.domain.SampleItemPreparation
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
@@ -17,7 +16,7 @@ class SampleItemPreparationServiceTest {
 
     @Test
     fun createsAReadySnapshotWithoutStartingProcessing() {
-        val item = SampleItem(
+        val item = SampleItem.create(
             " Example item ",
             SampleCategory.EXTENDED,
             " A reusable example ",
@@ -33,22 +32,16 @@ class SampleItemPreparationServiceTest {
 
     @Test
     fun preservesNonBreakingSpaceWhileStrippingJavaWhitespace() {
-        val item = SampleItem("\u00a0", null, "\u2003")
+        val item = SampleItem.create("\u00a0", null, "\u2003")
 
         assertEquals("\u00a0", item.name)
         assertNull(item.note)
     }
 
     @Test
-    fun rejectsStatesThatPretendProcessingHasAlreadyStarted() {
-        val item = SampleItem("Example", null, null)
-
+    fun rejectsBlankNamesAtTheDomainBoundary() {
         assertThrows(IllegalArgumentException::class.java) {
-            SampleItemPreparation(
-                SampleItemPhase.READY_FOR_PROCESSING,
-                item,
-                null,
-            )
+            SampleItem.create(" ", null, null)
         }
     }
 }

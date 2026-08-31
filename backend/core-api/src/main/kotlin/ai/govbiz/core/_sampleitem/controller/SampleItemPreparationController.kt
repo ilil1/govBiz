@@ -28,7 +28,7 @@ class SampleItemPreparationController(
     ): SampleItemPreparationResponse {
         val requestedItem = requireNotNull(request.item)
         val preparation = preparationService.prepare(
-            SampleItem(requestedItem.name, requestedItem.category, requestedItem.note),
+            SampleItem.create(requestedItem.name, requestedItem.category, requestedItem.note),
         )
         val item = preparation.item
         return SampleItemPreparationResponse(
