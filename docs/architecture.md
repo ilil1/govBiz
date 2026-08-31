@@ -84,17 +84,17 @@ _health_ai_service/controller
     → FastAPI Health API
 ```
 
-- **supportprogram/controller**는 HTTP 요청을 받고 응답 DTO로 변환합니다.
+- **supportprogram/controller**는 HTTP 요청과 브라우저 공개 응답 계약을 소유합니다.
 - **supportprogram/service**는 검색 흐름, 공고 정규화와 AI 점수화 결과 검증을 담당합니다.
 - **supportprogram/domain**은 프레임워크에 의존하지 않는 지원사업 모델과 상태를 둡니다.
-- **supportprogram/dto**는 브라우저에 공개하는 응답만 관리합니다.
 - **supportprogram/client/bizinfo**는 기업마당 HTTP·응답 전송 객체·pagination·오류 변환을 담당하고, 전용 decoder가 허용된 JSON 구조만 변환합니다.
 - **supportprogram/client/ai**는 AI 점수화 Client 인터페이스·HTTP 구현·내부 요청과 응답 계약을 관리합니다.
 - **_common/ai_config**는 두 AI HTTP 클라이언트가 공유하는 FastAPI 주소·timeout·`RestClient` 설정만 관리합니다.
 - **_common/http**의 `executeHttpCall`은 AI·기업마당 Client가 공유하는 Spring 연결 실패·timeout·응답 해석 실패 분류를 담당합니다. 각 외부 시스템은 이를 자기 예외 계약으로 변환하고, HTTP 상태의 업무상 의미는 해당 Client에 남깁니다. **_common/exception**은 공통 AI 호출 예외와 공개 ProblemDetail 변환을 관리합니다.
-- **_health_ai_service**는 AI Service 상태 조회의 Controller·Service·전용 HTTP Client와 Health 계약을 독립적으로 관리합니다.
+- **_health/controller**, **_health_ai_service/controller**, **_sampleitem/controller**는 각각 자기 공개 요청·응답 계약을 함께 소유합니다.
+- **_health_ai_service**는 AI Service 상태 조회의 Controller·Service·전용 HTTP Client를 독립적으로 관리합니다.
 
-각 기능은 자기 `controller`, `service`, `domain`, `dto`, `client`, `config`를 소유합니다. 전송 객체도 중앙 DTO 폴더에 몰아넣지 않고 실제 계약 소유자 가까이에 둡니다. 두 AI 기능이 공유하는 연결 설정은 `_common/ai_config`, AI·기업마당이 공유하는 Spring HTTP 실패 분류는 `_common/http`, AI 예외 분류와 공개 오류 변환은 `_common/exception`에 둡니다. Health·점수화·기업마당 응답 규칙은 각 기능에 남깁니다. 여러 기능에서 실제로 함께 쓰는 JSON·CORS·RestClient 생성 지원은 `_common/config`에 둡니다. `_common`의 밑줄은 IDE에서 공통 코드를 기능보다 위에 표시하기 위한 프로젝트 규칙입니다. 데이터베이스를 도입할 때도 해당 기능 아래에 필요한 저장 계층을 추가합니다.
+각 기능은 자기 `controller`, `service`, `domain`, `client`, `config`를 소유합니다. 공개 요청·응답은 Controller, 외부 요청·응답은 해당 Client, 검증된 실행 결과는 Service 가까이에 두며 중앙 DTO 폴더를 만들지 않습니다. 두 AI 기능이 공유하는 연결 설정은 `_common/ai_config`, AI·기업마당이 공유하는 Spring HTTP 실패 분류는 `_common/http`, AI 예외 분류와 공개 오류 변환은 `_common/exception`에 둡니다. Health·점수화·기업마당 응답 규칙은 각 기능에 남깁니다. 여러 기능에서 실제로 함께 쓰는 JSON·CORS·RestClient 생성 지원은 `_common/config`에 둡니다. `_common`의 밑줄은 IDE에서 공통 코드를 기능보다 위에 표시하기 위한 프로젝트 규칙입니다. 데이터베이스를 도입할 때도 해당 기능 아래에 필요한 저장 계층을 추가합니다.
 
 ## LLM 추천 점수화와 장애 격리
 

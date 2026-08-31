@@ -1,8 +1,6 @@
 package ai.govbiz.core._sampleitem.controller
 
 import ai.govbiz.core._sampleitem.domain.SampleItem
-import ai.govbiz.core._sampleitem.dto.SampleItemPreparationRequest
-import ai.govbiz.core._sampleitem.dto.SampleItemPreparationResponse
 import ai.govbiz.core._sampleitem.service.SampleItemPreparationService
 import jakarta.validation.Valid
 import org.springframework.http.MediaType

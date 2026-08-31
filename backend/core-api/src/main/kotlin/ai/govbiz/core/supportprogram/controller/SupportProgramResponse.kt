@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.dto
+package ai.govbiz.core.supportprogram.controller
 
 import ai.govbiz.core.supportprogram.domain.SupportProgram
 import ai.govbiz.core.supportprogram.domain.SupportProgramStatus

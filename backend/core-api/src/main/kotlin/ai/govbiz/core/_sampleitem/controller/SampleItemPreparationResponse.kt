@@ -1,4 +1,4 @@
-package ai.govbiz.core._sampleitem.dto
+package ai.govbiz.core._sampleitem.controller
 
 import ai.govbiz.core._sampleitem.domain.ProcessingStatus
 import ai.govbiz.core._sampleitem.domain.SampleCategory

@@ -1,6 +1,5 @@
 package ai.govbiz.core.supportprogram.controller
 
-import ai.govbiz.core.supportprogram.dto.SupportProgramSearchResponse
 import ai.govbiz.core.supportprogram.service.SupportProgramSearchService
 import jakarta.validation.constraints.Size
 import org.springframework.web.bind.annotation.GetMapping
