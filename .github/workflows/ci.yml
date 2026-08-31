@@ -119,6 +119,7 @@ jobs:
     env:
       VERIFY_COMPOSE_PROJECT_NAME: govbiz-ci
       VERIFY_COMPOSE_KEEP_RUNNING: "true"
+      OPENAI_API_KEY: compose-verification-key-never-sent
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
