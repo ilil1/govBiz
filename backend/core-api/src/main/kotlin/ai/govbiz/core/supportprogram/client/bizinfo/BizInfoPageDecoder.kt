@@ -44,11 +44,11 @@ internal object BizInfoPageDecoder {
     }
 
     private fun readItems(
-        itemsNode: JsonNode?,
+        itemsNode: JsonNode,
         totalCount: Int,
         maxItems: Int,
     ): List<BizInfoProgramPayload> {
-        if (itemsNode == null || itemsNode.isMissingNode || itemsNode.isNull) {
+        if (itemsNode.isMissingNode || itemsNode.isNull) {
             return emptyItemsOrThrow(totalCount)
         }
 
@@ -69,13 +69,10 @@ internal object BizInfoPageDecoder {
         if (items.isEmpty() && totalCount > 0) {
             throw invalidResponse("BizInfo API omitted items for a non-empty result")
         }
-        if (items.isNotEmpty() && totalCount == 0) {
-            throw invalidResponse("BizInfo API returned items for an empty result")
-        }
         if (items.size > totalCount) {
             throw invalidResponse("BizInfo API returned more items than totalCount")
         }
-        return java.util.List.copyOf(items)
+        return items.toList()
     }
 
     private fun decodeArray(
@@ -87,15 +84,14 @@ internal object BizInfoPageDecoder {
             if (items.size >= maxItems) {
                 throw invalidResponse("BizInfo API page exceeded the safe item limit")
             }
-            items.add(toPayload(node))
+            items += toPayload(node)
         }
         return items
     }
 
-    private fun emptyItemsOrThrow(totalCount: Int): List<BizInfoProgramPayload> {
-        if (totalCount == 0) return emptyList()
-        throw invalidResponse("BizInfo API omitted items for a non-empty result")
-    }
+    private fun emptyItemsOrThrow(totalCount: Int): List<BizInfoProgramPayload> =
+        if (totalCount == 0) emptyList()
+        else throw invalidResponse("BizInfo API omitted items for a non-empty result")
 
     private fun toPayload(node: JsonNode): BizInfoProgramPayload {
         if (!node.isObject) {
