@@ -72,6 +72,39 @@ Kotlin 기본 패키지는 `ai.govbiz.core`이고 Gradle 프로젝트명은 `gov
 두 곳에서 같은 필드가 보인다는 이유만으로 계약을 합치거나 `_common`으로 옮기지 않습니다. 실제로
 둘 이상의 기능이 같은 의미와 변경 이유를 공유할 때만 공통화를 검토합니다.
 
+### AI Health의 Payload·Result·Response를 분리하는 이유
+
+AI Service Health 흐름에는 현재 `status`, `service`라는 동일한 필드를 가진 객체가 세 개 있습니다.
+필드 모양이 같더라도 각 객체가 소유하는 경계와 신뢰 수준이 다르기 때문에 의도적으로 분리합니다.
+
+```text
+AI Service의 신뢰하지 않는 JSON
+  → AiServiceHealthPayload       # client가 역직렬화
+  → AiServiceHealthService 검증  # status·service exact 확인
+  → AiServiceHealthResult        # 검증된 내부 실행 결과
+  → AiServiceHealthController    # 공개 계약으로 변환
+  → AiServiceHealthResponse      # 브라우저에 반환하는 JSON
+```
+
+| 타입 | 소유 위치 | 의미와 변경 이유 |
+|---|---|---|
+| `AiServiceHealthPayload` | `_health_ai_service/client` | 외부 AI Service JSON을 그대로 받는 신뢰하지 않는 입력입니다. 누락·`null`·잘못된 값을 검증할 수 있도록 필드가 nullable입니다. |
+| `AiServiceHealthResult` | `_health_ai_service/service` | Client 응답이 `status=up`, `service=govbiz-ai-service` 계약을 통과한 뒤 만들어지는 non-null 내부 결과입니다. 향후 확인 시각이나 지연시간 같은 내부 정보가 추가될 수 있습니다. |
+| `AiServiceHealthResponse` | `_health_ai_service/controller` | Core API가 브라우저에 보장하는 공개 HTTP 응답입니다. 내부 결과가 확장되어도 공개할 필드만 선택하여 API 형식을 유지합니다. |
+
+현재 `Result`와 `Response`의 필드는 같아서 Controller 변환이 단순합니다.
+
+```kotlin
+val result = aiServiceHealthService.getHealth()
+return AiServiceHealthResponse(result.status, result.service)
+```
+
+하지만 나중에 내부 결과에 `latencyMs`, `checkedAt`을 추가하더라도 공개 응답에 자동으로 노출되지
+않습니다. 반대로 공개 JSON의 이름이나 구성을 바꾸더라도 Service 결과를 함께 바꿀 필요가 없습니다.
+또한 Service가 Controller의 응답 타입에 의존하지 않으므로 의존 방향도 `controller → service → client`로
+유지됩니다. 따라서 이 분리는 코드 중복을 위한 것이 아니라 외부 입력, 검증된 내부 결과, 공개 응답의
+서로 다른 계약을 독립적으로 변경하기 위한 경계입니다.
+
 지원사업 검색 관련 코드는 `supportprogram` 기능 디렉터리에서 함께 관리합니다. 기능 안의 `controller → service → domain` 흐름과 `client/ai`, `client/bizinfo` 외부 연결을 한곳에서 따라갈 수 있습니다. 모든 전송 객체를 한 DTO 폴더에 모으지 않습니다. 브라우저 공개 응답은 실제 사용자인 `supportprogram/controller`, AI Service 요청·응답은 `supportprogram/client/ai`, 기업마당 응답은 `supportprogram/client/bizinfo`, 검증된 검색 결과는 `supportprogram/service`가 각각 소유합니다. BizInfo Client는 인증키·pagination·공공데이터포털 HTTP 전송을 담당하고, `BizInfoPageDecoder`가 허용된 JSON 구조만 DTO로 변환합니다. Service는 HTML 제거·공식 원문 URL 검증·신청기간과 접수상태 계산을 담당합니다. AI 점수화 Service는 후보를 FastAPI에 보내고 ID·점수 합계·내림차순을 재검증합니다. Kotlin 단어 사전과 고정 관련도 가중치는 사용하지 않습니다.
 
 계층 연결 예제인 SampleItem도 `_sampleitem/controller → service → domain`으로 독립되어 있으며 공개 요청·응답 형식은 실제 사용자인 `_sampleitem/controller`가 소유합니다.
