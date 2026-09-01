@@ -29,11 +29,10 @@ supportprogram/
 │   └── dto/                # 지원사업 공개 요청·응답 계약
 ├── service/
 │   ├── search/             # 검색 흐름과 검색 오류 변환
-│   ├── catalog/            # 기업마당 공고 정규화·카탈로그
+│   ├── catalog/            # 기업마당 공고 정규화·카탈로그·시간 기준
 │   ├── ranking/            # AI 점수화와 결과 검증
 │   └── dto/                # 검증된 검색·카탈로그 실행 결과
 ├── domain/                 # 지원사업 모델과 상태
-├── config/                 # 지원사업 시간 기준 설정
 └── client/
     ├── ai/                 # AI 점수화 Client
     │   └── dto/            # AI 내부 요청·응답 계약
@@ -119,7 +118,7 @@ return AiServiceHealthResponse(result.status, result.service)
 유지됩니다. 따라서 이 분리는 코드 중복을 위한 것이 아니라 외부 입력, 검증된 내부 결과, 공개 응답의
 서로 다른 계약을 독립적으로 변경하기 위한 경계입니다.
 
-지원사업 검색 관련 코드는 `supportprogram` 기능 디렉터리에서 함께 관리합니다. 검색 조정은 `service/search`, 기업마당 공고 정규화는 `service/catalog`, AI 점수화 검증은 `service/ranking`이 각각 담당합니다. 모든 전송 객체를 프로젝트 전체의 한 DTO 폴더에 모으지 않습니다. 브라우저 공개 응답은 `supportprogram/controller/dto`, AI Service 요청·응답은 `supportprogram/client/ai/dto`, 기업마당 응답은 `supportprogram/client/bizinfo/dto`, 검증된 검색 결과는 `supportprogram/service/dto`가 각각 소유합니다. BizInfo Client는 인증키·pagination·공공데이터포털 HTTP 전송을 담당하고, `BizInfoPageDecoder`가 허용된 JSON 구조만 DTO로 변환합니다. 그 Client의 설정과 속성은 `client/bizinfo/config`에서 함께 관리합니다. 지원사업의 서울 시간 기준은 `supportprogram/config`가 제공합니다. Kotlin 단어 사전과 고정 관련도 가중치는 사용하지 않습니다.
+지원사업 검색 관련 코드는 `supportprogram` 기능 디렉터리에서 함께 관리합니다. 검색 조정은 `service/search`, 기업마당 공고 정규화와 서울 시간 기준은 `service/catalog`, AI 점수화 검증은 `service/ranking`이 각각 담당합니다. 모든 전송 객체를 프로젝트 전체의 한 DTO 폴더에 모으지 않습니다. 브라우저 공개 응답은 `supportprogram/controller/dto`, AI Service 요청·응답은 `supportprogram/client/ai/dto`, 기업마당 응답은 `supportprogram/client/bizinfo/dto`, 검증된 검색 결과는 `supportprogram/service/dto`가 각각 소유합니다. BizInfo Client는 인증키·pagination·공공데이터포털 HTTP 전송을 담당하고, `BizInfoPageDecoder`가 허용된 JSON 구조만 DTO로 변환합니다. 그 Client의 설정과 속성은 `client/bizinfo/config`에서 함께 관리합니다. Kotlin 단어 사전과 고정 관련도 가중치는 사용하지 않습니다.
 
 계층 연결 예제인 SampleItem도 `_sampleitem/controller → service → domain`으로 독립되어 있으며 공개 요청·응답 형식은 `_sampleitem/controller/dto`가 소유합니다.
 

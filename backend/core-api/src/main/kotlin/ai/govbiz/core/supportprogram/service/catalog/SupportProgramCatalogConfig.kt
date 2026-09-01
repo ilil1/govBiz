@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.config
+package ai.govbiz.core.supportprogram.service.catalog
 
 import java.time.Clock
 import java.time.ZoneId
@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration(proxyBeanMethods = false)
-class SupportProgramConfig {
+class SupportProgramCatalogConfig {
 
     @Bean
     fun seoulClock(): Clock = Clock.system(SEOUL_ZONE)
