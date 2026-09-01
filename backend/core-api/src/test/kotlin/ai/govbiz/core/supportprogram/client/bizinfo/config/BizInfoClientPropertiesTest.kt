@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.client.bizinfo
+package ai.govbiz.core.supportprogram.client.bizinfo.config
 
 import java.net.URI
 import java.time.Duration

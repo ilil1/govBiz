@@ -1,5 +1,6 @@
 package ai.govbiz.core.supportprogram.client.bizinfo
 
+import ai.govbiz.core.supportprogram.client.bizinfo.config.BizInfoClientProperties
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.URI

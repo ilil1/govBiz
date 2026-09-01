@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.service
+package ai.govbiz.core.supportprogram.service.catalog
 
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClient
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClientException
@@ -6,6 +6,7 @@ import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoProgramPayload
 import ai.govbiz.core.supportprogram.domain.SupportProgram
 import ai.govbiz.core.supportprogram.domain.SupportProgramStatus
 import ai.govbiz.core.supportprogram.service.dto.CatalogSupportProgram
+import ai.govbiz.core.supportprogram.service.search.SupportProgramSearchException
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import org.springframework.web.util.HtmlUtils
@@ -19,10 +20,6 @@ import java.util.LinkedHashMap
 import java.util.LinkedHashSet
 import java.util.Locale
 import java.util.regex.Pattern
-
-interface SupportProgramCatalog {
-    fun load(): List<CatalogSupportProgram>
-}
 
 /** 기업마당 원본을 조회하고 검증된 GovBiz 공고 모델로 정규화합니다. */
 @Component

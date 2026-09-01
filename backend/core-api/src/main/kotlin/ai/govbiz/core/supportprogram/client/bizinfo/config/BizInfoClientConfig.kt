@@ -1,8 +1,6 @@
-package ai.govbiz.core.supportprogram.client.bizinfo
+package ai.govbiz.core.supportprogram.client.bizinfo.config
 
 import ai.govbiz.core._common.config.buildRestClient
-import java.time.Clock
-import java.time.ZoneId
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -22,11 +20,4 @@ class BizInfoClientConfig {
         properties.connectTimeout,
         properties.readTimeout,
     )
-
-    @Bean
-    fun seoulClock(): Clock = Clock.system(SEOUL_ZONE)
-
-    companion object {
-        val SEOUL_ZONE: ZoneId = ZoneId.of("Asia/Seoul")
-    }
 }

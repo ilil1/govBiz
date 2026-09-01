@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.service
+package ai.govbiz.core.supportprogram.service.ranking
 
 import ai.govbiz.core.supportprogram.domain.SupportProgram
 import ai.govbiz.core.supportprogram.service.dto.CatalogSupportProgram

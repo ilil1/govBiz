@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.service
+package ai.govbiz.core.supportprogram.service.ranking
 
 import ai.govbiz.core._common.exception.AiServiceCallException
 import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingClient

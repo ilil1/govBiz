@@ -1,5 +1,6 @@
 package ai.govbiz.core.supportprogram.client.bizinfo
 
+import ai.govbiz.core.supportprogram.client.bizinfo.config.BizInfoClientProperties
 import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoPage
 import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoProgramPayload
 import org.springframework.beans.factory.annotation.Qualifier

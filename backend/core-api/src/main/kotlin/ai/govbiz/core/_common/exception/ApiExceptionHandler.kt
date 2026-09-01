@@ -1,6 +1,6 @@
 package ai.govbiz.core._common.exception
 
-import ai.govbiz.core.supportprogram.service.SupportProgramSearchException
+import ai.govbiz.core.supportprogram.service.search.SupportProgramSearchException
 import jakarta.servlet.http.HttpServletRequest
 import java.net.URI
 import org.springframework.http.HttpStatus

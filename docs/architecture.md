@@ -71,12 +71,13 @@ Health 조회처럼 업무 도메인이 아닌 연결 상태는 UseCase·Reposit
 
 ```text
 supportprogram/controller
-→ supportprogram/service
-→ supportprogram/domain
-   ├→ supportprogram/client/bizinfo → 공공데이터포털
-   └→ supportprogram/client/ai
-       → HttpAiSupportProgramRankingClient
-           → FastAPI → OpenAI
+└→ supportprogram/service/search
+   ├→ supportprogram/service/catalog
+   │   └→ supportprogram/client/bizinfo → 공공데이터포털
+   ├→ supportprogram/service/ranking
+   │   └→ supportprogram/client/ai
+   │       └→ HttpAiSupportProgramRankingClient → FastAPI → OpenAI
+   └→ supportprogram/domain
 
 _health_ai_service/controller
 → _health_ai_service/service
@@ -85,10 +86,11 @@ _health_ai_service/controller
 ```
 
 - **supportprogram/controller**는 HTTP 요청을 처리하고, 하위 `dto`는 브라우저 공개 요청·응답 계약을 소유합니다.
-- **supportprogram/service**는 검색 흐름, 공고 정규화와 AI 점수화 결과 검증을 담당하고, 하위 `dto`에 검증된 실행 결과를 둡니다.
+- **supportprogram/service/search**는 검색 흐름과 검색 오류 변환을, **service/catalog**는 공고 정규화와 카탈로그를, **service/ranking**은 AI 점수화 결과 검증을 담당합니다. `service/dto`는 이 흐름이 공유하는 검증된 실행 결과를 둡니다.
 - **supportprogram/domain**은 프레임워크에 의존하지 않는 지원사업 모델과 상태를 둡니다.
-- **supportprogram/client/bizinfo**는 기업마당 HTTP·pagination·오류 변환을 담당하고, 하위 `dto`에 응답 전송 객체를 둡니다. 전용 decoder는 허용된 JSON 구조만 변환합니다.
+- **supportprogram/client/bizinfo**는 기업마당 HTTP·pagination·오류 변환을 담당하고, `config`는 전용 Client 설정·속성을, `dto`는 응답 전송 객체를 관리합니다. 전용 decoder는 허용된 JSON 구조만 변환합니다.
 - **supportprogram/client/ai**는 AI 점수화 Client 인터페이스·HTTP 구현을 관리하고, 하위 `dto`에 내부 요청과 응답 계약을 둡니다.
+- **supportprogram/config**는 지원사업 상태 계산이 사용하는 서울 시간 기준을 제공합니다.
 - **_common/ai_config**는 두 AI HTTP 클라이언트가 공유하는 FastAPI 주소·timeout·`RestClient` 설정만 관리합니다.
 - **_common/http**의 `executeHttpCall`은 AI·기업마당 Client가 공유하는 Spring 연결 실패·timeout·응답 해석 실패 분류를 담당합니다. 각 외부 시스템은 이를 자기 예외 계약으로 변환하고, HTTP 상태의 업무상 의미는 해당 Client에 남깁니다. **_common/exception**은 공통 AI 호출 예외와 공개 ProblemDetail 변환을 관리합니다.
 - **_health/controller**, **_health_ai_service/controller**, **_sampleitem/controller**는 각각 자기 공개 API를 처리하고 하위 `dto`에 공개 요청·응답 계약을 둡니다.

@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.client.bizinfo
+package ai.govbiz.core.supportprogram.client.bizinfo.config
 
 import ai.govbiz.core._common.config.validateHttpBaseUrl
 import ai.govbiz.core._common.config.validatePositiveDuration

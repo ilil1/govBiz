@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.service
+package ai.govbiz.core.supportprogram.service.search
 
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClientException
 

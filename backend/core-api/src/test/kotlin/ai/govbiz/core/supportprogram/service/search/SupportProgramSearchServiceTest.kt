@@ -1,11 +1,12 @@
-package ai.govbiz.core.supportprogram.service
+package ai.govbiz.core.supportprogram.service.search
 
-import ai.govbiz.core.supportprogram.service.BizInfoSupportProgramCatalog
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClient
 import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoProgramPayload
 import ai.govbiz.core.supportprogram.domain.SupportProgram
 import ai.govbiz.core.supportprogram.domain.SupportProgramStatus
+import ai.govbiz.core.supportprogram.service.catalog.BizInfoSupportProgramCatalog
 import ai.govbiz.core.supportprogram.service.dto.CatalogSupportProgram
+import ai.govbiz.core.supportprogram.service.ranking.SupportProgramRanking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
