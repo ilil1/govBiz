@@ -3,8 +3,9 @@ package ai.govbiz.core.supportprogram.client.bizinfo
 import ai.govbiz.core.supportprogram.client.bizinfo.config.BizInfoClientProperties
 import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoPage
 import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoProgramPayload
-import ai.govbiz.core.supportprogram.client.bizinfo.helper.executeBizInfoHttpCall
+import ai.govbiz.core.supportprogram.client.bizinfo.exception.BizInfoClientException
 import ai.govbiz.core.supportprogram.client.bizinfo.helper.BizInfoPageDecoderHelper
+import ai.govbiz.core.supportprogram.client.bizinfo.helper.executeBizInfoHttpCall
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component

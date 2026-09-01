@@ -3,9 +3,9 @@ package ai.govbiz.core.supportprogram.controller
 import ai.govbiz.core._common.exception.AiServiceCallException
 import ai.govbiz.core._common.exception.ApiExceptionHandler
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClient
-import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClientException
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoSupportProgramCatalog
 import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoProgramPayload
+import ai.govbiz.core.supportprogram.client.bizinfo.exception.BizInfoClientException
 import ai.govbiz.core.supportprogram.domain.SupportProgram
 import ai.govbiz.core.supportprogram.service.dto.CatalogSupportProgram
 import ai.govbiz.core.supportprogram.service.ranking.SupportProgramRanking

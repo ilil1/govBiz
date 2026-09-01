@@ -55,6 +55,7 @@
 - 공개 HTTP 계약은 해당 기능의 `controller/dto`, 외부 시스템 계약은 `client/dto`, 검증된 내부
   실행 결과는 `service/dto`, 프레임워크와 무관한 업무 모델은 `domain`에 둔다.
 - 외부 DTO를 내부 모델로 변환하는 Mapper는 해당 외부 시스템의 `client/mapper`에 둔다.
+- 외부 시스템에서만 사용하는 예외는 해당 시스템의 `client/exception`에 둔다.
 - DTO, 예외, 설정을 프로젝트 전체의 중앙 폴더에 모으지 않고 그 계약을 소유하는 기능 가까이에 둔다.
 
 ### 역할별 이름

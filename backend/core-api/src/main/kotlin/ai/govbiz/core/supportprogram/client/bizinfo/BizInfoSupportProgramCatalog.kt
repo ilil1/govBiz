@@ -1,5 +1,6 @@
 package ai.govbiz.core.supportprogram.client.bizinfo
 
+import ai.govbiz.core.supportprogram.client.bizinfo.exception.BizInfoClientException
 import ai.govbiz.core.supportprogram.client.bizinfo.mapper.BizInfoProgramMapper
 import ai.govbiz.core.supportprogram.service.dto.CatalogSupportProgram
 import ai.govbiz.core.supportprogram.service.search.SupportProgramCatalog

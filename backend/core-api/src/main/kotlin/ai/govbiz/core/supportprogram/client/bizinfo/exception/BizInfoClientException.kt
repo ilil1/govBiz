@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.client.bizinfo
+package ai.govbiz.core.supportprogram.client.bizinfo.exception
 
 class BizInfoClientException private constructor(
     val failure: Failure,

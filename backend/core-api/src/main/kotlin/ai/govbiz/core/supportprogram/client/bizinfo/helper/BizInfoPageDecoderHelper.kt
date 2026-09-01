@@ -1,6 +1,6 @@
 package ai.govbiz.core.supportprogram.client.bizinfo.helper
 
-import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClientException
+import ai.govbiz.core.supportprogram.client.bizinfo.exception.BizInfoClientException
 import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoPage
 import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoProgramPayload
 import tools.jackson.databind.JsonNode
