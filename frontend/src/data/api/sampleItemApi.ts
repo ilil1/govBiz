@@ -1,5 +1,5 @@
 import type { SampleItem } from '../../domain/entities/SampleItem'
-import { getCoreApiBaseUrl } from '../core-api/coreApiConfig'
+import { getCoreApiBaseUrl } from './coreApiConfig'
 import {
   sampleItemPreparationDtoSchema,
   type SampleItemPreparationDto,

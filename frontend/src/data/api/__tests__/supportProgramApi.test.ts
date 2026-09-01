@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { supportPrograms } from '../fixtures/supportPrograms'
-import { SupportProgramRepositoryImpl } from '../repositories/SupportProgramRepositoryImpl'
-import { SupportProgramApiError, searchSupportProgramsApi } from './supportProgramApi'
+import { supportPrograms } from '../../fixtures/supportPrograms'
+import { SupportProgramRepositoryImpl } from '../../repositories/SupportProgramRepositoryImpl'
+import { SupportProgramApiError, searchSupportProgramsApi } from '../supportProgramApi'
 
 afterEach(() => {
   vi.unstubAllGlobals()

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { SampleItem } from '../../domain/entities/SampleItem'
-import { SampleItemApiError, prepareSampleItemApi } from './sampleItemApi'
+import type { SampleItem } from '../../../domain/entities/SampleItem'
+import { SampleItemApiError, prepareSampleItemApi } from '../sampleItemApi'
 
 const item: SampleItem = {
   name: 'Example item',

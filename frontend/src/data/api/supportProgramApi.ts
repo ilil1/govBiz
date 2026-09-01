@@ -1,5 +1,5 @@
 import type { SupportProgramSearch } from '../../domain/repositories/SupportProgramRepository'
-import { getCoreApiBaseUrl } from '../core-api/coreApiConfig'
+import { getCoreApiBaseUrl } from './coreApiConfig'
 import {
   supportProgramSearchResponseDtoSchema,
   type SupportProgramSearchResponseDto,

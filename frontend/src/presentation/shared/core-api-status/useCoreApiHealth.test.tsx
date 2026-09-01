@@ -3,7 +3,7 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { CoreApiHealth } from '../../../data/core-api/coreApiHealth'
+import type { CoreApiHealth } from '../../../data/api/coreApiHealth'
 import { useCoreApiHealth } from './useCoreApiHealth'
 
 afterEach(cleanup)

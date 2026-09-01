@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { CoreApiRequestError, fetchCoreApiHealth } from './fetchCoreApiHealth'
+import { CoreApiRequestError, fetchCoreApiHealth } from '../fetchCoreApiHealth'
 
 afterEach(() => {
   vi.unstubAllGlobals()

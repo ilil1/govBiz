@@ -1,6 +1,6 @@
 import type { AwilixContainer } from 'awilix/browser'
 
-import type { CoreApiHealth } from '../../data/core-api/coreApiHealth'
+import type { CoreApiHealth } from '../../data/api/coreApiHealth'
 import type { SampleItemRepository } from '../../domain/repositories/SampleItemRepository'
 import type { SupportProgramRepository } from '../../domain/repositories/SupportProgramRepository'
 import type { PrepareSampleItemUseCase } from '../../domain/usecases/PrepareSampleItemUseCase'

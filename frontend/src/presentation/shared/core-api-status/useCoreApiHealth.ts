@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { appContainer } from '../../../app/appContainer'
 import type { FetchCoreApiHealth } from '../../../app/di/types'
-import type { CoreApiHealth } from '../../../data/core-api/coreApiHealth'
+import type { CoreApiHealth } from '../../../data/api/coreApiHealth'
 
 type CoreApiHealthState = {
   data: CoreApiHealth | undefined
