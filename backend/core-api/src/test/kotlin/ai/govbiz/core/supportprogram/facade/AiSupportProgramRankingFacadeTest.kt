@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.service.ranking
+package ai.govbiz.core.supportprogram.facade
 
 import ai.govbiz.core._common.exception.AiServiceCallException
 import ai.govbiz.core._common.exception.AiServiceFailure
@@ -6,14 +6,14 @@ import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingClient
 import ai.govbiz.core.supportprogram.client.ai.dto.AiScoredSupportProgramPayload
 import ai.govbiz.core.supportprogram.client.ai.dto.AiSupportProgramRankingPayload
 import ai.govbiz.core.supportprogram.client.ai.dto.AiSupportProgramRankingRequest
+import ai.govbiz.core.supportprogram.domain.CatalogSupportProgram
 import ai.govbiz.core.supportprogram.domain.SupportProgram
 import ai.govbiz.core.supportprogram.domain.SupportProgramStatus
-import ai.govbiz.core.supportprogram.service.dto.CatalogSupportProgram
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 
-class AiSupportProgramRankingServiceTest {
+class AiSupportProgramRankingFacadeTest {
 
     private val client = StubRankingClient()
 
@@ -25,10 +25,10 @@ class AiSupportProgramRankingServiceTest {
             score("first", semantic = 20, total = 65, reason = "일부 관련"),
         )
 
-        val programs = service().rank(QUERY, candidates, 5)
+        val programs = facade().rank(QUERY, candidates, 5)
 
         val request = client.requests.single()
-        assertEquals(AiSupportProgramRankingService.SCORING_VERSION, request.scoringVersion)
+        assertEquals(AiSupportProgramRankingFacade.SCORING_VERSION, request.scoringVersion)
         assertEquals(2, request.resultLimit)
         assertEquals(listOf("first", "second"), request.candidates.map { it.id })
         assertEquals(listOf("second", "first"), programs.map { it.id })
@@ -80,12 +80,12 @@ class AiSupportProgramRankingServiceTest {
 
     private fun assertInvalidResponse() {
         val exception = assertThrows(AiServiceCallException::class.java) {
-            service().rank(QUERY, candidates(), 5)
+            facade().rank(QUERY, candidates(), 5)
         }
         assertEquals(AiServiceFailure.INVALID_RESPONSE, exception.failure)
     }
 
-    private fun service() = AiSupportProgramRankingService(client)
+    private fun facade() = AiSupportProgramRankingFacade(client)
 
     private fun candidates() = listOf(
         CatalogSupportProgram(program("first"), "2026-08-20"),
@@ -112,7 +112,7 @@ class AiSupportProgramRankingServiceTest {
     private fun response(vararg scores: AiScoredSupportProgramPayload) =
         AiSupportProgramRankingPayload(
             originalQuery = QUERY,
-            scoringVersion = AiSupportProgramRankingService.SCORING_VERSION,
+            scoringVersion = AiSupportProgramRankingFacade.SCORING_VERSION,
             rankings = scores.toList(),
         )
 

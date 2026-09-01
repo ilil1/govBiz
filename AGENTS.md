@@ -49,7 +49,8 @@
 ### 기능 중심 배치
 
 - Kotlin 기본 패키지는 `ai.govbiz.core`이며 실제 디렉터리와 `package` 선언을 항상 일치시킨다.
-- 업무 코드는 기능 디렉터리 안에서 `controller → service → domain/client` 책임으로 구성한다.
+- 업무 코드는 기능 디렉터리 안에서 `controller → service → facade → client` 흐름을 기본으로 하고,
+  프레임워크와 무관한 업무 모델은 `domain`에 둔다.
 - `supportprogram`은 실제 지원사업 기능, `_health`와 `_health_ai_service`는 상태 확인 기능,
   `_sampleitem`은 계층 학습 예제, `_common`은 둘 이상의 기능이 실제로 공유하는 코드다.
 - 공개 HTTP 계약은 해당 기능의 `controller/dto`, 외부 시스템 계약은 `client/dto`, 검증된 내부
@@ -61,8 +62,8 @@
 ### 역할별 이름
 
 - 공개 HTTP 진입점은 `Controller`, 업무 흐름은 `Service`, 외부 HTTP 통신은 `Client`로 끝낸다.
-- 외부 DTO 변환은 `Mapper`, 후보 제공 규격·구현은 `Catalog`, Spring 구성은 `Config`, 환경설정
-  값은 `Properties`로 끝낸다.
+- 하위 Client 호출·응답 검증·도메인 변환을 하나의 진입점으로 감추는 객체는 `Facade`로 끝낸다.
+- 외부 DTO 변환은 `Mapper`, Spring 구성은 `Config`, 환경설정 값은 `Properties`로 끝낸다.
 - 전송 객체는 경계에 맞춰 `Request`, `Response`, `Payload`, `Result`를 사용한다. 필드가 같다는
   이유만으로 서로 다른 경계의 타입을 합치지 않는다.
 - 이름은 수행 역할을 드러내야 하며 `Support`, `Util`, `Common`처럼 의미가 모호한 접미사를
@@ -76,15 +77,19 @@
   예: `supportprogram/client/bizinfo/helper`.
 - Helper 함수 이름은 `executeHttpCall`, `buildRestClient`, `decode`처럼 동작을 나타내며
   함수 이름에 `Helper`를 반복하지 않는다.
-- `Controller`, `Service`, `Client`, `Mapper`, `Catalog`처럼 더 정확한 역할명이 있으면 Helper로
+- `Controller`, `Service`, `Facade`, `Client`, `Mapper`처럼 더 정확한 역할명이 있으면 Helper로
   분류하지 않는다.
 - 실제 사용처가 하나뿐이고 호출부 안에 두는 편이 더 명확한 작은 함수는 불필요하게 별도
   Helper 파일로 추출하지 않는다.
 
 ### 의존 방향과 변경 원칙
 
-- Controller는 Service를 호출하고, Service는 필요한 Client·Catalog·전문 Service를 조합한다.
-- Service가 다른 전문 Service를 호출하는 것은 허용하지만 순환 의존성은 만들지 않는다.
+- 기본 의존 방향은 `Controller → Service → Facade → Client`로 고정한다.
+- Controller는 Facade나 Client를 직접 호출하지 않고 사용자 유스케이스를 담당하는 Service만 호출한다.
+- Service는 필요한 Repository를 직접 사용하며, 외부 하위 시스템의 호출·검증·변환이
+  복잡할 때만 Facade를 사용한다. 단순 Client 호출을 한 줄 전달하는 Facade는 만들지 않는다.
+- Facade는 상위 Service를 다시 호출하지 않는다. `Service ↔ Facade` 순환 의존성은 금지한다.
+- Facade가 필요 없는 단순 외부 호출은 Service가 Client를 직접 사용할 수 있다.
 - 외부 시스템의 원본 JSON과 예외를 공개 API에 그대로 노출하지 않는다. Client 경계에서 DTO와
   안정적인 내부 예외로 변환한다.
 - 새로운 공통 추상화는 production 사용처가 둘 이상이거나 외부 시스템 장애·보안 경계를

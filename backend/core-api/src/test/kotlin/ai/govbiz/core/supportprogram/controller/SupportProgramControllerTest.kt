@@ -3,12 +3,12 @@ package ai.govbiz.core.supportprogram.controller
 import ai.govbiz.core._common.exception.AiServiceCallException
 import ai.govbiz.core._common.exception.ApiExceptionHandler
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClient
-import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoSupportProgramCatalog
 import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoProgramPayload
 import ai.govbiz.core.supportprogram.client.bizinfo.exception.BizInfoClientException
+import ai.govbiz.core.supportprogram.domain.CatalogSupportProgram
 import ai.govbiz.core.supportprogram.domain.SupportProgram
-import ai.govbiz.core.supportprogram.service.dto.CatalogSupportProgram
-import ai.govbiz.core.supportprogram.service.ranking.SupportProgramRanking
+import ai.govbiz.core.supportprogram.facade.BizInfoSupportProgramCatalogFacade
+import ai.govbiz.core.supportprogram.facade.SupportProgramRankingFacade
 import ai.govbiz.core.supportprogram.service.search.SupportProgramSearchService
 import java.time.Clock
 import java.time.Instant
@@ -40,7 +40,7 @@ class SupportProgramControllerTest {
     @Mock
     private lateinit var client: BizInfoClient
 
-    private lateinit var ranking: StubSupportProgramRanking
+    private lateinit var ranking: StubSupportProgramRankingFacade
 
     private lateinit var mockMvc: MockMvc
 
@@ -50,9 +50,9 @@ class SupportProgramControllerTest {
             Instant.parse("2026-08-24T03:00:00Z"),
             ZoneId.of("Asia/Seoul"),
         )
-        ranking = StubSupportProgramRanking()
+        ranking = StubSupportProgramRankingFacade()
         val service = SupportProgramSearchService(
-            BizInfoSupportProgramCatalog(client, clock),
+            BizInfoSupportProgramCatalogFacade(client, clock),
             ranking,
         )
         mockMvc = MockMvcBuilders
@@ -167,7 +167,7 @@ class SupportProgramControllerTest {
             "온라인",
         )
 
-    private class StubSupportProgramRanking : SupportProgramRanking {
+    private class StubSupportProgramRankingFacade : SupportProgramRankingFacade {
         var response: (List<CatalogSupportProgram>) -> List<SupportProgram> = { emptyList() }
         var failure: RuntimeException? = null
 

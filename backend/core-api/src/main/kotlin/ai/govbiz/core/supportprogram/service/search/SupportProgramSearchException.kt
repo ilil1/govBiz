@@ -1,5 +1,7 @@
 package ai.govbiz.core.supportprogram.service.search
 
+import ai.govbiz.core.supportprogram.facade.SupportProgramCatalogFacadeException
+
 class SupportProgramSearchException private constructor(
     val failure: Failure,
     message: String?,
@@ -14,11 +16,24 @@ class SupportProgramSearchException private constructor(
     }
 
     companion object {
-        internal fun fromCatalog(
-            failure: Failure,
-            message: String?,
-            cause: Throwable,
+        internal fun fromFacade(
+            exception: SupportProgramCatalogFacadeException,
         ): SupportProgramSearchException =
-            SupportProgramSearchException(failure, message, cause)
+            SupportProgramSearchException(
+                failure = when (exception.failure) {
+                    SupportProgramCatalogFacadeException.Failure.NOT_CONFIGURED ->
+                        Failure.NOT_CONFIGURED
+                    SupportProgramCatalogFacadeException.Failure.UPSTREAM_ERROR ->
+                        Failure.UPSTREAM_ERROR
+                    SupportProgramCatalogFacadeException.Failure.INVALID_RESPONSE ->
+                        Failure.INVALID_RESPONSE
+                    SupportProgramCatalogFacadeException.Failure.UNAVAILABLE ->
+                        Failure.UNAVAILABLE
+                    SupportProgramCatalogFacadeException.Failure.TIMEOUT ->
+                        Failure.TIMEOUT
+                },
+                message = exception.message,
+                cause = exception,
+            )
     }
 }

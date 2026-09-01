@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.service.ranking
+package ai.govbiz.core.supportprogram.facade
 
 import ai.govbiz.core._common.exception.AiServiceCallException
 import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingClient
@@ -6,16 +6,16 @@ import ai.govbiz.core.supportprogram.client.ai.dto.AiScoredSupportProgramPayload
 import ai.govbiz.core.supportprogram.client.ai.dto.AiSupportProgramCandidateRequest
 import ai.govbiz.core.supportprogram.client.ai.dto.AiSupportProgramRankingPayload
 import ai.govbiz.core.supportprogram.client.ai.dto.AiSupportProgramRankingRequest
+import ai.govbiz.core.supportprogram.domain.CatalogSupportProgram
 import ai.govbiz.core.supportprogram.domain.SupportProgram
-import ai.govbiz.core.supportprogram.service.dto.CatalogSupportProgram
-import org.springframework.stereotype.Service
+import org.springframework.stereotype.Component
 import java.util.LinkedHashSet
 
-/** LLM 점수화 요청을 만들고 결과가 원래 후보와 점수 규칙을 지켰는지 재검증한다. */
-@Service
-class AiSupportProgramRankingService(
+/** 검색 Service에 LLM 점수화의 요청·검증·변환 과정을 단일 진입점으로 제공한다. */
+@Component
+class AiSupportProgramRankingFacade(
     private val client: AiSupportProgramRankingClient,
-) : SupportProgramRanking {
+) : SupportProgramRankingFacade {
     override fun rank(
         query: String,
         candidates: List<CatalogSupportProgram>,
@@ -23,10 +23,10 @@ class AiSupportProgramRankingService(
     ): List<SupportProgram> {
         require(query.isNotBlank()) { "query must not be blank" }
         require(candidates.isNotEmpty()) { "candidates must not be empty" }
-        require(candidates.size <= SupportProgramRanking.MAX_CANDIDATES) {
+        require(candidates.size <= SupportProgramRankingFacade.MAX_CANDIDATES) {
             "too many candidates"
         }
-        require(limit in 1..SupportProgramRanking.MAX_RESULTS) {
+        require(limit in 1..SupportProgramRankingFacade.MAX_RESULTS) {
             "limit is outside the supported range"
         }
 

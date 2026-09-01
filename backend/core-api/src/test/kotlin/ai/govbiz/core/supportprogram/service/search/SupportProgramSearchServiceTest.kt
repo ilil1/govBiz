@@ -1,12 +1,12 @@
 package ai.govbiz.core.supportprogram.service.search
 
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClient
-import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoSupportProgramCatalog
 import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoProgramPayload
+import ai.govbiz.core.supportprogram.domain.CatalogSupportProgram
 import ai.govbiz.core.supportprogram.domain.SupportProgram
 import ai.govbiz.core.supportprogram.domain.SupportProgramStatus
-import ai.govbiz.core.supportprogram.service.dto.CatalogSupportProgram
-import ai.govbiz.core.supportprogram.service.ranking.SupportProgramRanking
+import ai.govbiz.core.supportprogram.facade.BizInfoSupportProgramCatalogFacade
+import ai.govbiz.core.supportprogram.facade.SupportProgramRankingFacade
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -27,11 +27,11 @@ class SupportProgramSearchServiceTest {
     @Mock
     private lateinit var client: BizInfoClient
 
-    private lateinit var ranking: RecordingSupportProgramRanking
+    private lateinit var ranking: RecordingSupportProgramRankingFacade
 
     @BeforeEach
     fun setUp() {
-        ranking = RecordingSupportProgramRanking()
+        ranking = RecordingSupportProgramRankingFacade()
     }
 
     @Test
@@ -121,7 +121,7 @@ class SupportProgramSearchServiceTest {
     }
 
     private fun service() = SupportProgramSearchService(
-        BizInfoSupportProgramCatalog(client, CLOCK),
+        BizInfoSupportProgramCatalogFacade(client, CLOCK),
         ranking,
     )
 
@@ -158,7 +158,7 @@ class SupportProgramSearchServiceTest {
         val limit: Int,
     )
 
-    private class RecordingSupportProgramRanking : SupportProgramRanking {
+    private class RecordingSupportProgramRankingFacade : SupportProgramRankingFacade {
         val calls = mutableListOf<RankingCall>()
         var response: (List<CatalogSupportProgram>) -> List<SupportProgram> = { emptyList() }
 

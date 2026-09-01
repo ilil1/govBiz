@@ -3,7 +3,7 @@ package ai.govbiz.core.supportprogram.client.bizinfo.mapper
 import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoProgramPayload
 import ai.govbiz.core.supportprogram.domain.SupportProgram
 import ai.govbiz.core.supportprogram.domain.SupportProgramStatus
-import ai.govbiz.core.supportprogram.service.dto.CatalogSupportProgram
+import ai.govbiz.core.supportprogram.domain.CatalogSupportProgram
 import java.net.URI
 import java.net.URISyntaxException
 import java.text.Normalizer

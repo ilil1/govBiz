@@ -1,10 +1,10 @@
-package ai.govbiz.core.supportprogram.service.ranking
+package ai.govbiz.core.supportprogram.facade
 
+import ai.govbiz.core.supportprogram.domain.CatalogSupportProgram
 import ai.govbiz.core.supportprogram.domain.SupportProgram
-import ai.govbiz.core.supportprogram.service.dto.CatalogSupportProgram
 
-/** 검색 유스케이스가 필요로 하는 공고 후보 점수화 포트. */
-fun interface SupportProgramRanking {
+/** 검색 유스케이스에 검증된 공고 후보 점수화를 제공하는 Facade 계약입니다. */
+fun interface SupportProgramRankingFacade {
     fun rank(
         query: String,
         candidates: List<CatalogSupportProgram>,

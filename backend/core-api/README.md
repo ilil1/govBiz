@@ -28,14 +28,14 @@ supportprogram/
 ├── controller/             # 지원사업 공개 HTTP API
 │   └── dto/                # 지원사업 공개 요청·응답 계약
 ├── service/
-│   ├── search/             # 검색 흐름·검색 오류·공고 후보 조회 규격
-│   ├── ranking/            # AI 점수화와 결과 검증
-│   └── dto/                # 검증된 검색·카탈로그 실행 결과
-├── domain/                 # 지원사업 모델과 상태
+│   ├── search/             # 검색 흐름과 검색 오류
+│   └── dto/                # 검증된 검색 실행 결과
+├── facade/                 # 후보 조회·AI 점수화 Facade 계약과 구현
+├── domain/                 # 지원사업·정규화된 검색 후보 모델과 상태
 └── client/
     ├── ai/                 # AI 점수화 Client
     │   └── dto/            # AI 내부 요청·응답 계약
-    └── bizinfo/            # 기업마당 HTTP·공고 변환·카탈로그 구현
+    └── bizinfo/            # 기업마당 HTTP와 외부 응답 해석
         ├── config/         # 기업마당 Client 설정·속성
         ├── dto/            # 기업마당 응답 계약
         ├── exception/      # 기업마당 전용 Client 오류 계약
@@ -82,7 +82,7 @@ Kotlin 기본 패키지는 `ai.govbiz.core`이고 Gradle 프로젝트명은 `gov
 | 브라우저가 Core API에 보내거나 받는 공개 HTTP 계약 | 해당 기능의 `controller/dto` | `SampleItemPreparationRequest`, `SupportProgramSearchResponse` |
 | Core가 AI Service·기업마당처럼 다른 시스템과 주고받는 계약 | 해당 외부 시스템의 `client/dto` | `AiSupportProgramRankingRequest`, `BizInfoProgramPayload` |
 | 외부 응답 검증과 업무 처리를 마친 애플리케이션 실행 결과 | 해당 기능의 `service/dto` | `AiServiceHealthResult`, `SupportProgramSearchResult` |
-| 프레임워크·HTTP 형식과 무관한 업무 개념과 불변식 | 해당 기능의 `domain` | `SampleItem`, `SupportProgram`, `SupportProgramStatus` |
+| 프레임워크·HTTP 형식과 무관한 업무 개념과 불변식 | 해당 기능의 `domain` | `SampleItem`, `SupportProgram`, `CatalogSupportProgram` |
 
 두 곳에서 같은 필드가 보인다는 이유만으로 계약을 합치거나 `_common`으로 옮기지 않습니다. 실제로
 둘 이상의 기능이 같은 의미와 변경 이유를 공유할 때만 공통화를 검토합니다.
@@ -96,14 +96,36 @@ Kotlin 기본 패키지는 `ai.govbiz.core`이고 Gradle 프로젝트명은 `gov
 |---|---|---|
 | 공개 HTTP 진입점 | `Controller` | `SupportProgramController` |
 | 애플리케이션 흐름·업무 처리 | `Service` | `SupportProgramSearchService` |
+| 하위 기능의 호출·검증·변환을 단일 진입점으로 제공 | `Facade` | `BizInfoSupportProgramCatalogFacade`, `AiSupportProgramRankingFacade` |
 | 외부 시스템 HTTP 통신 | `Client` | `BizInfoClient`, `HttpAiSupportProgramRankingClient` |
 | 경계별 실패 분류 | `Exception` | `BizInfoClientException`, `AiServiceCallException` |
 | 외부 DTO를 내부 모델로 변환 | `Mapper` | `BizInfoProgramMapper` |
-| 공고 후보 제공 규격·구현 | `Catalog` | `SupportProgramCatalog`, `BizInfoSupportProgramCatalog` |
 | Spring Bean 구성 | `Config` | `BizInfoClientConfig` |
 | 환경설정 값 | `Properties` | `BizInfoClientProperties` |
 | 공개·외부·내부 전송 객체 | `Request`, `Response`, `Payload`, `Result` | `SupportProgramSearchResponse`, `BizInfoProgramPayload` |
 | 다른 코드의 반복 작업을 보조 | `Helper` | `HttpCallHelper`, `BizInfoPageDecoderHelper` |
+
+### Facade 배치 규칙
+
+이 프로젝트에서 Facade는 Controller 위에 두는 상위 진입점이 아니라, Service가 복잡한 하위 시스템을
+간단하게 사용하도록 감싸는 내부 경계입니다. 기본 의존 방향은 다음과 같이 고정합니다.
+
+```text
+Controller → Service → Facade → Client → 외부 시스템
+```
+
+- Controller는 Facade나 Client를 직접 호출하지 않고 사용자 유스케이스를 담당하는 Service만 호출합니다.
+- Service는 Repository를 직접 사용할 수 있습니다. 외부 하위 시스템의 요청 생성, Client 호출,
+  응답 검증, 도메인 변환이 함께 필요할 때 Facade를 사용합니다.
+- Facade는 자신을 호출한 상위 Service를 다시 호출하지 않습니다. `Service ↔ Facade` 순환 의존성은
+  허용하지 않습니다.
+- 단순히 Client 메서드를 한 줄 전달하는 경우에는 Facade를 만들지 않고 Service가 Client를 직접
+  사용합니다.
+
+현재 검색 흐름에서 `BizInfoSupportProgramCatalogFacade`는 기업마당 조회·Facade 실패 변환·검색 후보 정규화를
+`load` 하나로 감추고, 검색 Service가 그 실패를 공개 검색 오류로 변환합니다. `AiSupportProgramRankingFacade`는 AI 요청 생성·점수화 Client 호출·응답의 공고
+ID·점수·순서 검증과 도메인 변환을 `rank` 하나로 감춥니다. 둘 다 단순 전달 객체가 아니라 이 규칙에
+맞는 하위 시스템 Facade입니다.
 
 Helper는 사용 범위에 따라 배치합니다.
 
@@ -115,8 +137,8 @@ Helper는 사용 범위에 따라 배치합니다.
 
 Helper 파일과 `object`·클래스 이름은 `Helper`로 끝냅니다. Helper 안의 함수는
 `executeHttpCall`, `buildRestClient`, `decode`처럼 수행 동작을 동사로 표현하며 함수 이름에
-`Helper`를 반복해서 붙이지 않습니다. 역할이 이미 `Controller`, `Service`, `Client`, `Mapper`,
-`Catalog`로 명확한 코드는 Helper 디렉터리로 옮기지 않습니다. 공통 사용처가 하나뿐인 코드를
+`Helper`를 반복해서 붙이지 않습니다. 역할이 이미 `Controller`, `Service`, `Facade`, `Client`, `Mapper`로
+명확한 코드는 Helper 디렉터리로 옮기지 않습니다. 공통 사용처가 하나뿐인 코드를
 미리 `_common/helper`로 올리지 않습니다.
 
 ### AI Health의 Payload·Result·Response를 분리하는 이유
@@ -152,7 +174,7 @@ return AiServiceHealthResponse(result.status, result.service)
 유지됩니다. 따라서 이 분리는 코드 중복을 위한 것이 아니라 외부 입력, 검증된 내부 결과, 공개 응답의
 서로 다른 계약을 독립적으로 변경하기 위한 경계입니다.
 
-지원사업 검색 관련 코드는 `supportprogram` 기능 디렉터리에서 함께 관리합니다. 검색 조정과 공고 후보 조회 규격은 `service/search`, AI 점수화 검증은 `service/ranking`이 담당합니다. 모든 전송 객체를 프로젝트 전체의 한 DTO 폴더에 모으지 않습니다. 브라우저 공개 응답은 `supportprogram/controller/dto`, AI Service 요청·응답은 `supportprogram/client/ai/dto`, 기업마당 응답은 `supportprogram/client/bizinfo/dto`, 검증된 검색 결과는 `supportprogram/service/dto`가 각각 소유합니다. `BizInfoClient`는 인증키·pagination·공공데이터포털 HTTP 전송을 담당하고, `BizInfoPageDecoderHelper`가 허용된 JSON 구조만 DTO로 변환합니다. `BizInfoProgramMapper`는 그 DTO를 검색 후보로 정규화하며, `BizInfoSupportProgramCatalog`가 조회와 변환을 연결합니다. Client 설정과 속성은 `client/bizinfo/config`, 전용 실패 계약은 `client/bizinfo/exception`, 전용 보조 코드는 `client/bizinfo/helper`에서 관리하고, 접수 상태 계산용 서울 기준 시계는 유일한 사용처와 함께 `client/bizinfo`에 둡니다. Kotlin 단어 사전과 고정 관련도 가중치는 사용하지 않습니다.
+지원사업 검색 관련 코드는 `supportprogram` 기능 디렉터리에서 함께 관리합니다. `service/search`는 검색 흐름과 검색 오류를 소유합니다. `facade`는 `SupportProgramCatalogFacade`·`SupportProgramRankingFacade` 계약과 그 구현을 함께 관리합니다. `BizInfoSupportProgramCatalogFacade`는 기업마당 조회·오류 변환·검색 후보 정규화를 `load` 하나로 감추고, `AiSupportProgramRankingFacade`는 AI 요청 생성·호출·응답 검증·도메인 변환을 `rank` 하나로 감춥니다. 모든 전송 객체를 프로젝트 전체의 한 DTO 폴더에 모으지 않습니다. 브라우저 공개 응답은 `supportprogram/controller/dto`, AI Service 요청·응답은 `supportprogram/client/ai/dto`, 기업마당 응답은 `supportprogram/client/bizinfo/dto`, 검증된 검색 결과는 `supportprogram/service/dto`가 각각 소유합니다. `BizInfoClient`는 인증키·pagination·공공데이터포털 HTTP 전송을 담당하고, `BizInfoPageDecoderHelper`가 허용된 JSON 구조만 DTO로 변환합니다. `client/bizinfo/mapper`의 `BizInfoProgramMapper`는 그 DTO를 검색 후보로 정규화합니다. Client 설정과 속성은 `client/bizinfo/config`, 전용 실패 계약은 `client/bizinfo/exception`, 전용 보조 코드는 `client/bizinfo/helper`에서 관리하고, 접수 상태 계산용 서울 기준 시계는 유일한 사용처인 기업마당 Facade 설정과 함께 `supportprogram/facade`에 둡니다. Kotlin 단어 사전과 고정 관련도 가중치는 사용하지 않습니다.
 
 계층 연결 예제인 SampleItem도 `_sampleitem/controller → service → domain`으로 독립되어 있으며 공개 요청·응답 형식은 `_sampleitem/controller/dto`가 소유합니다.
 
