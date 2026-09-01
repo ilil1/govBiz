@@ -89,7 +89,7 @@ _health_ai_service/controller
 - **supportprogram/controller**는 HTTP 요청을 처리하고, 하위 `dto`는 브라우저 공개 요청·응답 계약을 소유합니다.
 - **supportprogram/service/search**는 검색 흐름·검색 오류와 공고 후보 조회 규격을, **service/ranking**은 AI 점수화 결과 검증을 담당합니다. `service/dto`는 이 흐름이 공유하는 검증된 실행 결과를 둡니다.
 - **supportprogram/domain**은 프레임워크에 의존하지 않는 지원사업 모델과 상태를 둡니다.
-- **supportprogram/client/bizinfo**는 기업마당 HTTP·pagination·오류 변환을 담당합니다. `BizInfoProgramMapper`는 외부 DTO를 검색 후보로 정규화하고, `BizInfoSupportProgramCatalog`는 조회와 변환을 연결해 검색의 `SupportProgramCatalog` 규격을 구현합니다. 하위 `config`는 전용 Client 설정·속성을, `dto`는 응답 전송 객체를 관리합니다. 접수 상태 계산용 서울 기준 시계는 **supportprogram/config**가 제공합니다.
+- **supportprogram/client/bizinfo**는 기업마당 HTTP·pagination·오류 변환을 담당합니다. `BizInfoProgramMapper`는 외부 DTO를 검색 후보로 정규화하고, `BizInfoSupportProgramCatalog`는 조회와 변환을 연결해 검색의 `SupportProgramCatalog` 규격을 구현합니다. 접수 상태 계산용 서울 기준 시계도 유일한 사용처인 catalog 구현과 함께 둡니다. 하위 `config`는 전용 Client 설정·속성을, `dto`는 응답 전송 객체를 관리합니다.
 - **supportprogram/client/ai**는 AI 점수화 Client 인터페이스·HTTP 구현을 관리하고, 하위 `dto`에 내부 요청과 응답 계약을 둡니다.
 - **_common/ai_config**는 두 AI HTTP 클라이언트가 공유하는 FastAPI 주소·timeout·`RestClient` 설정만 관리합니다.
 - **_common/http**의 `executeHttpCall`은 AI·기업마당 Client가 공유하는 Spring 연결 실패·timeout·응답 해석 실패 분류를 담당합니다. 각 외부 시스템은 이를 자기 예외 계약으로 변환하고, HTTP 상태의 업무상 의미는 해당 Client에 남깁니다. **_common/exception**은 공통 AI 호출 예외와 공개 ProblemDetail 변환을 관리합니다.
