@@ -1,8 +1,8 @@
 package ai.govbiz.core.supportprogram.service
 
-import ai.govbiz.core.supportprogram.service.CatalogSupportProgram
-import ai.govbiz.core.supportprogram.service.SupportProgramCatalog
 import ai.govbiz.core.supportprogram.domain.SupportProgramStatus
+import ai.govbiz.core.supportprogram.service.dto.CatalogSupportProgram
+import ai.govbiz.core.supportprogram.service.dto.SupportProgramSearchResult
 import org.springframework.stereotype.Service
 
 /** 공식 공고 후보와 LLM 점수화를 연결하는 검색 유스케이스입니다. */

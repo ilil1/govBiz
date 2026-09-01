@@ -2,9 +2,10 @@ package ai.govbiz.core.supportprogram.service
 
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClient
 import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClientException
-import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoProgramPayload
+import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoProgramPayload
 import ai.govbiz.core.supportprogram.domain.SupportProgram
 import ai.govbiz.core.supportprogram.domain.SupportProgramStatus
+import ai.govbiz.core.supportprogram.service.dto.CatalogSupportProgram
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import org.springframework.web.util.HtmlUtils
@@ -18,11 +19,6 @@ import java.util.LinkedHashMap
 import java.util.LinkedHashSet
 import java.util.Locale
 import java.util.regex.Pattern
-
-data class CatalogSupportProgram(
-    val program: SupportProgram,
-    val sortTimestamp: String,
-)
 
 interface SupportProgramCatalog {
     fun load(): List<CatalogSupportProgram>

@@ -2,6 +2,7 @@ package ai.govbiz.core._health_ai_service.service
 
 import ai.govbiz.core._common.exception.AiServiceCallException
 import ai.govbiz.core._health_ai_service.client.AiServiceHealthClient
+import ai.govbiz.core._health_ai_service.service.dto.AiServiceHealthResult
 import org.springframework.stereotype.Service
 
 @Service

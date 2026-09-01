@@ -2,6 +2,7 @@ package ai.govbiz.core._health_ai_service.client
 
 import ai.govbiz.core._common.exception.AiServiceCallException
 import ai.govbiz.core._common.http.executeAiServiceCall
+import ai.govbiz.core._health_ai_service.client.dto.AiServiceHealthPayload
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component

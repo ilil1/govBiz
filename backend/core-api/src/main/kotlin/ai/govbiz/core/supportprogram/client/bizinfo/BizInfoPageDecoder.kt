@@ -1,5 +1,7 @@
 package ai.govbiz.core.supportprogram.client.bizinfo
 
+import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoPage
+import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoProgramPayload
 import tools.jackson.databind.JsonNode
 
 /** 기업마당 JSON의 허용된 페이지 구조만 내부 전송 모델로 변환합니다. */
@@ -139,10 +141,3 @@ internal object BizInfoPageDecoder {
     private fun invalidResponse(message: String): BizInfoClientException =
         BizInfoClientException.invalidResponse(message, null)
 }
-
-internal data class BizInfoPage(
-    val items: List<BizInfoProgramPayload>,
-    val totalCount: Int,
-    val pageNumber: Int,
-    val pageSize: Int,
-)

@@ -25,22 +25,31 @@ LLM 총점 순으로 최대 5개를 반환합니다.
 
 ```text
 supportprogram/
-├── controller/             # 지원사업 공개 HTTP API와 응답 계약
+├── controller/             # 지원사업 공개 HTTP API
+│   └── dto/                # 지원사업 공개 요청·응답 계약
 ├── service/                # 검색 흐름, 공고 정규화와 AI 결과 검증
+│   └── dto/                # 검증된 검색·카탈로그 실행 결과
 ├── domain/                 # 지원사업 모델과 상태
 └── client/
-    ├── ai/                 # AI 점수화 Client와 내부 요청·응답 계약
-    └── bizinfo/            # 기업마당 HTTP·응답 계약·decoder·오류 변환
+    ├── ai/                 # AI 점수화 Client
+    │   └── dto/            # AI 내부 요청·응답 계약
+    └── bizinfo/            # 기업마당 HTTP·decoder·오류 변환
+        └── dto/            # 기업마당 응답 계약
 _sampleitem/
-├── controller/             # SampleItem 공개 API와 요청·응답 계약
+├── controller/             # SampleItem 공개 API
+│   └── dto/                # SampleItem 공개 요청·응답 계약
 ├── service/                # SampleItem 준비 흐름
 └── domain/                 # SampleItem 모델과 상태
 _health/
-└── controller/             # Core API 자체 Health API와 응답 계약
+└── controller/             # Core API 자체 Health API
+    └── dto/                # Core API Health 공개 응답 계약
 _health_ai_service/
 ├── client/                 # AI Service 내부 Health HTTP 호출
-├── controller/             # AI Service Health 공개 API와 응답 계약
+│   └── dto/                # AI Service Health 응답 계약
+├── controller/             # AI Service Health 공개 API
+│   └── dto/                # AI Service Health 공개 응답 계약
 └── service/                # AI Service Health 응답 검증
+    └── dto/                # 검증된 Health 실행 결과
 _common/
 ├── ai_config/              # 두 AI Client가 공유하는 주소·timeout·RestClient 설정
 ├── config/                 # CORS, JSON, 범용 RestClient 생성 지원
@@ -52,21 +61,21 @@ Kotlin 기본 패키지는 `ai.govbiz.core`이고 Gradle 프로젝트명은 `gov
 
 ### 파일 배치 규칙
 
-전송 객체와 모델은 이름에 `Request`, `Response`, `Payload`가 들어가는지만 보고 한 DTO 폴더에
-모으지 않습니다. 그 객체를 만들고 해석하며 책임지는 코드 가까이에 둡니다.
+전송 객체와 모델은 이름에 `Request`, `Response`, `Payload`가 들어가는지만 보고 프로젝트 전체의
+한 DTO 폴더에 모으지 않습니다. 그 객체를 만들고 해석하며 책임지는 코드 가까이에 둡니다.
 
 ```text
-공개 HTTP Request/Response → controller
-외부 API Request/Payload  → client
-검증된 실행 Result        → service
+공개 HTTP Request/Response → controller/dto
+외부 API Request/Payload  → client/dto
+검증된 실행 Result        → service/dto
 업무 모델                 → domain
 ```
 
 | 구분 | 배치 위치 | 현재 예시 |
 |---|---|---|
-| 브라우저가 Core API에 보내거나 받는 공개 HTTP 계약 | 해당 기능의 `controller` | `SampleItemPreparationRequest`, `SupportProgramSearchResponse` |
-| Core가 AI Service·기업마당처럼 다른 시스템과 주고받는 계약 | 해당 외부 시스템의 `client` | `AiSupportProgramRankingRequest`, `BizInfoProgramPayload` |
-| 외부 응답 검증과 업무 처리를 마친 애플리케이션 실행 결과 | 해당 기능의 `service` | `AiServiceHealthResult`, `SupportProgramSearchResult` |
+| 브라우저가 Core API에 보내거나 받는 공개 HTTP 계약 | 해당 기능의 `controller/dto` | `SampleItemPreparationRequest`, `SupportProgramSearchResponse` |
+| Core가 AI Service·기업마당처럼 다른 시스템과 주고받는 계약 | 해당 외부 시스템의 `client/dto` | `AiSupportProgramRankingRequest`, `BizInfoProgramPayload` |
+| 외부 응답 검증과 업무 처리를 마친 애플리케이션 실행 결과 | 해당 기능의 `service/dto` | `AiServiceHealthResult`, `SupportProgramSearchResult` |
 | 프레임워크·HTTP 형식과 무관한 업무 개념과 불변식 | 해당 기능의 `domain` | `SampleItem`, `SupportProgram`, `SupportProgramStatus` |
 
 두 곳에서 같은 필드가 보인다는 이유만으로 계약을 합치거나 `_common`으로 옮기지 않습니다. 실제로
@@ -88,9 +97,9 @@ AI Service의 신뢰하지 않는 JSON
 
 | 타입 | 소유 위치 | 의미와 변경 이유 |
 |---|---|---|
-| `AiServiceHealthPayload` | `_health_ai_service/client` | 외부 AI Service JSON을 그대로 받는 신뢰하지 않는 입력입니다. 누락·`null`·잘못된 값을 검증할 수 있도록 필드가 nullable입니다. |
-| `AiServiceHealthResult` | `_health_ai_service/service` | Client 응답이 `status=up`, `service=govbiz-ai-service` 계약을 통과한 뒤 만들어지는 non-null 내부 결과입니다. 향후 확인 시각이나 지연시간 같은 내부 정보가 추가될 수 있습니다. |
-| `AiServiceHealthResponse` | `_health_ai_service/controller` | Core API가 브라우저에 보장하는 공개 HTTP 응답입니다. 내부 결과가 확장되어도 공개할 필드만 선택하여 API 형식을 유지합니다. |
+| `AiServiceHealthPayload` | `_health_ai_service/client/dto` | 외부 AI Service JSON을 그대로 받는 신뢰하지 않는 입력입니다. 누락·`null`·잘못된 값을 검증할 수 있도록 필드가 nullable입니다. |
+| `AiServiceHealthResult` | `_health_ai_service/service/dto` | Client 응답이 `status=up`, `service=govbiz-ai-service` 계약을 통과한 뒤 만들어지는 non-null 내부 결과입니다. 향후 확인 시각이나 지연시간 같은 내부 정보가 추가될 수 있습니다. |
+| `AiServiceHealthResponse` | `_health_ai_service/controller/dto` | Core API가 브라우저에 보장하는 공개 HTTP 응답입니다. 내부 결과가 확장되어도 공개할 필드만 선택하여 API 형식을 유지합니다. |
 
 현재 `Result`와 `Response`의 필드는 같아서 Controller 변환이 단순합니다.
 
@@ -105,11 +114,11 @@ return AiServiceHealthResponse(result.status, result.service)
 유지됩니다. 따라서 이 분리는 코드 중복을 위한 것이 아니라 외부 입력, 검증된 내부 결과, 공개 응답의
 서로 다른 계약을 독립적으로 변경하기 위한 경계입니다.
 
-지원사업 검색 관련 코드는 `supportprogram` 기능 디렉터리에서 함께 관리합니다. 기능 안의 `controller → service → domain` 흐름과 `client/ai`, `client/bizinfo` 외부 연결을 한곳에서 따라갈 수 있습니다. 모든 전송 객체를 한 DTO 폴더에 모으지 않습니다. 브라우저 공개 응답은 실제 사용자인 `supportprogram/controller`, AI Service 요청·응답은 `supportprogram/client/ai`, 기업마당 응답은 `supportprogram/client/bizinfo`, 검증된 검색 결과는 `supportprogram/service`가 각각 소유합니다. BizInfo Client는 인증키·pagination·공공데이터포털 HTTP 전송을 담당하고, `BizInfoPageDecoder`가 허용된 JSON 구조만 DTO로 변환합니다. Service는 HTML 제거·공식 원문 URL 검증·신청기간과 접수상태 계산을 담당합니다. AI 점수화 Service는 후보를 FastAPI에 보내고 ID·점수 합계·내림차순을 재검증합니다. Kotlin 단어 사전과 고정 관련도 가중치는 사용하지 않습니다.
+지원사업 검색 관련 코드는 `supportprogram` 기능 디렉터리에서 함께 관리합니다. 기능 안의 `controller → service → domain` 흐름과 `client/ai`, `client/bizinfo` 외부 연결을 한곳에서 따라갈 수 있습니다. 모든 전송 객체를 프로젝트 전체의 한 DTO 폴더에 모으지 않습니다. 브라우저 공개 응답은 `supportprogram/controller/dto`, AI Service 요청·응답은 `supportprogram/client/ai/dto`, 기업마당 응답은 `supportprogram/client/bizinfo/dto`, 검증된 검색 결과는 `supportprogram/service/dto`가 각각 소유합니다. BizInfo Client는 인증키·pagination·공공데이터포털 HTTP 전송을 담당하고, `BizInfoPageDecoder`가 허용된 JSON 구조만 DTO로 변환합니다. Service는 HTML 제거·공식 원문 URL 검증·신청기간과 접수상태 계산을 담당합니다. AI 점수화 Service는 후보를 FastAPI에 보내고 ID·점수 합계·내림차순을 재검증합니다. Kotlin 단어 사전과 고정 관련도 가중치는 사용하지 않습니다.
 
-계층 연결 예제인 SampleItem도 `_sampleitem/controller → service → domain`으로 독립되어 있으며 공개 요청·응답 형식은 실제 사용자인 `_sampleitem/controller`가 소유합니다.
+계층 연결 예제인 SampleItem도 `_sampleitem/controller → service → domain`으로 독립되어 있으며 공개 요청·응답 형식은 `_sampleitem/controller/dto`가 소유합니다.
 
-Core API 프로세스 자체의 생존 상태와 공개 응답은 `_health/controller`가 담당합니다. AI Service 연결 상태를 확인하는 `_health_ai_service` 기능과는 별개입니다. `_health_ai_service/client/AiServiceHealthClient`는 내부 Health API만 호출하고, 공개 Health 응답은 `_health_ai_service/controller`, 지원사업 점수화 호출은 `supportprogram/client/ai/HttpAiSupportProgramRankingClient`가 담당합니다.
+Core API 프로세스 자체의 생존 상태는 `_health/controller`, 공개 응답 계약은 `_health/controller/dto`가 담당합니다. AI Service 연결 상태를 확인하는 `_health_ai_service` 기능과는 별개입니다. `_health_ai_service/client/AiServiceHealthClient`는 내부 Health API만 호출하고, 공개 Health 응답은 `_health_ai_service/controller/dto`, 지원사업 점수화 호출은 `supportprogram/client/ai/HttpAiSupportProgramRankingClient`가 담당합니다.
 
 둘 이상의 기능이 실제로 함께 사용하는 코드만 `_common`에 둡니다. 앞의 밑줄은 IDE의 알파벳 정렬에서 공통 코드를 기능보다 위에 표시하려는 프로젝트 규칙입니다. `_common/ai_config`는 AI Service 주소·timeout과 공용 `RestClient` 설정만 담당합니다. `_common/http`의 `executeHttpCall`은 AI·기업마당 Client가 공통으로 사용하는 연결 실패·timeout·Spring 응답 해석 실패 분류를 담당합니다. 각 외부 시스템은 이 공통 분류를 자기 예외 계약으로 변환합니다. `_common/exception`은 공통 AI 호출 예외와 공개 ProblemDetail 변환을 담당합니다. 반면 HTTP 204·503·504가 각 기능에서 무엇을 뜻하는지는 각 Client가 판단합니다. `_common/config`는 전체 API의 JSON·CORS 정책과 범용 `RestClient` 생성 지원을 담당합니다.
 

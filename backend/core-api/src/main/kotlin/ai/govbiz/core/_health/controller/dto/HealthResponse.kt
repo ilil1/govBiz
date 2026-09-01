@@ -1,4 +1,4 @@
-package ai.govbiz.core._health.controller
+package ai.govbiz.core._health.controller.dto
 
 data class HealthResponse(
     val status: String,

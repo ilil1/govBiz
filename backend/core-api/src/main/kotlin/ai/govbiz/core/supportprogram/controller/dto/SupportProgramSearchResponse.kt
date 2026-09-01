@@ -1,6 +1,6 @@
-package ai.govbiz.core.supportprogram.controller
+package ai.govbiz.core.supportprogram.controller.dto
 
-import ai.govbiz.core.supportprogram.service.SupportProgramSearchResult
+import ai.govbiz.core.supportprogram.service.dto.SupportProgramSearchResult
 
 data class SupportProgramSearchResponse(
     val query: String,

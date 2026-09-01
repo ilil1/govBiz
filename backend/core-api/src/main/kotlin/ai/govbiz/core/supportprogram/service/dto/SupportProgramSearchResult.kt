@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.service
+package ai.govbiz.core.supportprogram.service.dto
 
 import ai.govbiz.core.supportprogram.domain.SupportProgram
 

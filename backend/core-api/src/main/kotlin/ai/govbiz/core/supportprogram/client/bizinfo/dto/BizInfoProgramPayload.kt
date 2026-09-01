@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.client.bizinfo
+package ai.govbiz.core.supportprogram.client.bizinfo.dto
 
 data class BizInfoProgramPayload(
     val title: String?,

@@ -2,6 +2,8 @@ package ai.govbiz.core.supportprogram.client.ai
 
 import ai.govbiz.core._common.exception.AiServiceCallException
 import ai.govbiz.core._common.exception.AiServiceFailure
+import ai.govbiz.core.supportprogram.client.ai.dto.AiSupportProgramCandidateRequest
+import ai.govbiz.core.supportprogram.client.ai.dto.AiSupportProgramRankingRequest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows

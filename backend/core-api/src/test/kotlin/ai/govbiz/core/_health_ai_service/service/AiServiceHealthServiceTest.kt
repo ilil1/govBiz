@@ -3,7 +3,7 @@ package ai.govbiz.core._health_ai_service.service
 import ai.govbiz.core._common.exception.AiServiceCallException
 import ai.govbiz.core._common.exception.AiServiceFailure
 import ai.govbiz.core._health_ai_service.client.AiServiceHealthClient
-import ai.govbiz.core._health_ai_service.client.AiServiceHealthPayload
+import ai.govbiz.core._health_ai_service.client.dto.AiServiceHealthPayload
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.util.stream.Stream

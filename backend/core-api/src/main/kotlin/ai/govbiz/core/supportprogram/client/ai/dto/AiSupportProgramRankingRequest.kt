@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.client.ai
+package ai.govbiz.core.supportprogram.client.ai.dto
 
 data class AiSupportProgramCandidateRequest(
     val id: String,

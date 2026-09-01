@@ -1,7 +1,7 @@
 package ai.govbiz.core.supportprogram.service
 
-import ai.govbiz.core.supportprogram.service.CatalogSupportProgram
 import ai.govbiz.core.supportprogram.domain.SupportProgram
+import ai.govbiz.core.supportprogram.service.dto.CatalogSupportProgram
 
 /** 검색 유스케이스가 필요로 하는 공고 후보 점수화 포트. */
 fun interface SupportProgramRanking {

@@ -3,11 +3,12 @@ package ai.govbiz.core.supportprogram.service
 import ai.govbiz.core._common.exception.AiServiceCallException
 import ai.govbiz.core._common.exception.AiServiceFailure
 import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingClient
-import ai.govbiz.core.supportprogram.client.ai.AiScoredSupportProgramPayload
-import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingPayload
-import ai.govbiz.core.supportprogram.client.ai.AiSupportProgramRankingRequest
+import ai.govbiz.core.supportprogram.client.ai.dto.AiScoredSupportProgramPayload
+import ai.govbiz.core.supportprogram.client.ai.dto.AiSupportProgramRankingPayload
+import ai.govbiz.core.supportprogram.client.ai.dto.AiSupportProgramRankingRequest
 import ai.govbiz.core.supportprogram.domain.SupportProgram
 import ai.govbiz.core.supportprogram.domain.SupportProgramStatus
+import ai.govbiz.core.supportprogram.service.dto.CatalogSupportProgram
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
