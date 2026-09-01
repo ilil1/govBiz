@@ -1,6 +1,9 @@
 package ai.govbiz.core._common.http
 
 import ai.govbiz.core._common.exception.AiServiceCallException
+import java.net.SocketTimeoutException
+import java.net.http.HttpTimeoutException
+import java.util.concurrent.TimeoutException
 import org.springframework.web.client.ResourceAccessException
 import org.springframework.web.client.RestClientException
 import org.springframework.web.client.RestClientResponseException
@@ -45,3 +48,18 @@ fun <T> executeAiServiceCall(block: () -> T): T =
         },
         block = block,
     )
+
+private fun Throwable.hasTimeoutCause(): Boolean {
+    var current: Throwable? = this
+    while (current != null) {
+        if (
+            current is HttpTimeoutException ||
+            current is SocketTimeoutException ||
+            current is TimeoutException
+        ) {
+            return true
+        }
+        current = current.cause
+    }
+    return false
+}
