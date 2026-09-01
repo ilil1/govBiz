@@ -1,7 +1,6 @@
 package ai.govbiz.core.supportprogram.service.search
 
 import ai.govbiz.core.supportprogram.domain.SupportProgramStatus
-import ai.govbiz.core.supportprogram.service.catalog.SupportProgramCatalog
 import ai.govbiz.core.supportprogram.service.dto.CatalogSupportProgram
 import ai.govbiz.core.supportprogram.service.dto.SupportProgramSearchResult
 import ai.govbiz.core.supportprogram.service.ranking.SupportProgramRanking
