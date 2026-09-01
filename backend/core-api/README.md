@@ -35,9 +35,10 @@ supportprogram/
 └── client/
     ├── ai/                 # AI 점수화 Client
     │   └── dto/            # AI 내부 요청·응답 계약
-    └── bizinfo/            # 기업마당 HTTP·decoder·공고 변환·카탈로그 구현
+    └── bizinfo/            # 기업마당 HTTP·공고 변환·카탈로그 구현
         ├── config/         # 기업마당 Client 설정·속성
-        └── dto/            # 기업마당 응답 계약
+        ├── dto/            # 기업마당 응답 계약
+        └── helper/         # 기업마당 전용 HTTP·JSON 변환 헬퍼
 _sampleitem/
 ├── controller/             # SampleItem 공개 API
 │   └── dto/                # SampleItem 공개 요청·응답 계약
@@ -55,9 +56,9 @@ _health_ai_service/
     └── dto/                # 검증된 Health 실행 결과
 _common/
 ├── ai_config/              # 두 AI Client가 공유하는 주소·timeout·RestClient 설정
-├── config/                 # CORS, JSON, 범용 RestClient 생성 지원
+├── config/                 # 전체 API의 CORS·JSON 정책
 ├── exception/              # 공통 AI 호출 예외와 ProblemDetail 예외 처리
-└── http/                   # 외부 HTTP 호출의 공통 Spring 예외 분류
+└── helper/                 # 공통 RestClient 생성·검증과 HTTP 예외 분류 헬퍼
 ```
 
 Kotlin 기본 패키지는 `ai.govbiz.core`이고 Gradle 프로젝트명은 `govbiz-core-api`입니다.
@@ -83,6 +84,37 @@ Kotlin 기본 패키지는 `ai.govbiz.core`이고 Gradle 프로젝트명은 `gov
 
 두 곳에서 같은 필드가 보인다는 이유만으로 계약을 합치거나 `_common`으로 옮기지 않습니다. 실제로
 둘 이상의 기능이 같은 의미와 변경 이유를 공유할 때만 공통화를 검토합니다.
+
+### 파일·타입 이름과 Helper 배치 규칙
+
+파일과 타입 이름은 맡은 역할을 접미사로 드러냅니다. 같은 역할은 같은 접미사를 사용하고,
+`Support`, `Util`, `Common`처럼 구체적인 동작을 알기 어려운 이름은 사용하지 않습니다.
+
+| 역할 | 접미사 | 현재 예시 |
+|---|---|---|
+| 공개 HTTP 진입점 | `Controller` | `SupportProgramController` |
+| 애플리케이션 흐름·업무 처리 | `Service` | `SupportProgramSearchService` |
+| 외부 시스템 HTTP 통신 | `Client` | `BizInfoClient`, `HttpAiSupportProgramRankingClient` |
+| 외부 DTO를 내부 모델로 변환 | `Mapper` | `BizInfoProgramMapper` |
+| 공고 후보 제공 규격·구현 | `Catalog` | `SupportProgramCatalog`, `BizInfoSupportProgramCatalog` |
+| Spring Bean 구성 | `Config` | `BizInfoClientConfig` |
+| 환경설정 값 | `Properties` | `BizInfoClientProperties` |
+| 공개·외부·내부 전송 객체 | `Request`, `Response`, `Payload`, `Result` | `SupportProgramSearchResponse`, `BizInfoProgramPayload` |
+| 다른 코드의 반복 작업을 보조 | `Helper` | `HttpCallHelper`, `BizInfoPageDecoderHelper` |
+
+Helper는 사용 범위에 따라 배치합니다.
+
+```text
+둘 이상의 기능이 함께 사용 → _common/helper
+특정 외부 시스템만 사용   → 해당 client/helper
+특정 기능만 사용           → 해당 기능/helper
+```
+
+Helper 파일과 `object`·클래스 이름은 `Helper`로 끝냅니다. Helper 안의 함수는
+`executeHttpCall`, `buildRestClient`, `decode`처럼 수행 동작을 동사로 표현하며 함수 이름에
+`Helper`를 반복해서 붙이지 않습니다. 역할이 이미 `Controller`, `Service`, `Client`, `Mapper`,
+`Catalog`로 명확한 코드는 Helper 디렉터리로 옮기지 않습니다. 공통 사용처가 하나뿐인 코드를
+미리 `_common/helper`로 올리지 않습니다.
 
 ### AI Health의 Payload·Result·Response를 분리하는 이유
 
