@@ -3,6 +3,8 @@ package ai.govbiz.core.supportprogram.client.bizinfo
 import ai.govbiz.core.supportprogram.client.bizinfo.config.BizInfoClientProperties
 import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoPage
 import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoProgramPayload
+import ai.govbiz.core.supportprogram.client.bizinfo.helper.executeBizInfoHttpCall
+import ai.govbiz.core.supportprogram.client.bizinfo.helper.BizInfoPageDecoderHelper
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
@@ -89,7 +91,7 @@ class BizInfoClient(
     }
 
     private fun fetchPage(serviceKey: String, pageNumber: Int): BizInfoPage =
-        executeBizInfoCall {
+        executeBizInfoHttpCall {
             val response = restClient.get()
                 .uri(
                     PROGRAMS_PATH +
@@ -119,7 +121,7 @@ class BizInfoClient(
                     "BizInfo API returned an empty response",
                     null,
                 )
-            BizInfoPageDecoder.decode(body, PAGE_SIZE)
+            BizInfoPageDecoderHelper.decode(body, PAGE_SIZE)
         }
 
     companion object {

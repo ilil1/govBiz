@@ -117,13 +117,13 @@ return AiServiceHealthResponse(result.status, result.service)
 유지됩니다. 따라서 이 분리는 코드 중복을 위한 것이 아니라 외부 입력, 검증된 내부 결과, 공개 응답의
 서로 다른 계약을 독립적으로 변경하기 위한 경계입니다.
 
-지원사업 검색 관련 코드는 `supportprogram` 기능 디렉터리에서 함께 관리합니다. 검색 조정과 공고 후보 조회 규격은 `service/search`, AI 점수화 검증은 `service/ranking`이 담당합니다. 모든 전송 객체를 프로젝트 전체의 한 DTO 폴더에 모으지 않습니다. 브라우저 공개 응답은 `supportprogram/controller/dto`, AI Service 요청·응답은 `supportprogram/client/ai/dto`, 기업마당 응답은 `supportprogram/client/bizinfo/dto`, 검증된 검색 결과는 `supportprogram/service/dto`가 각각 소유합니다. `BizInfoClient`는 인증키·pagination·공공데이터포털 HTTP 전송을 담당하고, `BizInfoPageDecoder`가 허용된 JSON 구조만 DTO로 변환합니다. `BizInfoProgramMapper`는 그 DTO를 검색 후보로 정규화하며, `BizInfoSupportProgramCatalog`가 조회와 변환을 연결합니다. Client 설정과 속성은 `client/bizinfo/config`에서 관리하고, 접수 상태 계산용 서울 기준 시계는 유일한 사용처와 함께 `client/bizinfo`에 둡니다. Kotlin 단어 사전과 고정 관련도 가중치는 사용하지 않습니다.
+지원사업 검색 관련 코드는 `supportprogram` 기능 디렉터리에서 함께 관리합니다. 검색 조정과 공고 후보 조회 규격은 `service/search`, AI 점수화 검증은 `service/ranking`이 담당합니다. 모든 전송 객체를 프로젝트 전체의 한 DTO 폴더에 모으지 않습니다. 브라우저 공개 응답은 `supportprogram/controller/dto`, AI Service 요청·응답은 `supportprogram/client/ai/dto`, 기업마당 응답은 `supportprogram/client/bizinfo/dto`, 검증된 검색 결과는 `supportprogram/service/dto`가 각각 소유합니다. `BizInfoClient`는 인증키·pagination·공공데이터포털 HTTP 전송을 담당하고, `BizInfoPageDecoderHelper`가 허용된 JSON 구조만 DTO로 변환합니다. `BizInfoProgramMapper`는 그 DTO를 검색 후보로 정규화하며, `BizInfoSupportProgramCatalog`가 조회와 변환을 연결합니다. Client 설정과 속성은 `client/bizinfo/config`, 전용 보조 코드는 `client/bizinfo/helper`에서 관리하고, 접수 상태 계산용 서울 기준 시계는 유일한 사용처와 함께 `client/bizinfo`에 둡니다. Kotlin 단어 사전과 고정 관련도 가중치는 사용하지 않습니다.
 
 계층 연결 예제인 SampleItem도 `_sampleitem/controller → service → domain`으로 독립되어 있으며 공개 요청·응답 형식은 `_sampleitem/controller/dto`가 소유합니다.
 
 Core API 프로세스 자체의 생존 상태는 `_health/controller`, 공개 응답 계약은 `_health/controller/dto`가 담당합니다. AI Service 연결 상태를 확인하는 `_health_ai_service` 기능과는 별개입니다. `_health_ai_service/client/AiServiceHealthClient`는 내부 Health API만 호출하고, 공개 Health 응답은 `_health_ai_service/controller/dto`, 지원사업 점수화 호출은 `supportprogram/client/ai/HttpAiSupportProgramRankingClient`가 담당합니다.
 
-둘 이상의 기능이 실제로 함께 사용하는 코드만 `_common`에 둡니다. 앞의 밑줄은 IDE의 알파벳 정렬에서 공통 코드를 기능보다 위에 표시하려는 프로젝트 규칙입니다. `_common/ai_config`는 AI Service 주소·timeout과 공용 `RestClient` 설정만 담당합니다. `_common/http`의 `executeHttpCall`은 AI·기업마당 Client가 공통으로 사용하는 연결 실패·timeout·Spring 응답 해석 실패 분류를 담당합니다. 각 외부 시스템은 이 공통 분류를 자기 예외 계약으로 변환합니다. `_common/exception`은 공통 AI 호출 예외와 공개 ProblemDetail 변환을 담당합니다. 반면 HTTP 204·503·504가 각 기능에서 무엇을 뜻하는지는 각 Client가 판단합니다. `_common/config`는 전체 API의 JSON·CORS 정책과 범용 `RestClient` 생성 지원을 담당합니다.
+둘 이상의 기능이 실제로 함께 사용하는 코드만 `_common`에 둡니다. 앞의 밑줄은 IDE의 알파벳 정렬에서 공통 코드를 기능보다 위에 표시하려는 프로젝트 규칙입니다. `_common/ai_config`는 AI Service 주소·timeout과 공용 `RestClient` 설정만 담당합니다. `_common/helper`는 범용 `RestClient` 생성·설정 검증과 AI·기업마당 Client가 함께 사용하는 연결 실패·timeout·Spring 응답 해석 실패 분류를 담당합니다. 각 외부 시스템은 이 공통 분류를 자기 예외 계약으로 변환합니다. `_common/exception`은 공통 AI 호출 예외와 공개 ProblemDetail 변환을 담당합니다. 반면 HTTP 204·503·504가 각 기능에서 무엇을 뜻하는지는 각 Client가 판단합니다. `_common/config`는 전체 API의 JSON·CORS 정책을 담당합니다.
 
 ## 외부 HTTP 호출의 공통 처리와 기능별 처리
 
@@ -139,7 +139,7 @@ BizInfoClient ─────────────────────┘
 ```
 
 공통 함수는
-[`HttpCallSupport.kt`](src/main/kotlin/ai/govbiz/core/_common/http/HttpCallSupport.kt)에 있습니다. 각
+[`HttpCallHelper.kt`](src/main/kotlin/ai/govbiz/core/_common/helper/HttpCallHelper.kt)에 있습니다. 각
 Client가 전달한 코드 블록을 `try` 안에서 실행하고, 실패 종류에 맞는 예외 생성 함수를 호출합니다.
 
 ```kotlin
@@ -162,7 +162,7 @@ fun <T> executeHttpCall(
 ```
 
 `executeAiServiceCall`은 이 공통 함수를 AI용 `AiServiceCallException`과 연결합니다. 기업마당은
-`executeBizInfoCall`을 통해 같은 공통 함수를 `BizInfoClientException`과 연결합니다. 기업마당에서
+`executeBizInfoHttpCall`을 통해 같은 공통 함수를 `BizInfoClientException`과 연결합니다. 기업마당에서
 AI용 helper를 그대로 사용하면 공개 오류가 `AI_SERVICE_*`로 잘못 표시되므로, 공통화 대상은 Spring
 예외 판별까지만입니다.
 

@@ -1,11 +1,12 @@
-package ai.govbiz.core.supportprogram.client.bizinfo
+package ai.govbiz.core.supportprogram.client.bizinfo.helper
 
+import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClientException
 import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoPage
 import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoProgramPayload
 import tools.jackson.databind.JsonNode
 
 /** 기업마당 JSON의 허용된 페이지 구조만 내부 전송 모델로 변환합니다. */
-internal object BizInfoPageDecoder {
+internal object BizInfoPageDecoderHelper {
 
     fun decode(
         root: JsonNode,

@@ -1,7 +1,7 @@
 package ai.govbiz.core.supportprogram.client.bizinfo.config
 
-import ai.govbiz.core._common.config.validateHttpBaseUrl
-import ai.govbiz.core._common.config.validatePositiveDuration
+import ai.govbiz.core._common.helper.validateHttpBaseUrl
+import ai.govbiz.core._common.helper.validatePositiveDuration
 import java.net.URI
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets

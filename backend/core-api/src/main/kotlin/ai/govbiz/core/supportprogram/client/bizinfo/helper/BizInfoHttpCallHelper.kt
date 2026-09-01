@@ -1,10 +1,11 @@
-package ai.govbiz.core.supportprogram.client.bizinfo
+package ai.govbiz.core.supportprogram.client.bizinfo.helper
 
-import ai.govbiz.core._common.http.executeHttpCall
+import ai.govbiz.core._common.helper.executeHttpCall
+import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClientException
 import tools.jackson.core.JacksonException
 
 /** 공통 HTTP 분류를 기업마당 공개 오류 계약에 맞게 변환합니다. */
-internal fun <T> executeBizInfoCall(block: () -> T): T =
+internal fun <T> executeBizInfoHttpCall(block: () -> T): T =
     try {
         executeHttpCall(
             onTimeout = { exception -> BizInfoClientException.timeout(exception) },

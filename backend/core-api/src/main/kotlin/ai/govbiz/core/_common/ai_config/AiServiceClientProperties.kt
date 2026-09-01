@@ -1,7 +1,7 @@
 package ai.govbiz.core._common.ai_config
 
-import ai.govbiz.core._common.config.validateHttpBaseUrl
-import ai.govbiz.core._common.config.validatePositiveDuration
+import ai.govbiz.core._common.helper.validateHttpBaseUrl
+import ai.govbiz.core._common.helper.validatePositiveDuration
 import java.net.URI
 import java.time.Duration
 import org.springframework.boot.context.properties.ConfigurationProperties

@@ -1,4 +1,4 @@
-package ai.govbiz.core._common.config
+package ai.govbiz.core._common.helper
 
 import java.net.URI
 import java.net.http.HttpClient

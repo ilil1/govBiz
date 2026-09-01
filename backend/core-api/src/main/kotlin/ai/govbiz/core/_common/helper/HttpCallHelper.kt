@@ -1,4 +1,4 @@
-package ai.govbiz.core._common.http
+package ai.govbiz.core._common.helper
 
 import ai.govbiz.core._common.exception.AiServiceCallException
 import java.net.SocketTimeoutException

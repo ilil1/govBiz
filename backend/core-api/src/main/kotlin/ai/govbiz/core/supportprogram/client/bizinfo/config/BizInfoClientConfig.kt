@@ -1,6 +1,6 @@
 package ai.govbiz.core.supportprogram.client.bizinfo.config
 
-import ai.govbiz.core._common.config.buildRestClient
+import ai.govbiz.core._common.helper.buildRestClient
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
