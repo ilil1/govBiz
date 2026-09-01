@@ -74,7 +74,7 @@ supportprogram/controller
 └→ supportprogram/service/search
    ├→ supportprogram/client/bizinfo/BizInfoSupportProgramCatalog
    │   ├→ BizInfoClient → 공공데이터포털
-   │   └→ BizInfoProgramMapper
+   │   └→ supportprogram/client/bizinfo/mapper/BizInfoProgramMapper
    ├→ supportprogram/service/ranking
    │   └→ supportprogram/client/ai
    │       └→ HttpAiSupportProgramRankingClient → FastAPI → OpenAI

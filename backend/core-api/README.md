@@ -38,7 +38,8 @@ supportprogram/
     └── bizinfo/            # 기업마당 HTTP·공고 변환·카탈로그 구현
         ├── config/         # 기업마당 Client 설정·속성
         ├── dto/            # 기업마당 응답 계약
-        └── helper/         # 기업마당 전용 HTTP·JSON 변환 헬퍼
+        ├── helper/         # 기업마당 전용 HTTP·JSON 변환 헬퍼
+        └── mapper/         # 기업마당 DTO를 검색 후보로 변환
 _sampleitem/
 ├── controller/             # SampleItem 공개 API
 │   └── dto/                # SampleItem 공개 요청·응답 계약

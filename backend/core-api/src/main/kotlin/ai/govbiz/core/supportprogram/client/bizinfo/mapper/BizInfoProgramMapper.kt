@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.client.bizinfo
+package ai.govbiz.core.supportprogram.client.bizinfo.mapper
 
 import ai.govbiz.core.supportprogram.client.bizinfo.dto.BizInfoProgramPayload
 import ai.govbiz.core.supportprogram.domain.SupportProgram
