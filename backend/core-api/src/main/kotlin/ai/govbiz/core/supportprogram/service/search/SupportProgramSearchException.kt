@@ -1,6 +1,6 @@
 package ai.govbiz.core.supportprogram.service.search
 
-import ai.govbiz.core.supportprogram.facade.SupportProgramCatalogFacadeException
+import ai.govbiz.core.supportprogram.facade.exception.SupportProgramCatalogFacadeException
 
 class SupportProgramSearchException private constructor(
     val failure: Failure,

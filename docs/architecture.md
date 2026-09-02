@@ -87,9 +87,9 @@ _health_ai_service/controller
 ```
 
 - **supportprogram/controller**는 HTTP 요청을 처리하고, 하위 `dto`는 브라우저 공개 요청·응답 계약을 소유합니다.
-- **supportprogram/service/search**는 검색 흐름과 공개 검색 오류를 소유합니다. **supportprogram/facade**는 `SupportProgramCatalogFacade`·`SupportProgramRankingFacade` 계약과 구현, 상위 Service에 전달할 안정적인 Facade 실패 계약을 함께 관리합니다. `BizInfoSupportProgramCatalogFacade`는 기업마당 조회·실패 변환·검색 후보 정규화를 단일 `load` 진입점으로 제공하고, 검색 Service가 Facade 실패를 검색 오류로 변환합니다. `AiSupportProgramRankingFacade`는 AI 요청 생성·Client 호출·응답 검증·도메인 변환을 단일 `rank` 진입점으로 제공합니다. `service/dto`는 이 흐름이 공유하는 검증된 실행 결과를 둡니다.
+- **supportprogram/service/search**는 검색 흐름과 공개 검색 오류를 소유합니다. **supportprogram/facade**는 `SupportProgramCatalogFacade`·`SupportProgramRankingFacade` 계약과 구현을 관리하고, 하위 `exception`은 상위 Service에 전달할 안정적인 Facade 실패 계약을 소유합니다. `BizInfoSupportProgramCatalogFacade`는 기업마당 조회·실패 변환·검색 후보 정규화를 단일 `load` 진입점으로 제공하고, 검색 Service가 Facade 실패를 검색 오류로 변환합니다. `AiSupportProgramRankingFacade`는 AI 요청 생성·Client 호출·응답 검증·도메인 변환을 단일 `rank` 진입점으로 제공합니다. 하위 `config`는 Facade 전용 설정을, `service/dto`는 이 흐름이 공유하는 검증된 실행 결과를 둡니다.
 - **supportprogram/domain**은 프레임워크에 의존하지 않는 지원사업 모델과 상태를 둡니다.
-- **supportprogram/client/bizinfo**는 기업마당 HTTP·pagination을 담당하며, 하위 `mapper`의 `BizInfoProgramMapper`는 외부 DTO를 검색 후보로 정규화합니다. 하위 `config`는 전용 Client 설정·속성을, `dto`는 응답 전송 객체를, `exception`은 기업마당 전용 실패 계약을, `helper`는 기업마당 전용 HTTP 예외 변환을 관리합니다. 기업마당 Client 오류를 검색 오류로 변환하는 책임과 접수 상태 계산용 서울 기준 시계는 `supportprogram/facade`의 기업마당 Facade와 그 설정이 소유합니다.
+- **supportprogram/client/bizinfo**는 기업마당 HTTP·pagination을 담당하며, 하위 `mapper`의 `BizInfoProgramMapper`는 외부 DTO를 검색 후보로 정규화합니다. 하위 `config`는 전용 Client 설정·속성을, `dto`는 응답 전송 객체를, `exception`은 기업마당 전용 실패 계약을, `helper`는 기업마당 전용 HTTP 예외 변환을 관리합니다. 기업마당 Client 오류를 검색 오류로 변환하는 책임은 `supportprogram/facade`의 기업마당 Facade가 소유하고, 접수 상태 계산용 서울 기준 시계는 `supportprogram/facade/config`에 둡니다.
 - **supportprogram/client/ai**는 AI 점수화 Client 인터페이스·HTTP 구현을 관리하고, 하위 `dto`에 내부 요청과 응답 계약을 둡니다.
 - **_common/ai_config**는 두 AI HTTP 클라이언트가 공유하는 FastAPI 주소·timeout·`RestClient` 설정만 관리합니다.
 - **_common/helper**는 공용 `RestClient` 생성·설정 검증과 AI·기업마당 Client가 공유하는 Spring 연결 실패·timeout·응답 해석 실패 분류를 담당합니다. 각 외부 시스템은 이를 자기 예외 계약으로 변환하고, HTTP 상태의 업무상 의미는 해당 Client에 남깁니다. **_common/exception**은 공통 AI 호출 예외와 공개 ProblemDetail 변환을 관리합니다.

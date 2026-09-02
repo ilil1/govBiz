@@ -4,6 +4,7 @@ import ai.govbiz.core.supportprogram.client.bizinfo.BizInfoClient
 import ai.govbiz.core.supportprogram.client.bizinfo.exception.BizInfoClientException
 import ai.govbiz.core.supportprogram.client.bizinfo.mapper.BizInfoProgramMapper
 import ai.govbiz.core.supportprogram.domain.CatalogSupportProgram
+import ai.govbiz.core.supportprogram.facade.exception.SupportProgramCatalogFacadeException
 import java.time.Clock
 import java.time.LocalDate
 import org.springframework.beans.factory.annotation.Qualifier

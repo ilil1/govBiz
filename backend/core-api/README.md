@@ -31,6 +31,8 @@ supportprogram/
 │   ├── search/             # 검색 흐름과 검색 오류
 │   └── dto/                # 검증된 검색 실행 결과
 ├── facade/                 # 후보 조회·AI 점수화 Facade 계약과 구현
+│   ├── config/             # Facade 전용 설정
+│   └── exception/          # 상위 Service에 전달하는 Facade 실패 계약
 ├── domain/                 # 지원사업·정규화된 검색 후보 모델과 상태
 └── client/
     ├── ai/                 # AI 점수화 Client
@@ -174,7 +176,7 @@ return AiServiceHealthResponse(result.status, result.service)
 유지됩니다. 따라서 이 분리는 코드 중복을 위한 것이 아니라 외부 입력, 검증된 내부 결과, 공개 응답의
 서로 다른 계약을 독립적으로 변경하기 위한 경계입니다.
 
-지원사업 검색 관련 코드는 `supportprogram` 기능 디렉터리에서 함께 관리합니다. `service/search`는 검색 흐름과 검색 오류를 소유합니다. `facade`는 `SupportProgramCatalogFacade`·`SupportProgramRankingFacade` 계약과 그 구현을 함께 관리합니다. `BizInfoSupportProgramCatalogFacade`는 기업마당 조회·오류 변환·검색 후보 정규화를 `load` 하나로 감추고, `AiSupportProgramRankingFacade`는 AI 요청 생성·호출·응답 검증·도메인 변환을 `rank` 하나로 감춥니다. 모든 전송 객체를 프로젝트 전체의 한 DTO 폴더에 모으지 않습니다. 브라우저 공개 응답은 `supportprogram/controller/dto`, AI Service 요청·응답은 `supportprogram/client/ai/dto`, 기업마당 응답은 `supportprogram/client/bizinfo/dto`, 검증된 검색 결과는 `supportprogram/service/dto`가 각각 소유합니다. `BizInfoClient`는 인증키·pagination·공공데이터포털 HTTP 전송을 담당하고, `BizInfoPageDecoderHelper`가 허용된 JSON 구조만 DTO로 변환합니다. `client/bizinfo/mapper`의 `BizInfoProgramMapper`는 그 DTO를 검색 후보로 정규화합니다. Client 설정과 속성은 `client/bizinfo/config`, 전용 실패 계약은 `client/bizinfo/exception`, 전용 보조 코드는 `client/bizinfo/helper`에서 관리하고, 접수 상태 계산용 서울 기준 시계는 유일한 사용처인 기업마당 Facade 설정과 함께 `supportprogram/facade`에 둡니다. Kotlin 단어 사전과 고정 관련도 가중치는 사용하지 않습니다.
+지원사업 검색 관련 코드는 `supportprogram` 기능 디렉터리에서 함께 관리합니다. `service/search`는 검색 흐름과 검색 오류를 소유합니다. `facade`는 `SupportProgramCatalogFacade`·`SupportProgramRankingFacade` 계약과 그 구현을 함께 관리하고, 하위 `config`에는 Facade 전용 설정을, `exception`에는 상위 Service에 전달하는 안정적인 Facade 실패 계약을 둡니다. `BizInfoSupportProgramCatalogFacade`는 기업마당 조회·오류 변환·검색 후보 정규화를 `load` 하나로 감추고, `AiSupportProgramRankingFacade`는 AI 요청 생성·호출·응답 검증·도메인 변환을 `rank` 하나로 감춥니다. 모든 전송 객체를 프로젝트 전체의 한 DTO 폴더에 모으지 않습니다. 브라우저 공개 응답은 `supportprogram/controller/dto`, AI Service 요청·응답은 `supportprogram/client/ai/dto`, 기업마당 응답은 `supportprogram/client/bizinfo/dto`, 검증된 검색 결과는 `supportprogram/service/dto`가 각각 소유합니다. `BizInfoClient`는 인증키·pagination·공공데이터포털 HTTP 전송을 담당하고, `BizInfoPageDecoderHelper`가 허용된 JSON 구조만 DTO로 변환합니다. `client/bizinfo/mapper`의 `BizInfoProgramMapper`는 그 DTO를 검색 후보로 정규화합니다. Client 설정과 속성은 `client/bizinfo/config`, 전용 실패 계약은 `client/bizinfo/exception`, 전용 보조 코드는 `client/bizinfo/helper`에서 관리하고, 접수 상태 계산용 서울 기준 시계는 `supportprogram/facade/config`에 둡니다. Kotlin 단어 사전과 고정 관련도 가중치는 사용하지 않습니다.
 
 계층 연결 예제인 SampleItem도 `_sampleitem/controller → service → domain`으로 독립되어 있으며 공개 요청·응답 형식은 `_sampleitem/controller/dto`가 소유합니다.
 

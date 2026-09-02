@@ -1,4 +1,4 @@
-package ai.govbiz.core.supportprogram.facade
+package ai.govbiz.core.supportprogram.facade.config
 
 import java.time.Clock
 import java.time.ZoneId

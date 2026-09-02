@@ -3,8 +3,8 @@ package ai.govbiz.core.supportprogram.service.search
 import ai.govbiz.core.supportprogram.domain.CatalogSupportProgram
 import ai.govbiz.core.supportprogram.domain.SupportProgramStatus
 import ai.govbiz.core.supportprogram.facade.SupportProgramCatalogFacade
-import ai.govbiz.core.supportprogram.facade.SupportProgramCatalogFacadeException
 import ai.govbiz.core.supportprogram.facade.SupportProgramRankingFacade
+import ai.govbiz.core.supportprogram.facade.exception.SupportProgramCatalogFacadeException
 import ai.govbiz.core.supportprogram.service.dto.SupportProgramSearchResult
 import org.springframework.stereotype.Service
 
