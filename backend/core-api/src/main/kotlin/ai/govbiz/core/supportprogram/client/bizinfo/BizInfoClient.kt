@@ -25,7 +25,10 @@ class BizInfoClient(
         }
 
         val firstPage = fetchPage(serviceKey, 1)
-        val pageCount = maxOf(1, Math.ceilDiv(firstPage.totalCount, firstPage.pageSize))
+        val pageCount = maxOf(
+            1,
+            ((firstPage.totalCount.toLong() + firstPage.pageSize - 1L) / firstPage.pageSize).toInt(),
+        )
         if (pageCount > MAX_PAGES) {
             throw BizInfoClientException.invalidResponse(
                 "BizInfo API result exceeded the safe pagination limit",

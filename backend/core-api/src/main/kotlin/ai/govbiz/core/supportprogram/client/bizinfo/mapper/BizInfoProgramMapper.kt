@@ -9,8 +9,6 @@ import java.net.URISyntaxException
 import java.text.Normalizer
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
-import java.util.LinkedHashMap
-import java.util.LinkedHashSet
 import java.util.Locale
 import java.util.regex.Pattern
 import org.springframework.web.util.HtmlUtils

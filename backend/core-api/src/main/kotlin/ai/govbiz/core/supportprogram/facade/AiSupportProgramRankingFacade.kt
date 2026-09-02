@@ -9,7 +9,6 @@ import ai.govbiz.core.supportprogram.client.ai.dto.AiSupportProgramRankingReques
 import ai.govbiz.core.supportprogram.domain.CatalogSupportProgram
 import ai.govbiz.core.supportprogram.domain.SupportProgram
 import org.springframework.stereotype.Component
-import java.util.LinkedHashSet
 
 /** 검색 Service에 LLM 점수화의 요청·검증·변환 과정을 단일 진입점으로 제공한다. */
 @Component
